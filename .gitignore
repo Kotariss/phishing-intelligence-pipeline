@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Dangerous datasets / Raw data (1.5GB)
+file_for_case/
+
+# Environment variables & secrets
+.env
+*.env
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker / Temporary artifacts
+*.log
+docker-volumes/
+tmp/
+scratch/
