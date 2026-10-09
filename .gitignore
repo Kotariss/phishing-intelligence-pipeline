@@ -39,3 +39,4 @@ logs/
 services/worker/src/exports/
 services/worker/src/logs/
 .pytest_cache/
+.claude/

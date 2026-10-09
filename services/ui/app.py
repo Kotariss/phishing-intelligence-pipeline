@@ -1,13 +1,15 @@
-import os
-import sys
+import base64
+import collections
 import io
 import json
-import base64
-import requests
+import os
+import sys
+import uuid
 import zipfile
+
+import requests
 import streamlit as st
 
-# Setup page config
 st.set_page_config(
     page_title="Phishing Intelligence Pipeline",
     page_icon="🛡️",
@@ -15,557 +17,428 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Ensure paths
-if os.path.exists(os.path.join(os.path.dirname(__file__), "file_for_case")):
-    ROOT_DIR = os.path.dirname(__file__)
-elif os.path.exists(os.path.join(os.path.dirname(__file__), "../..", "file_for_case")):
-    ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+# ------------------------------------------------------------------------------ paths
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if os.path.exists(os.path.join(_HERE, "file_for_case")):
+    ROOT_DIR = _HERE
 else:
-    ROOT_DIR = os.environ.get("ROOT_DIR", os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+    ROOT_DIR = os.environ.get("ROOT_DIR", os.path.abspath(os.path.join(_HERE, "..", "..")))
 
 WORKER_SRC = os.path.join(ROOT_DIR, "services", "worker", "src")
 SANDBOX_SRC = os.path.join(ROOT_DIR, "services", "sandbox", "src")
-if os.path.exists(WORKER_SRC) and WORKER_SRC not in sys.path:
-    sys.path.insert(0, WORKER_SRC)
-if os.path.exists(SANDBOX_SRC) and SANDBOX_SRC not in sys.path:
-    sys.path.insert(0, SANDBOX_SRC)
+FIXTURES = os.path.join(ROOT_DIR, "tests", "fixtures")
+for _p in (WORKER_SRC, SANDBOX_SRC, FIXTURES):
+    if os.path.exists(_p) and _p not in sys.path:
+        sys.path.insert(0, _p)
 
-WORKER_HOST = os.getenv("WORKER_HOST", "localhost")
-WORKER_PORT = os.getenv("WORKER_PORT", "8000")
-WORKER_API = f"http://{WORKER_HOST}:{WORKER_PORT}"
+WORKER_API = f"http://{os.getenv('WORKER_HOST', 'localhost')}:{os.getenv('WORKER_PORT', '8000')}"
+DATASET = os.path.join(ROOT_DIR, "file_for_case")
+REPORTS = os.path.join(ROOT_DIR, "reports")
+EXPORTS = os.path.join(ROOT_DIR, "exports")
 
-# Fallback in-process runner
-def execute_pipeline_local(source_type: str, raw_target: str, raw_bytes: bytes = None):
+VERDICT_RU = {"MALICIOUS": "ФИШИНГ", "SUSPICIOUS": "ПОДОЗРИТЕЛЬНО", "CLEAN": "ПРИЗНАКОВ ФИШИНГА НЕ ОБНАРУЖЕНО"}
+
+
+# --------------------------------------------------------------------------- backend
+def _worker_alive() -> bool:
     try:
-        from orchestrator.state import PhishingState
-        from orchestrator.graph import run_pipeline
-        import uuid
-        state = PhishingState(
-            incident_id=f"ui_{uuid.uuid4().hex[:8]}",
-            source_type=source_type,
-            raw_target=raw_target,
-            raw_bytes=raw_bytes
-        )
-        return run_pipeline(state).model_dump()
-    except Exception as e:
-        return {"error": str(e), "verdict": "ERROR", "risk_score": 0.0}
+        return requests.get(f"{WORKER_API}/health", timeout=1.5).status_code == 200
+    except requests.RequestException:
+        return False
 
-def analyze_target(source_type: str, target_val: str, file_bytes: bytes = None):
-    # Try Worker API first
-    try:
-        if source_type == "url":
-            resp = requests.post(f"{WORKER_API}/api/v1/scan", data={"url": target_val}, timeout=120)
-        else:
-            files = {"file": (os.path.basename(target_val), file_bytes)}
-            resp = requests.post(f"{WORKER_API}/api/v1/scan", files=files, timeout=120)
+
+def _local_available() -> bool:
+    return os.path.isdir(WORKER_SRC)
+
+
+def run_local(state) -> dict:
+    from orchestrator.graph import run_pipeline
+    return run_pipeline(state).public_dump()
+
+
+def analyze_url(url: str) -> dict:
+    if _worker_alive():
+        resp = requests.post(f"{WORKER_API}/api/v1/scan", data={"url": url}, timeout=180)
         if resp.status_code == 200:
             return resp.json()
-    except Exception:
-        pass
-    
-    # In-process fallback
-    return execute_pipeline_local(source_type, target_val, file_bytes)
+        return {"error": resp.text[:500]}
+    from orchestrator.state import PhishingState
+    return run_local(PhishingState(incident_id=f"ui_{uuid.uuid4().hex[:8]}", source_type="url", raw_target=url))
 
+
+def analyze_file(name: str, data: bytes) -> dict:
+    if _worker_alive():
+        resp = requests.post(f"{WORKER_API}/api/v1/scan", files={"file": (name, data)}, timeout=180)
+        if resp.status_code == 200:
+            return resp.json()
+        return {"error": resp.text[:500]}
+    from orchestrator.state import PhishingState
+    ext = name.lower().rsplit(".", 1)[-1] if "." in name else "bin"
+    return run_local(PhishingState(incident_id=f"ui_{uuid.uuid4().hex[:8]}", source_type=ext, raw_target=name, raw_bytes=data))
+
+
+def reason_catalogue() -> dict:
+    try:
+        from rules.reason_codes import REASON_CODES
+        return REASON_CODES
+    except ImportError:
+        return {}
+
+
+# ------------------------------------------------------------------------- demo cases
+def _first_existing(*paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def demo_state(choice: str):
+    """Demo cases run OFFLINE on pre-collected artefacts (no visits to live phishing infrastructure)."""
+    from orchestrator.state import PhishingState
+    from ingest.dataset import build_state_from_sample_dir
+    iid = f"demo_{uuid.uuid4().hex[:8]}"
+    if choice.startswith("1"):
+        d = _first_existing(os.path.join(DATASET, "keis2", "Adobe", "bfc7879dc6f69c94cc86b74f3158ee30033bd12f"))
+        return build_state_from_sample_dir(d, iid) if d else None
+    if choice.startswith("2"):
+        d = _first_existing(os.path.join(DATASET, "keis2", "Сбер", "2a5b3ccfd50b3a4c7223fd5eec48e7a00a116c86"),
+                            os.path.join(DATASET, "keis2", "Сбер", "0517e90f5805fff01c086cbc6ace8010e0a643e6"))
+        return build_state_from_sample_dir(d, iid) if d else None
+    if choice.startswith("3"):
+        from helpers_demo import TELEGRAM_KIT
+        return PhishingState(incident_id=iid, source_type="html", raw_target="Счет_на_оплату.pdf.html",
+                             raw_bytes=TELEGRAM_KIT.encode("utf-8"), offline_mode=True)
+    if choice.startswith("4"):
+        p = _first_existing(os.path.join(DATASET, "grouped_png_phishing2026", "cluster_10",
+                                         "570516f8ef2a63f2eb3e5e3c172cf5479ae1300d_PO.2025072100002.PDF.png"))
+        if not p:
+            return None
+        with open(p, "rb") as f:
+            return PhishingState(incident_id=iid, source_type="png", raw_target=p, raw_bytes=f.read(), offline_mode=True)
+    if choice.startswith("5"):
+        import benign_samples
+        s = next(x for x in benign_samples.HTML_PAGES if x["id"] == "benign-sber-login")
+        return PhishingState(incident_id=iid, source_type="url", raw_target=s["url"], offline_mode=True,
+                             precollected_links=[{"url": s["url"], "final_url": s["url"], "html": s["html"], "redirect_chain": []}])
+    if choice.startswith("6"):
+        p = _first_existing(os.path.join(DATASET, "hardcore_demo", "hardcore_visual_sber_phish.html"))
+        if not p:
+            return None
+        with open(p, "rb") as f:
+            return PhishingState(incident_id=iid, source_type="html", raw_target=p, raw_bytes=f.read(), offline_mode=True)
+    return None
+
+
+DEMO_CASES = [
+    "1. Письмо «Adobe»: OAuth-редирект Microsoft → загрузка ScreenConnect (RAT)",
+    "2. Письмо «Сбербанк»: подмена отправителя и редирект через сокращатель",
+    "3. HTML-вложение «счёт.pdf.html»: форма входа Сбера + эксфильтрация в Telegram",
+    "4. Изображение-приманка с двойным расширением (.PDF.png), кампания PO",
+    "5. Легитимная страница входа СберБанк Онлайн (проверка отсутствия ложного срабатывания)",
+    "6. Визуальный фишинг без текста бренда (нужен VLM)",
+]
+
+
+# --------------------------------------------------------------------------- rendering
 def render_agent_traces(traces: list):
-    """Renders the step-by-step multi-agent execution pipeline trace."""
-    st.subheader("🤖 Пошаговая трассировка мультиагентного конвейера LangGraph")
-    st.caption("Каждый агент изолированно анализирует артефакты, вызывает специализированные инструменты и нейросети, обогащая общее состояние расследования (State).")
-    
+    st.subheader("🤖 Трассировка мультиагентного конвейера LangGraph")
     if not traces:
         st.info("Данные трассировки недоступны.")
         return
-
-    total_time_ms = sum(t.get("duration_ms", 0) for t in traces)
-    llm_calls_count = sum(1 for t in traces if t.get("llm_audit"))
-    threat_nodes = sum(1 for t in traces if t.get("status") == "TRIGGERED")
-
+    total_ms = sum(t.get("duration_ms", 0) for t in traces)
+    llm_calls = [t for t in traces if t.get("llm_audit")]
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Всего шагов агентов", len(traces))
-    m2.metric("Суммарное время пайплайна", f"{total_time_ms / 1000:.2f} сек")
-    m3.metric("Обращений к нейросетям", f"{llm_calls_count} (VLM / LLM)")
-    m4.metric("Узлов с детекцией угроз", f"{threat_nodes}")
+    m1.metric("Шагов агентов", len(traces))
+    m2.metric("Время конвейера", f"{total_ms / 1000:.2f} c")
+    m3.metric("Обращений к LLM / VLM", len(llm_calls))
+    m4.metric("Агентов с находками", sum(1 for t in traces if t.get("status") == "TRIGGERED"))
+
+    badges = {"TRIGGERED": "🔴 НАХОДКИ", "WARNING": "🟡 ВНИМАНИЕ", "SKIPPED": "⚪ ПРОПУЩЕН", "CLEAN": "🟢 ЧИСТО"}
+    for idx, trace in enumerate(traces, 1):
+        llm_info = trace.get("llm_audit")
+        status = trace.get("status", "COMPLETED")
+        ai_tag = f" 🧠 [{llm_info.get('model', 'LLM')}]" if llm_info else ""
+        header = f"{trace.get('icon', '🤖')} Шаг {idx}: {trace.get('agent_name', 'Agent')} — {badges.get(status, '🟢 ВЫПОЛНЕН')} ({trace.get('duration_ms', 0):.0f} мс){ai_tag}"
+        with st.expander(header, expanded=status == "TRIGGERED"):
+            st.caption(f"Фаза: `{trace.get('phase', '')}` · агент: `{trace.get('agent_id', '')}`")
+            left, right = st.columns([3, 2])
+            with left:
+                st.markdown("**Рассуждение агента:**")
+                st.write(trace.get("reasoning", "—"))
+                st.markdown("**Решение:**")
+                (st.error if status == "TRIGGERED" else st.warning if status == "WARNING" else st.info)(trace.get("decision", "—"))
+                if trace.get("tools_called"):
+                    st.markdown("**Инструменты:** " + " ".join(f"`{t}`" for t in trace["tools_called"]))
+            with right:
+                if trace.get("findings"):
+                    st.dataframe([{"Параметр": f.get("label", ""), "Значение": str(f.get("value", ""))}
+                                  for f in trace["findings"]], hide_index=True, use_container_width=True)
+            if llm_info:
+                ok = llm_info.get("success", True)
+                st.markdown(f"**Обращение к модели `{llm_info.get('model', '?')}`** ({llm_info.get('call_type', '')}, "
+                            f"{llm_info.get('elapsed_seconds', 0):.2f} c) — {'успешно' if ok else 'недоступна, использован детерминированный результат'}")
+                with st.expander("Промпт и ответ модели", expanded=False):
+                    st.code(llm_info.get("prompt", ""), language="text")
+                    st.code(llm_info.get("response", ""), language="text")
+
+
+def render_result(result: dict):
+    if result.get("error") and not result.get("verdict"):
+        st.error(f"Ошибка анализа: {result['error']}")
+        return
+    verdict = result.get("verdict", "UNKNOWN")
+    risk = float(result.get("risk_score", 0.0))
+    brand_ev = result.get("brand_evidence", {}) or {}
+    brand = brand_ev.get("detected_brand_name") or "—"
+
+    c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
+    with c1:
+        text = f"### Вердикт: {VERDICT_RU.get(verdict, verdict)}"
+        (st.error if verdict == "MALICIOUS" else st.warning if verdict == "SUSPICIOUS" else st.success)(text)
+    with c2:
+        st.metric("Risk score", f"{risk:.2f}")
+        st.progress(min(risk, 1.0))
+    with c3:
+        st.metric("Бренд", brand)
+        st.caption(f"источник: {brand_ev.get('detection_source') or '—'}")
+    with c4:
+        st.metric("Кампания", result.get("campaign_id") or "—")
+        st.caption(result.get("signature_status") or "")
+
+    if result.get("zero_fpr_note"):
+        st.caption(f"Zero FPR Guard: {result['zero_fpr_note']}")
+    if result.get("explanation"):
+        st.markdown("### 🧾 Пояснение решения")
+        st.chat_message("assistant", avatar="🛡️").markdown(result["explanation"].replace("\n", "  \n"))
+
+    st.subheader("📋 Коды причин и подтверждающие признаки")
+    codes = result.get("reason_codes", [])
+    if codes:
+        catalogue = reason_catalogue()
+        rows = []
+        for code in sorted(codes, key=lambda c: -getattr(catalogue.get(c), "weight", 0)):
+            info = catalogue.get(code)
+            rows.append({
+                "Код": code,
+                "Важность": info.severity if info else "",
+                "Вес": f"{info.weight:.2f}" if info else "",
+                "Подтверждающий признак": (result.get("reason_details") or {}).get(code, ""),
+                "Описание": info.description if info else "",
+            })
+        st.dataframe(rows, hide_index=True, use_container_width=True)
+    else:
+        st.info("Признаков фишинговых техник не обнаружено.")
+
+    shot = result.get("screenshot_base64")
+    left, right = st.columns([1, 1])
+    with left:
+        if shot:
+            st.subheader("🖼️ Снимок страницы / изображение")
+            try:
+                st.image(base64.b64decode(shot.split("base64,")[-1]), caption=result.get("screenshot_source") or "", use_container_width=True)
+            except Exception:
+                st.caption("Изображение не удалось отобразить.")
+    with right:
+        st.subheader("🔎 Отпечатки и сеть")
+        st.json({"final_url": result.get("final_url"), "redirect_chain": [h.get("url") for h in result.get("redirect_chain", [])],
+                 "fingerprints": result.get("fingerprints", {}),
+                 "dom_structural_hash": result.get("dom_structural_hash")}, expanded=False)
+
+    st.subheader("📦 Компактные артефакты")
+    sig, yara = result.get("generated_l_signature"), result.get("generated_yara_rule")
+    s1, s2 = st.columns(2)
+    with s1:
+        st.markdown("**L-сигнатура (lar-rule-v1)**")
+        if sig:
+            st.json(sig, expanded=False)
+            st.download_button("💾 Скачать .json", json.dumps(sig, ensure_ascii=False, indent=2),
+                               file_name=f"{sig.get('rule_id', 'rule')}.json", mime="application/json")
+        else:
+            st.info("Правило не формировалось (вердикт CLEAN или улики не обобщаются).")
+    with s2:
+        st.markdown("**YARA**")
+        if yara:
+            st.code(yara, language="c")
+            st.download_button("💾 Скачать .yar", yara, file_name=f"{(sig or {}).get('rule_id', 'rule')}.yar")
+        else:
+            st.info("Для образца нет специфичных строк для YARA.")
 
     st.markdown("---")
+    render_agent_traces(result.get("agent_traces", []))
 
-    for idx, trace in enumerate(traces, 1):
-        icon = trace.get("icon", "🤖")
-        name = trace.get("agent_name", "Unknown Agent")
-        phase = trace.get("phase", "Analysis")
-        status = trace.get("status", "COMPLETED")
-        dur_ms = trace.get("duration_ms", 0.0)
-        llm_info = trace.get("llm_audit")
 
-        # Status badge styling
-        if status == "TRIGGERED":
-            status_badge = "🔴 ОБНАРУЖЕНА УГРОЗА"
-        elif status == "WARNING":
-            status_badge = "🟡 ТРЕБУЕТ ВНИМАНИЯ"
-        elif status == "SKIPPED":
-            status_badge = "⚪ ПРОПУЩЕН"
-        else:
-            status_badge = "🟢 ВЫПОЛНЕН"
-
-        ai_tag = f" 🧠 [AI: {llm_info.get('model', 'Cloud').split('/')[-1]}]" if llm_info else ""
-        header = f"{icon} Шаг {idx}: {name} — {status_badge} ({dur_ms:.1f} мс){ai_tag}"
-
-        # Expand automatically if threat detected or LLM was called or key steps
-        default_expanded = bool(status == "TRIGGERED" or llm_info or idx in (1, 4, 7))
-
-        with st.expander(header, expanded=default_expanded):
-            st.caption(f"**Фаза пайплайна:** `{phase}` | **Идентификатор агента:** `{trace.get('agent_id', 'agent')}`")
-            
-            c_left, c_right = st.columns([3, 2])
-
-            with c_left:
-                st.markdown("**💭 Цепочка рассуждений агента (Agent Reasoning):**")
-                st.write(trace.get("reasoning", "—"))
-
-                st.markdown("**⚖️ Принятое решение (Decision):**")
-                if status == "TRIGGERED":
-                    st.error(trace.get("decision", "—"))
-                elif status == "WARNING":
-                    st.warning(trace.get("decision", "—"))
-                else:
-                    st.info(trace.get("decision", "—"))
-
-                tools = trace.get("tools_called", [])
-                if tools:
-                    st.markdown("**🛠️ Вызванные алгоритмы и инструменты (Tools & Algorithms):**")
-                    tools_badges = " ".join([f"`{t}`" for t in tools])
-                    st.markdown(tools_badges)
-
-            with c_right:
-                findings = trace.get("findings", [])
-                if findings:
-                    st.markdown("**📊 Выявленные параметры (Findings):**")
-                    table_rows = []
-                    for f in findings:
-                        table_rows.append({
-                            "Параметр": f.get("label", ""),
-                            "Значение": str(f.get("value", ""))
-                        })
-                    st.dataframe(table_rows, hide_index=True, use_container_width=True)
-
-            # Neural Network Call Highlight
-            if llm_info:
-                st.markdown("---")
-                call_type = llm_info.get("call_type", "AI_CALL")
-                model_name = llm_info.get("model", "Unknown")
-                elapsed_s = llm_info.get("elapsed_seconds", 0.0)
-                
-                st.markdown(f"#### 🧠 Прямой вызов нейросети NSU Cloud AI (`{call_type}`)")
-                
-                c_ai_meta1, c_ai_meta2 = st.columns([1, 1])
-                with c_ai_meta1:
-                    st.info(f"**Модель:** `{model_name}`\n\n**Время инференса:** `{elapsed_s:.2f} сек`")
-                with c_ai_meta2:
-                    st.success(f"**Таймстемп:** `{llm_info.get('timestamp', 'UTC')}`\n\n**Статус:** `SUCCESS (200 OK)`")
-
-                with st.expander("📥 Посмотреть промпт, переданный в модель", expanded=False):
-                    st.code(llm_info.get("prompt", ""), language="text")
-
-                st.markdown("**📤 Непосредственный ответ нейросети (Raw Output):**")
-                st.code(llm_info.get("response", ""), language="text")
-
-# Sidebar Navigation
-st.sidebar.markdown("## 🛡️ Anti-Spam Threat Lab")
-st.sidebar.title("Phishing Intelligence Pipeline")
-st.sidebar.markdown("**Мультиагентный анализ фишинга и дистилляция в компактные L-сигнатуры**")
-st.sidebar.divider()
-
-page = st.sidebar.radio(
-    "Навигация по разделам",
-    [
-        "🔍 Сканер & Анализатор угроз",
-        "📚 База знаний & Реестр L-сигнатур",
-        "🤖 Логи нейросетей (LLM & VLM Live Audit)"
-    ]
-)
-
+# ----------------------------------------------------------------------------- sidebar
+st.sidebar.title("🛡️ Phishing Intelligence Pipeline")
+st.sidebar.caption("Глубокий анализ фишинга → база знаний → компактные артефакты")
+page = st.sidebar.radio("Разделы", ["🔍 Анализ объекта", "📚 База знаний и кампании", "📈 Метрики качества", "🧠 Журнал LLM / VLM"])
 st.sidebar.markdown("---")
-st.sidebar.info(
-    "**Стандарт Zero FPR:**\n"
-    "• Clean: < 0.30\n"
-    "• Review: 0.30 - 0.70\n"
-    "• Block: >= 0.70\n"
-    "Гарантия нулевых ложных срабатываний на корпоративной почте."
-)
+st.sidebar.markdown(
+    "**Вердикт (noisy-OR по кодам причин):**\n"
+    "- `< 0.30` — признаков нет\n- `0.30–0.70` — подозрительно\n- `≥ 0.70` — фишинг\n\n"
+    "Одиночный признак не даёт вердикт «фишинг»; каждое правило проверяется на эталонной выборке легитимных объектов.")
+st.sidebar.caption(f"Worker API: {'🟢 доступен' if _worker_alive() else '⚪ не запущен — локальный режим'}")
 
-# ==============================================================================
-# PAGE 1: SCANNER & ANALYZER
-# ==============================================================================
-if page == "🔍 Сканер & Анализатор угроз":
-    st.title("🛡️ Мультиагентный сканер фишинговых угроз")
-    st.caption("Полносвязный мультиагентный конвейер LangGraph: изоляция Sandbox, VLM-компьютерное зрение и синтез L-сигнатур")
 
-    tab_url, tab_file, tab_demo = st.tabs([
-        "🔗 Подозрительный URL",
-        "📁 Загрузка файла (EML, HTML, PDF, PNG)",
-        "🧪 Готовые кейсы из датасета (Демо)"
-    ])
-
-    scan_triggered = False
-    source_type = ""
-    target_str = ""
-    raw_content = None
-
-    with tab_url:
-        st.subheader("Анализ подозрительной ссылки")
-        url_input = st.text_input("Введите URL для раскрытия редиректов и песочницы:", placeholder="https://example.com/promo-auth")
-        if st.button("🚀 Запустить глубокий анализ ссылки", key="btn_scan_url", type="primary"):
-            if url_input:
-                scan_triggered = True
-                source_type = "url"
-                target_str = url_input.strip()
-            else:
-                st.warning("Пожалуйста, укажите URL.")
-
-    with tab_file:
-        st.subheader("Загрузка подозрительного файла")
-        uploaded_file = st.file_uploader(
-            "Перетащите файл для безопасного разбора в песочнице:",
-            type=["eml", "msg", "html", "htm", "pdf", "docx", "xlsx", "png", "jpg", "jpeg"]
-        )
-        if st.button("🔍 Проанализировать загруженный файл", key="btn_scan_file", type="primary"):
-            if uploaded_file:
-                scan_triggered = True
-                ext = uploaded_file.name.split(".")[-1].lower() if "." in uploaded_file.name else "bin"
-                source_type = ext
-                target_str = uploaded_file.name
-                raw_content = uploaded_file.read()
-            else:
-                st.warning("Пожалуйста, загрузите файл.")
-
+# ------------------------------------------------------------------------------ pages
+if page == "🔍 Анализ объекта":
+    st.title("🔍 Анализ объекта")
+    tab_demo, tab_file, tab_url = st.tabs(["🧪 Кейсы из датасета", "📁 Файл (EML, HTML, PDF, Office, изображение)", "🔗 URL"])
+    result = None
     with tab_demo:
-        st.subheader("Предустановленные кейсы из датасета")
-        demo_choice = st.selectbox(
-            "Выберите образцовый кейс для моментальной демонстрации пайплайна:",
-            [
-                "Кейс 1: Фишинг под Сбербанк (EML с подменой отображаемого имени)",
-                "Кейс 2: Подделка Госуслуг / Автономный HTML-фишинг кит с JS-обфускацией",
-                "Кейс 3: Quishing / B2B приманка с двойным расширением (.PDF.png)",
-                "Кейс 4: Легитимная деловая ссылка (Гарантия Zero FPR: Сбербанк Онлайн)",
-                "🔥 Кейс 5 (ХАРДКОР VLM + LLM): Чисто визуальный фишинг БЕЗ единого слова в тексте"
-            ]
-        )
-        if "Кейс 5" in demo_choice:
-            st.info("💡 **Хардкор-сценарий для нейросетей:** В HTML-коде и DOM вообще нет текста и упоминаний бренда (0 ключевых слов). Традиционные парсеры и regex бессильны. Для детекции критически необходима **мультимодальная Vision нейросеть (Qwen3.8-27B)** для распознавания пикселей логотипа и интерфейса Сбера, а также **DeepSeek-V4-Flash** для синтеза вердикта.")
-        if st.button("⚡ Загрузить кейс и выполнить анализ", key="btn_scan_demo", type="primary"):
-            scan_triggered = True
-            if "Кейс 1" in demo_choice:
-                source_type = "eml"
-                target_str = os.path.join(ROOT_DIR, "file_for_case/keis2/Сбер/0517e90f5805fff01c086cbc6ace8010e0a643e6/0517e90f5805fff01c086cbc6ace8010e0a643e6")
-                if os.path.exists(target_str):
-                    with open(target_str, "rb") as f:
-                        raw_content = f.read()
-            elif "Кейс 2" in demo_choice:
-                source_type = "html"
-                h_dir = os.path.join(ROOT_DIR, "file_for_case/html_phishing2026")
-                h_files = [f for f in os.listdir(h_dir) if f.endswith(".html")]
-                target_str = os.path.join(h_dir, h_files[0])
-                with open(target_str, "rb") as f:
-                    raw_content = f.read()
-            elif "Кейс 3" in demo_choice:
-                source_type = "png"
-                target_str = os.path.join(ROOT_DIR, "file_for_case/grouped_png_phishing2026/cluster_10/570516f8ef2a63f2eb3e5e3c172cf5479ae1300d_PO.2025072100002.PDF.png")
-                with open(target_str, "rb") as f:
-                    raw_content = f.read()
-            elif "Кейс 4" in demo_choice:
-                source_type = "url"
-                target_str = "https://online.sberbank.ru/CSAFront/index.do"
-            elif "Кейс 5" in demo_choice:
-                source_type = "html"
-                target_str = os.path.join(ROOT_DIR, "file_for_case/hardcore_demo/hardcore_visual_sber_phish.html")
-                with open(target_str, "rb") as f:
-                    raw_content = f.read()
-
-    if scan_triggered:
+        choice = st.selectbox("Кейс:", DEMO_CASES)
+        st.caption("Кейсы анализируются офлайн по собранным артефактам (цепочки редиректов, HTML, скриншоты) — без обращения к живой фишинговой инфраструктуре.")
+        if st.button("⚡ Запустить", type="primary", key="demo"):
+            if not _local_available():
+                st.error("Демо-кейсы требуют локальных исходников воркера.")
+            else:
+                state = demo_state(choice)
+                if state is None:
+                    st.warning("Файлы кейса отсутствуют (каталог file_for_case не подключён).")
+                else:
+                    with st.spinner("Работает мультиагентный конвейер..."):
+                        result = run_local(state)
+    with tab_file:
+        uploaded = st.file_uploader("Файл для разбора в песочнице", type=None)
+        if st.button("🔍 Проанализировать", type="primary", key="file") and uploaded:
+            with st.spinner("Работает мультиагентный конвейер..."):
+                result = analyze_file(uploaded.name, uploaded.read())
+    with tab_url:
+        url = st.text_input("URL", placeholder="https://example.com/login")
+        st.caption("Активное раскрытие ссылки выполняется только песочницей с выходом в сеть (профиль live-fetch).")
+        if st.button("🚀 Проанализировать URL", type="primary", key="url") and url:
+            with st.spinner("Работает мультиагентный конвейер..."):
+                result = analyze_url(url.strip())
+    if result is not None:
         st.divider()
-        with st.status("Исполнение мультиагентного конвейера LangGraph...", expanded=True) as status:
-            st.write("🔵 **Triage Agent:** Валидация входного типа, Anti-SSRF фильтрация и Sandbox изоляция...")
-            st.write("🌐 **URL Agent:** Анализ перенаправлений, OAuth-абуза и полезных нагрузок RAT...")
-            st.write("📄 **DOM Agent:** Глубокий разбор форм, скриптов и каналов эксфильтрации...")
-            st.write("👁️ **Vision Agent:** Мультимодальный VLM-анализ графики и проверка по 175-Brand Allowlist...")
-            st.write("📦 **Quishing Agent:** Поиск QR-кодов и маскированных вложений...")
-            st.write("🧠 **Synthesizer Agent:** Синтез SOC-вердикта через DeepSeek LLM и компиляция L-сигнатур...")
-            
-            result = analyze_target(source_type, target_str, raw_content)
-            status.update(label="Мультиагентный анализ завершен успешно!", state="complete", expanded=False)
+        render_result(result)
 
-        # Verdict Section
-        verdict = result.get("verdict", "UNKNOWN")
-        risk_score = result.get("risk_score", 0.0)
-        confidence = result.get("confidence", "LOW")
-        brand_ev = result.get("brand_evidence", {})
-        target_brand = brand_ev.get("detected_brand_name") or result.get("target_brand") or "Generic"
+elif page == "📚 База знаний и кампании":
+    st.title("📚 База знаний, кампании и пакет артефактов")
+    stats, incidents, signatures, campaigns = {}, [], [], []
+    if _worker_alive():
+        try:
+            stats = requests.get(f"{WORKER_API}/api/v1/stats", timeout=5).json()
+            incidents = requests.get(f"{WORKER_API}/api/v1/incidents?limit=200", timeout=5).json()
+            signatures = requests.get(f"{WORKER_API}/api/v1/signatures?limit=200", timeout=5).json()
+            campaigns = requests.get(f"{WORKER_API}/api/v1/campaigns", timeout=5).json()
+        except (requests.RequestException, ValueError):
+            pass
+    elif _local_available():
+        from db.repository import IncidentRepository
+        repo = IncidentRepository()
+        stats = repo.count_stats()
+        incidents = [{"id": i.id, "created_at": i.created_at.isoformat() if i.created_at else "", "source_type": i.source_type,
+                      "raw_target": i.raw_target, "verdict": i.verdict, "target_brand": i.target_brand,
+                      "risk_score": i.risk_score, "reason_codes": i.reason_codes, "campaign_id": i.campaign_id}
+                     for i in repo.list_incidents(limit=200)]
+        signatures = [{"id": s.id, "name": s.name, "target_brand": s.target_brand, "status": s.status,
+                       "created_at": s.created_at.isoformat() if s.created_at else "", "incident_id": s.incident_id}
+                      for s in repo.list_signatures(limit=200)]
+        campaigns = repo.list_campaigns()
 
-        col_verdict, col_metrics, col_brand = st.columns([2, 1, 1])
+    m = st.columns(6)
+    m[0].metric("Инцидентов", stats.get("total_incidents", 0))
+    m[1].metric("Фишинг", stats.get("malicious_count", 0))
+    m[2].metric("Подозрительно", stats.get("suspicious_count", 0))
+    m[3].metric("Чисто", stats.get("clean_count", 0))
+    m[4].metric("Правил (активных)", stats.get("active_signatures", 0))
+    m[5].metric("Кампаний", len(campaigns))
 
-        with col_verdict:
-            if verdict == "MALICIOUS":
-                st.error(f"### 🔴 ВЕРДИКТ: {verdict} / ЗАБЛОКИРОВАНО")
-                st.markdown(f"**Объект классифицирован как подтвержденный фишинг.** Сгенерирована L-сигнатура.")
-            elif verdict == "SUSPICIOUS":
-                st.warning(f"### 🟡 ВЕРДИКТ: {verdict} / ТРЕБУЕТСЯ ПРОВЕРКА")
-                st.markdown(f"**Подозрительный объект.** Передан на проверку SOC-аналитику.")
-            else:
-                st.success(f"### 🟢 ВЕРДИКТ: {verdict} / ЧИСТЫЙ ОБЪЕКТ")
-                st.markdown(f"**Легитимный трафик.** Полное соответствие стандарту Zero FPR.")
+    st.subheader("📊 Частота фишинговых техник по базе знаний")
+    freq = collections.Counter(c for i in incidents for c in (i.get("reason_codes") or []))
+    if freq:
+        st.bar_chart({code: n for code, n in freq.most_common(20)}, horizontal=True)
+    else:
+        st.info("База знаний пуста — проанализируйте объекты или запустите `python phishctl.py analyze-dir`.")
 
-        with col_metrics:
-            st.metric("Risk Score", f"{risk_score:.2f} / 1.00")
-            st.progress(min(float(risk_score), 1.0))
-            st.caption(f"Степень уверенности: **{confidence}**")
+    st.subheader("🕸️ Кампании (общий kit, канал эксфильтрации или инфраструктура)")
+    if campaigns:
+        st.dataframe([{"Кампания": c["campaign_id"], "Инцидентов": c["incidents"], "Бренды": ", ".join(c["brands"]),
+                       "Техники": ", ".join(c["reason_codes"][:6]), "Последний": c["last_seen"]} for c in campaigns],
+                     hide_index=True, use_container_width=True)
+    else:
+        st.caption("Кампании появляются, когда ≥ 2 инцидента имеют общий отпечаток.")
 
-        with col_brand:
-            st.metric("Таргет-бренд", target_brand)
-            impersonated = brand_ev.get("brand_impersonation_confirmed", False)
-            if impersonated:
-                st.error("⚠️ Brand Impersonation")
-            else:
-                st.success("✅ Allowlist Match")
+    st.subheader("📦 Пакет артефактов для антиспам-движка")
+    st.caption("Версионированный JSON: сигнатуры известного фишинга отдельно от обобщённых правил, признаки брендов, коды причин и YARA.")
+    if _local_available() and st.button("Сформировать новую версию пакета", type="primary"):
+        from rules.package import build_package, save_package
+        info = save_package(build_package(), os.path.join(EXPORTS, "package"))
+        st.success(f"Пакет v{info['version']} сохранён: {info['json']}")
+        with open(info["json"], "rb") as f:
+            st.download_button("📥 Скачать package.json", f.read(), file_name=os.path.basename(info["json"]), mime="application/json")
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(info["json"], os.path.basename(info["json"]))
+            zf.write(info["yara"], os.path.basename(info["yara"]))
+        st.download_button("📥 Скачать пакет (ZIP: JSON + YARA)", buf.getvalue(), file_name=f"package_v{info['version']}.zip",
+                           mime="application/zip")
 
-        # SOC Analyst LLM Synthesis Callout
-        explanation_text = result.get("explanation")
-        if explanation_text:
-            st.markdown("### 🧠 Экспертное заключение SOC-аналитика (DeepSeek-V4-Flash)")
-            st.caption("Аналитическое заключение автоматически сформировано нейросетью на облачной инфраструктуре НГУ:")
-            st.chat_message("assistant", avatar="🛡️").markdown(explanation_text)
+    st.subheader("🗂️ Журнал инцидентов")
+    if incidents:
+        st.dataframe([{"ID": i.get("id"), "Время": (i.get("created_at") or "").replace("T", " ")[:16], "Тип": i.get("source_type"),
+                       "Объект": str(i.get("raw_target", ""))[-70:], "Вердикт": i.get("verdict"), "Бренд": i.get("target_brand") or "",
+                       "Risk": f"{float(i.get('risk_score') or 0):.2f}", "Кампания": i.get("campaign_id") or ""} for i in incidents],
+                     hide_index=True, use_container_width=True)
+    st.subheader("📜 Реестр правил")
+    if signatures:
+        st.dataframe([{"Rule ID": s.get("id"), "Название": s.get("name"), "Бренд": s.get("target_brand"),
+                       "Статус": s.get("status"), "Инцидент": s.get("incident_id"),
+                       "Дата": (s.get("created_at") or "").replace("T", " ")[:16]} for s in signatures],
+                     hide_index=True, use_container_width=True)
 
-        st.markdown("---")
+elif page == "📈 Метрики качества":
+    st.title("📈 Метрики качества (ТЗ п. 4.1.11)")
+    st.caption("Отчёт формируется командой `python phishctl.py metrics` (или кнопкой ниже на ограниченной выборке).")
+    report_path = os.path.join(REPORTS, "metrics.json")
+    if _local_available():
+        limit = st.slider("Объектов на источник для быстрого прогона", 5, 200, 20, step=5)
+        if st.button("Пересчитать метрики (офлайн)"):
+            from evaluation import evaluate, save_report
+            with st.spinner("Прогон корпуса и легитимного набора..."):
+                save_report(evaluate(DATASET, limit), report_path)
+    if os.path.exists(report_path):
+        with open(report_path, "r", encoding="utf-8") as f:
+            report = json.load(f)
+        st.caption(f"Отчёт от {report.get('generated_at')} · объектов: {report.get('counts')}")
+        st.subheader("Критерии приёмки")
+        st.dataframe([{"Метрика": k, "Цель": v["target"], "Факт": v["actual"], "Выполнено": "✅" if v["passed"] else "❌"}
+                      for k, v in report["acceptance"].items()], hide_index=True, use_container_width=True)
+        st.subheader("Все метрики")
+        st.json(report["metrics"])
+        st.subheader("Разрез по источникам")
+        st.dataframe([{"Источник": k, **{kk: (json.dumps(vv, ensure_ascii=False) if isinstance(vv, dict) else vv) for kk, vv in v.items()}}
+                      for k, v in report["per_category"].items()], hide_index=True, use_container_width=True)
+        st.subheader("Глобальная интерпретация: частота техник")
+        st.bar_chart(dict(list(report.get("reason_code_frequency", {}).items())[:20]), horizontal=True)
+        if report.get("benign_false_positives", {}).get("suspicious"):
+            st.warning("«Подозрительно» на легитимных: " + ", ".join(report["benign_false_positives"]["suspicious"]))
+    else:
+        st.info("Отчёт ещё не сформирован.")
 
-        # AGENT EXECUTION TRACE SECTION
-        agent_traces = result.get("agent_traces", [])
-        render_agent_traces(agent_traces)
-
-        st.markdown("---")
-
-        # Reason Codes Table
-        st.subheader("📋 Сработавшие коды причин (Reason Codes)")
-        reason_codes = result.get("reason_codes", [])
-        if reason_codes:
-            rc_data = []
-            for code in reason_codes:
-                rc_data.append({
-                    "Reason Code": code,
-                    "Описание индикатора": "Детектирован признак фишинговой техники / эксфильтрации",
-                    "Статус": "TRIGGERED"
-                })
-            st.dataframe(rc_data, use_container_width=True)
-        else:
-            st.info("Аномальных признаков или подозрительных кодов не обнаружено.")
-
-        # Visual Artifacts & Screenshot
-        screenshot_b64 = result.get("screenshot_base64")
-        if screenshot_b64:
-            st.subheader("🖼️ Визуальные улики (Снимок песочницы / Вложения)")
-            try:
-                img_data = base64.b64decode(screenshot_b64)
-                st.image(img_data, caption="Рендеринг песочницы Sandbox / Входной графический артефакт", width=700)
-            except Exception:
-                pass
-
-        # Generated L-Signature & YARA rules
-        st.subheader("📦 Сгенерированные правила для локального движка Dr.Web")
-        l_sig = result.get("generated_l_signature")
-        yara_rule = result.get("generated_yara_rule")
-
-        col_sig1, col_sig2 = st.columns(2)
-
-        with col_sig1:
-            st.markdown("#### 1. Компактная L-сигнатура (JSON)")
-            if l_sig:
-                st.json(l_sig)
-                sig_json_str = json.dumps(l_sig, indent=2, ensure_ascii=False)
-                st.download_button(
-                    label="💾 Скачать L-сигнатуру (.json)",
-                    data=sig_json_str,
-                    file_name=f"{l_sig.get('rule_id', 'rule')}.json",
-                    mime="application/json"
-                )
-            else:
-                st.info("L-сигнатура блокировки не генерировалась (объект признан легитимным).")
-
-        with col_sig2:
-            st.markdown("#### 2. YARA-правило для вложений")
-            if yara_rule:
-                st.code(yara_rule, language="c")
-                st.download_button(
-                    label="💾 Скачать YARA-правило (.yar)",
-                    data=yara_rule,
-                    file_name="generated_rule.yar",
-                    mime="text/plain"
-                )
-            else:
-                st.info("YARA-правило для данного образца не требуется.")
-
-# ==============================================================================
-# PAGE 2: KNOWLEDGE BASE & SIGNATURE REGISTRY
-# ==============================================================================
-elif page == "📚 База знаний & Реестр L-сигнатур":
-    st.title("📚 Реестр инцидентов и База знаний L-сигнатур")
-    st.caption("Архив проанализированных образцов и пакетный экспорт правил для Dr.Web")
-
-    # Fetch stats & records (Try Worker API first, then local DB fallback)
-    stats = {"total_incidents": 0, "malicious_count": 0, "suspicious_count": 0, "clean_count": 0, "total_signatures": 0}
-    incidents = []
-    signatures = []
-
+elif page == "🧠 Журнал LLM / VLM":
+    st.title("🧠 Журнал обращений к LLM / VLM")
     try:
-        r_stats = requests.get(f"{WORKER_API}/api/v1/stats", timeout=3)
-        if r_stats.status_code == 200:
-            stats = r_stats.json()
-        r_inc = requests.get(f"{WORKER_API}/api/v1/incidents?limit=50", timeout=3)
-        if r_inc.status_code == 200:
-            incidents = r_inc.json()
-        r_sig = requests.get(f"{WORKER_API}/api/v1/signatures?limit=50", timeout=3)
-        if r_sig.status_code == 200:
-            signatures = r_sig.json()
+        from config import get_settings
+        s = get_settings()
+        st.caption(f"Режим: **{s.llm_mode}** · текстовая модель: `{s.LLM_TEXT_MODEL}` · VLM: `{s.LLM_VISION_MODEL}` · "
+                   f"{'настроено' if s.llm_configured else 'не настроено'}")
     except Exception:
         pass
-
-    if not incidents and not signatures:
-        try:
-            from db.repository import IncidentRepository
-            repo = IncidentRepository()
-            stats = repo.count_stats()
-            incidents = repo.list_incidents(limit=50)
-            signatures = repo.list_signatures(limit=50)
-        except Exception:
-            pass
-
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Всего инцидентов", stats.get("total_incidents", 0))
-    m2.metric("Вредоносных (MALICIOUS)", stats.get("malicious_count", 0))
-    m3.metric("Подозрительных (SUSPICIOUS)", stats.get("suspicious_count", 0))
-    m4.metric("Чистых (CLEAN)", stats.get("clean_count", 0))
-    m5.metric("Активных L-сигнатур", stats.get("total_signatures", 0))
-
-    st.divider()
-
-    # Batch ZIP export
-    col_exp1, col_exp2 = st.columns([3, 1])
-    with col_exp1:
-        st.markdown("### 📦 Пакетный экспорт правил")
-        st.markdown("Экспортируйте весь накопленный каталог активных JSON L-сигнатур и YARA правил для развертывания в локальном антиспам-движке.")
-    with col_exp2:
-        # Generate ZIP on the fly
-        zip_buf = io.BytesIO()
-        exports_dir = os.path.join(ROOT_DIR, "exports")
-        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            for root, _, files in os.walk(exports_dir):
-                for f in files:
-                    full_p = os.path.join(root, f)
-                    rel_p = os.path.relpath(full_p, exports_dir)
-                    zf.write(full_p, arcname=rel_p)
-        zip_buf.seek(0)
-        st.download_button(
-            label="📥 Скачать весь пакет правил (ZIP)",
-            data=zip_buf,
-            file_name="phishing_signatures_bundle.zip",
-            mime="application/zip",
-            type="primary"
-        )
-
-    st.divider()
-
-    # Incidents Table
-    st.subheader("Журнал инцидентов")
-    if incidents:
-        table_rows = []
-        for inc in incidents:
-            if isinstance(inc, dict):
-                c_time = inc.get("created_at", "") or ""
-                if "T" in c_time:
-                    c_time = c_time.replace("T", " ")[:16]
-                table_rows.append({
-                    "ID": inc.get("id"),
-                    "Время": c_time,
-                    "Тип": inc.get("source_type"),
-                    "Целевой объект": str(inc.get("raw_target", ""))[:60],
-                    "Вердикт": inc.get("verdict"),
-                    "Бренд": inc.get("target_brand") or "None",
-                    "Risk Score": f"{float(inc.get('risk_score', 0.0)):.2f}",
-                    "Zero FPR": "PASSED" if inc.get("zero_fpr_passed") else "FAILED"
-                })
-            else:
-                table_rows.append({
-                    "ID": inc.id,
-                    "Время": inc.created_at.strftime("%Y-%m-%d %H:%M") if inc.created_at else "",
-                    "Тип": inc.source_type,
-                    "Целевой объект": inc.raw_target[:60],
-                    "Вердикт": inc.verdict,
-                    "Бренд": inc.target_brand or "None",
-                    "Risk Score": f"{inc.risk_score:.2f}",
-                    "Zero FPR": "PASSED" if inc.zero_fpr_passed else "FAILED"
-                })
-        st.dataframe(table_rows, use_container_width=True)
-    else:
-        st.info("Инцидентов в базе данных пока нет. Запустите анализ на странице «Сканер & Анализатор».")
-
-    # Signatures Registry
-    st.subheader("Реестр активных L-сигнатур")
-    if signatures:
-        sig_rows = []
-        for s in signatures:
-            if isinstance(s, dict):
-                c_time = s.get("created_at", "") or ""
-                if "T" in c_time:
-                    c_time = c_time.replace("T", " ")[:16]
-                sig_rows.append({
-                    "Rule ID": s.get("id"),
-                    "Название": s.get("name"),
-                    "Бренд": s.get("target_brand"),
-                    "Статус": s.get("status"),
-                    "Дата": c_time
-                })
-            else:
-                sig_rows.append({
-                    "Rule ID": s.id,
-                    "Название": s.name,
-                    "Бренд": s.target_brand,
-                    "Статус": s.status,
-                    "Дата": s.created_at.strftime("%Y-%m-%d %H:%M") if s.created_at else ""
-                })
-        st.dataframe(sig_rows, use_container_width=True)
-    else:
-        st.info("Активных L-сигнатур пока нет.")
-
-# ==============================================================================
-# PAGE 3: LLM & VLM LIVE AUDIT LOG
-# ==============================================================================
-elif page == "🤖 Логи нейросетей (LLM & VLM Live Audit)":
-    st.title("🤖 Журнал прямых обращений к нейросетям (NSU Cloud AI Audit)")
-    st.caption("Аудит обращений к Multimodal Vision VLM (Qwen3.8-27B) и Text LLM (deepseek-ai/DeepSeek-V4-Flash-0731)")
-
     log_path = os.path.join(ROOT_DIR, "logs", "llm_audit.log")
-
-    if st.button("🔄 Обновить журнал логов"):
+    if st.button("🔄 Обновить"):
         st.rerun()
-
     if os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8") as f:
-            raw_content = f.read()
-        
-        entries = [e.strip() for e in raw_content.split("-" * 70) if e.strip()]
-        
+            entries = [e.strip() for e in f.read().split("-" * 70) if e.strip()]
         c1, c2, c3 = st.columns(3)
-        c1.metric("Всего обращений к моделям", len(entries))
-        vlm_count = sum(1 for e in entries if "VISION_VLM" in e)
-        llm_count = sum(1 for e in entries if "TEXT_LLM" in e)
-        c2.metric("Вызовов Vision VLM (Qwen)", vlm_count)
-        c3.metric("Вызовов Text LLM (DeepSeek)", llm_count)
-
-        st.markdown("---")
-        st.subheader("Последние записи аудита (в обратном хронологическом порядке):")
-
-        for idx, entry in enumerate(reversed(entries), 1):
-            lines = entry.splitlines()
-            header_line = lines[0] if lines else "Call"
-            is_vlm = "VISION_VLM" in header_line
-            badge_icon = "👁️" if is_vlm else "🧠"
-
-            with st.expander(f"{badge_icon} Запись #{len(entries) - idx + 1}: {header_line}", expanded=(idx <= 3)):
+        c1.metric("Всего обращений", len(entries))
+        c2.metric("VLM (скриншоты)", sum(1 for e in entries if "VISION_VLM" in e))
+        c3.metric("LLM (текст)", sum(1 for e in entries if "TEXT_LLM" in e))
+        for idx, entry in enumerate(reversed(entries[-100:]), 1):
+            header = entry.splitlines()[0] if entry else "call"
+            with st.expander(("👁️ " if "VISION" in header else "🧠 ") + header, expanded=idx <= 2):
                 st.code(entry, language="text")
     else:
-        st.info("Файл логов `logs/llm_audit.log` пока не создан. Выполните анализ на первой вкладке, чтобы увидеть вызовы нейросетей.")
+        st.info("Обращений к моделям ещё не было (или LLM_MODE=off).")

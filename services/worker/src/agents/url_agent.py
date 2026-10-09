@@ -5,11 +5,11 @@ from typing import List
 try:
     from ..orchestrator.state import PhishingState, AgentStepTrace
     from ..brands.matcher import get_brand_registry
-    from ..features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label
+    from ..features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label, mask_url
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from brands.matcher import get_brand_registry
-    from features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label
+    from features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label, mask_url
 
 
 TRUSTED_REDIRECTORS = re.compile(
@@ -119,7 +119,7 @@ class URLAgent:
             phase="Phase 2: Static & Network Inspection",
             status="TRIGGERED" if added_codes else "COMPLETED",
             duration_ms=elapsed_ms,
-            reasoning=f"Инспекция {len(all_urls)} URL (основной: '{state.final_url or state.scan_url or state.raw_target}'). Анализ глубины и типа перенаправлений, злоупотребления доверенными редиректорами, доменов-двойников брендов, IDN-омографов, IP-хостов, бесплатного хостинга, полезных нагрузок (ScreenConnect, exe/msi/iso) и доступности хоста.",
+            reasoning=f"Инспекция {len(all_urls)} URL (основной: '{mask_url(state.final_url or state.scan_url or state.raw_target)[:200]}'). Анализ глубины и типа перенаправлений, злоупотребления доверенными редиректорами, доменов-двойников брендов, IDN-омографов, IP-хостов, бесплатного хостинга, полезных нагрузок (ScreenConnect, exe/msi/iso) и доступности хоста.",
             decision=f"Выявлено индикаторов сетевых угроз: {len(added_codes)} шт. " + (f"[{', '.join(added_codes)}]" if added_codes else "[Сетевых аномалий не обнаружено]"),
             tools_called=["RedirectChainAnalyzer", "LookalikeDomainDetector", "HomographDetector", "PayloadPatternMatcher"],
             findings=[

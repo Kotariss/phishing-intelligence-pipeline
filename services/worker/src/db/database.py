@@ -54,3 +54,22 @@ def init_db():
     from . import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
     _add_missing_columns()
+    _retire_legacy_signatures()
+
+
+def _retire_legacy_signatures():
+    """Rules produced by pre-1.1 versions (no all_of/any_of predicates, never regression-tested)
+    must not be shipped: they are kept for history with status LEGACY_UNVERIFIED."""
+    from .models import LSignatureModel
+    db = SessionLocal()
+    try:
+        changed = 0
+        for sig in db.query(LSignatureModel).filter(LSignatureModel.status == "ACTIVE_VERIFIED").all():
+            preds = (sig.rule_json or {}).get("predicates") or {}
+            if "all_of" not in preds and "any_of" not in preds:
+                sig.status = "LEGACY_UNVERIFIED"
+                changed += 1
+        if changed:
+            db.commit()
+    finally:
+        db.close()
