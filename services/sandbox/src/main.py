@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 try:
@@ -67,7 +68,8 @@ async def extract_file(file: UploadFile = File(...), base_url: str = Form("")):
     if len(content) > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail=f"File exceeds {MAX_FILE_BYTES // (1024 * 1024)} MB limit")
     try:
-        parsed = parse_file_bytes(content, file.filename or "", browser_ctrl=browser_ctrl, base_url=base_url)
+        # Playwright's sync API must not run inside the event loop: parse in a worker thread.
+        parsed = await run_in_threadpool(parse_file_bytes, content, file.filename or "", browser_ctrl, base_url)
         parsed.setdefault("filename", file.filename or "")
         return parsed
     except Exception as e:
