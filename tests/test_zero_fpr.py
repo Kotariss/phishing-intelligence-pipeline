@@ -93,3 +93,15 @@ def test_lookalike_counts_when_the_page_is_hosted_on_it():
     state = run_page("https://gosuslugi-pay.help-center.ru/auth/login", html)
     assert "BRAND_LOOKALIKE_DOMAIN" in state.reason_codes
     assert state.verdict == "MALICIOUS"
+
+
+def test_findings_carry_supporting_artefacts():
+    """ТЗ 4.1.5.1: each verdict lists reason codes with supporting evidence (URL, DOM fragment, hash ...)."""
+    from helpers_demo import TELEGRAM_KIT
+    state = run_page("https://sber-online-auth.top/login", TELEGRAM_KIT)
+    ev = state.reason_evidence
+    assert ev["RC_ATTACH_TELEGRAM_EXFIL"]["type"] == "dom" and "api.telegram.org/bot7123456789:" in ev["RC_ATTACH_TELEGRAM_EXFIL"]["value"]
+    assert "AAHdqTcvCH1v" not in ev["RC_ATTACH_TELEGRAM_EXFIL"]["value"]  # bot secret masked
+    assert "<form" in ev["RC_ATTACH_PASSWORD_INPUT"]["value"]
+    assert ev["BRAND_IMPERSONATION_CONFIRMED"]["type"] == "dom" and "<title>" in ev["BRAND_IMPERSONATION_CONFIRMED"]["value"]
+    assert state.fingerprints.get("dom_structural_hash")

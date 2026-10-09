@@ -18,6 +18,7 @@ class FormEvidence(BaseModel):
     submit_target_url: Optional[str] = None
     submit_mechanism: str = "standard_submit"  # standard_submit, onclick_ajax, telegram_bot
     origin: str = "page"  # page | attachment
+    snippet: str = ""  # HTML of the form (evidence)
 
 class BrandEvidence(BaseModel):
     detected_brand_name: Optional[str] = None
@@ -28,6 +29,7 @@ class BrandEvidence(BaseModel):
     is_domain_in_allowlist: bool = True
     brand_impersonation_confirmed: bool = False
     impersonation_reason: Optional[str] = None
+    logo_box: Optional[List[float]] = None  # [x1, y1, x2, y2] as fractions of the screenshot (VLM)
 
 class AgentStepTrace(BaseModel):
     agent_id: str
@@ -81,6 +83,8 @@ class PhishingState(BaseModel):
     verdict: str = "CLEAN"    # CLEAN, SUSPICIOUS, MALICIOUS
     reason_codes: List[str] = Field(default_factory=list)
     reason_details: Dict[str, str] = Field(default_factory=dict)  # code -> human-readable evidence
+    # code -> supporting artefact: {"type": "dom"|"url"|"hash"|"header"|"image_region", "value"/"box": ..., "label": ...}
+    reason_evidence: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     explanation: Optional[str] = None
 
     # Output Signatures, Fingerprints & Campaigns
@@ -94,7 +98,7 @@ class PhishingState(BaseModel):
     execution_steps: List[str] = Field(default_factory=list)
     agent_traces: List[AgentStepTrace] = Field(default_factory=list)
 
-    def add_reason(self, code: str, detail: str) -> None:
+    def add_reason(self, code: str, detail: str, evidence: Optional[Dict[str, Any]] = None) -> None:
         if code not in self.reason_codes:
             self.reason_codes.append(code)
             self.reason_codes.sort()
@@ -104,11 +108,17 @@ class PhishingState(BaseModel):
         except (ImportError, ValueError):
             from features.url_features import mask_urls_in_text
         self.reason_details.setdefault(code, mask_urls_in_text(detail))
+        if evidence and evidence.get("value") not in (None, "", []) or (evidence or {}).get("box"):
+            ev = dict(evidence)
+            if ev.get("type") in ("url", "dom", "header") and isinstance(ev.get("value"), str):
+                ev["value"] = mask_urls_in_text(ev["value"])
+            self.reason_evidence.setdefault(code, ev)
 
     def drop_reason(self, code: str) -> None:
         if code in self.reason_codes:
             self.reason_codes.remove(code)
         self.reason_details.pop(code, None)
+        self.reason_evidence.pop(code, None)
 
     @property
     def current_url(self) -> str:

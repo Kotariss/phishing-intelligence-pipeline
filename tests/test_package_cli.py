@@ -59,6 +59,8 @@ def test_cli_analyze_and_resumable_batch(tmp_path, capsys):
     cli.main(["analyze-dir", str(tmp_path), "--out", str(results)])  # resume: nothing re-processed
     assert len(results.read_text(encoding="utf-8").splitlines()) == len(rows)
     assert "skipped_resume" in capsys.readouterr().out
+    summary = json.loads((tmp_path / "batch_summary.json").read_text(encoding="utf-8"))
+    assert summary["objects"] == len(rows) and summary["verdicts"].get("MALICIOUS", 0) >= 1
 
 
 def test_cli_import_corpus_detects_duplicates(tmp_path):
@@ -69,3 +71,11 @@ def test_cli_import_corpus_detects_duplicates(tmp_path):
     cli.main(["import-corpus", str(tmp_path), "--out", str(out)])
     summary = json.loads(out.read_text(encoding="utf-8"))["summary"]
     assert summary["files"] == 2 and summary["duplicates"] == 1
+
+
+def test_rule_contribution_in_package():
+    run_page("https://contrib-one.top/login", TELEGRAM_KIT)
+    contrib = build_package()["rule_contribution"]
+    assert contrib["detected_objects_total"] >= 1 and contrib["covered_by_package"] >= 1
+    top = contrib["rules"][0]
+    assert top["detected_objects"] >= 1 and top["clean_objects_matched"] == 0

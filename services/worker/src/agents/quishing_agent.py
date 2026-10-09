@@ -44,14 +44,14 @@ class QuishingAgent:
         names += [m.get("filename") or "" for m in att.get("attachments_meta") or []]
         for name in dict.fromkeys(n for n in names if n):
             if DOUBLE_EXT_PATTERN.search(name):
-                state.add_reason("RC_LURE_DOUBLE_EXTENSION", f"Файл «{name}» маскирует тип двойным расширением")
+                state.add_reason("RC_LURE_DOUBLE_EXTENSION", f"Файл «{name}» маскирует тип двойным расширением", {"type": "file", "value": name, "label": "Имя файла"})
             if CAMPAIGN_INVARIANTS.search(name):
-                state.add_reason("RC_CAMPAIGN_INVARIANT_MATCH", f"Имя «{name}» совпадает с индикатором известной кампании")
+                state.add_reason("RC_CAMPAIGN_INVARIANT_MATCH", f"Имя «{name}» совпадает с индикатором известной кампании", {"type": "file", "value": name, "label": "Имя файла"})
 
         qr_urls = sorted({q for i in items for q in (i.get("qr_codes") or [])} | set(att.get("qr_codes") or []))
         qr_http = [q for q in qr_urls if q.lower().startswith(("http://", "https://"))]
         if qr_http:
-            state.add_reason("ATTACH_QR_CODE_FOUND", f"QR-код ведёт на {qr_http[0][:150]}")
+            state.add_reason("ATTACH_QR_CODE_FOUND", f"QR-код ведёт на {qr_http[0][:150]}", {"type": "url", "value": qr_http[0], "label": "URL из QR-кода"})
             for q in qr_http:
                 if q not in state.discovered_urls_from_attachments:
                     state.discovered_urls_from_attachments.append(q)
@@ -60,38 +60,42 @@ class QuishingAgent:
             name = item.get("filename") or "вложение"
             kind = item.get("kind")
             if item.get("has_vba_macros"):
-                state.add_reason("ATTACH_ACTIVE_MACRO_MARKER", f"{name}: VBA-макросы")
+                state.add_reason("ATTACH_ACTIVE_MACRO_MARKER", f"{name}: VBA-макросы", {"type": "file", "value": name, "label": "Документ с макросами"})
             if item.get("has_remote_template"):
-                state.add_reason("ATTACH_REMOTE_TEMPLATE", f"{name}: удалённый шаблон/OLE")
+                state.add_reason("ATTACH_REMOTE_TEMPLATE", f"{name}: удалённый шаблон/OLE", {"type": "file", "value": name, "label": "Документ"})
             if kind == "pdf" and (item.get("has_javascript") or item.get("has_launch_action")):
-                state.add_reason("ATTACH_PDF_ACTIVE_CONTENT", f"{name}: JavaScript/Launch в PDF")
+                state.add_reason("ATTACH_PDF_ACTIVE_CONTENT", f"{name}: JavaScript/Launch в PDF", {"type": "file", "value": name, "label": "PDF"})
             if item.get("is_executable"):
-                state.add_reason("ATTACH_EXECUTABLE", f"{name}: исполняемый файл" + (" в архиве" if kind == "archive" else ""))
+                state.add_reason("ATTACH_EXECUTABLE", f"{name}: исполняемый файл" + (" в архиве" if kind == "archive" else ""),
+                                 {"type": "file", "value": ", ".join([name] + [n for n in item.get("archive_entries") or [] if n.lower().endswith((".exe", ".scr", ".js", ".vbs", ".lnk", ".iso", ".msi", ".bat", ".hta"))][:5]), "label": "Исполняемое содержимое"})
             if kind == "html":
                 card_form = any(f.get("has_card") for f in item.get("forms") or [])
                 if item.get("has_password_field") or card_form:
                     what = "поле пароля" if item.get("has_password_field") else "поля банковской карты"
-                    state.add_reason("ATTACH_OFFLINE_FORM", f"{name}: HTML-вложение запрашивает {what}")
+                    state.add_reason("ATTACH_OFFLINE_FORM", f"{name}: HTML-вложение запрашивает {what}",
+                                     {"type": "dom", "value": next((f.get("snippet", "") for f in item.get("forms") or [] if f.get("has_password") or f.get("has_card")), (item.get("evidence_snippets") or {}).get("password_input", "")), "label": f"Форма во вложении {name}"})
                 redirect = item.get("meta_refresh") or next(iter(item.get("js_redirects") or []), "")
                 if redirect and redirect.lower().startswith("http"):
-                    state.add_reason("ATTACH_HTML_REDIRECTOR", f"{name}: перенаправляет на {hostname(redirect)}")
+                    state.add_reason("ATTACH_HTML_REDIRECTOR", f"{name}: перенаправляет на {hostname(redirect)}",
+                                     {"type": "dom", "value": (item.get("evidence_snippets") or {}).get("meta_refresh") or (item.get("evidence_snippets") or {}).get("js_redirect") or redirect, "label": "Перенаправление во вложении"})
                     if redirect not in state.discovered_urls_from_attachments:
                         state.discovered_urls_from_attachments.append(redirect)
                 if item.get("has_telegram_exfil"):
-                    state.add_reason("RC_ATTACH_TELEGRAM_EXFIL", f"{name}: отправка в Telegram Bot API")
+                    state.add_reason("RC_ATTACH_TELEGRAM_EXFIL", f"{name}: отправка в Telegram Bot API", {"type": "dom", "value": (item.get("evidence_snippets") or {}).get("telegram", ""), "label": "Вызов Telegram Bot API"})
                 if item.get("has_discord_exfil"):
-                    state.add_reason("RC_ATTACH_DISCORD_EXFIL", f"{name}: отправка в Discord Webhook")
+                    state.add_reason("RC_ATTACH_DISCORD_EXFIL", f"{name}: отправка в Discord Webhook", {"type": "dom", "value": (item.get("evidence_snippets") or {}).get("discord", ""), "label": "Вызов Discord Webhook"})
 
         # E-mail level signals
         if att.get("type") == "eml":
             if att.get("reply_to_mismatch"):
-                state.add_reason("EMAIL_REPLY_TO_MISMATCH", f"From: {att.get('from_domain')} → Reply-To: {att.get('reply_to_domain')}")
+                state.add_reason("EMAIL_REPLY_TO_MISMATCH", f"From: {att.get('from_domain')} → Reply-To: {att.get('reply_to_domain')}", {"type": "header", "value": f"From: {att.get('from_address')}\nReply-To: {att.get('reply_to')}", "label": "Заголовки письма"})
             if att.get("spf_fail") or att.get("dmarc_fail"):
-                state.add_reason("EMAIL_AUTH_FAIL", "SPF/DMARC fail в Authentication-Results")
+                state.add_reason("EMAIL_AUTH_FAIL", "SPF/DMARC fail в Authentication-Results", {"type": "header", "value": att.get("auth_results_raw", ""), "label": "Authentication-Results"})
             mismatches = att.get("link_text_mismatch") or []
             if mismatches:
                 m = mismatches[0]
-                state.add_reason("EMAIL_LINK_TEXT_MISMATCH", f"Текст «{m['shown'][:60]}» → {hostname(m['href'])}")
+                state.add_reason("EMAIL_LINK_TEXT_MISMATCH", f"Текст «{m['shown'][:60]}» → {hostname(m['href'])}",
+                             {"type": "url", "value": f"показано: {m['shown'][:100]}\nведёт на: {m['href']}", "label": "Подмена текста ссылки"})
 
         added_codes = [c for c in state.reason_codes if c not in initial_codes]
         elapsed_ms = round((time.time() - t0) * 1000, 1)

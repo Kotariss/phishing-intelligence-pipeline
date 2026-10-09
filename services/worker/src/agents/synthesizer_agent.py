@@ -60,10 +60,12 @@ class SynthesizerAgent:
             bool(state.page_features.get("has_password_field"))
         if "BRAND_IMPERSONATION_CONFIRMED" in codes and credential_input:
             state.add_reason("COMBO_BRAND_CREDENTIAL_FORM",
-                             f"{state.brand_evidence.detected_brand_name} вне официального домена + форма ввода учётных данных")
+                             f"{state.brand_evidence.detected_brand_name} вне официального домена + форма ввода учётных данных",
+                             state.reason_evidence.get("RC_ATTACH_PASSWORD_INPUT") or state.reason_evidence.get("FORM_CARD_HARVESTING"))
         if "BRAND_LOOKALIKE_DOMAIN" in codes and credential_input:
             state.add_reason("COMBO_LOOKALIKE_CREDENTIAL_FORM",
-                             f"Домен-двойник {state.network_evidence.get('lookalike_host')} + форма ввода учётных данных")
+                             f"Домен-двойник {state.network_evidence.get('lookalike_host')} + форма ввода учётных данных",
+                             state.reason_evidence.get("RC_ATTACH_PASSWORD_INPUT") or state.reason_evidence.get("FORM_CARD_HARVESTING"))
 
     def _allowlist_clamp(self, state: PhishingState) -> str:
         """Level 1: a landing page hosted on an official brand domain is legitimate content, so the
@@ -91,7 +93,8 @@ class SynthesizerAgent:
             registrable_domain(start_host) != registrable_domain(host)
         sender_official = sender and self.registry.is_domain_allowed(owner["brand_id"], sender)
         if foreign_start and state.redirect_chain and not sender_official:
-            state.add_reason("RC_CLOAKING_TO_OFFICIAL", f"{start_host} → {host} ({owner['display_name']})")
+            state.add_reason("RC_CLOAKING_TO_OFFICIAL", f"{start_host} → {host} ({owner['display_name']})",
+                             {"type": "chain", "value": [state.scan_url or ""] + [h.url for h in state.redirect_chain] + [url], "label": "Перенаправление на официальный сайт"})
         return f"Level 1: {host} — официальный домен {owner['display_name']}; признаки страницы нейтрализованы ({len(neutralised)})"
 
     def _fingerprints(self, state: PhishingState) -> None:

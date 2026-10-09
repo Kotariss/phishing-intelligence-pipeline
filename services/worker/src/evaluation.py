@@ -156,6 +156,15 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
     heavy_detected = {r["object"] for r in detected}
     light_agree = [r for r in light_hits if r["object"] in heavy_detected]
 
+    contribution = []
+    for rule in rules:
+        own = {r["object"] for r in phish_ok if rule_matches(rule, r["record"])}
+        others = {r["object"] for r in phish_ok for other in rules if other is not rule and rule_matches(other, r["record"])}
+        contribution.append({"rule_id": rule["rule_id"], "kind": rule.get("kind"), "target_brand": rule.get("target_brand"),
+                             "phishing_hits": len(own), "unique_hits": len(own - others),
+                             "benign_hits": sum(1 for r in benign_ok if rule_matches(rule, r["record"]))})
+    contribution.sort(key=lambda x: (-x["phishing_hits"], -x["unique_hits"]))
+
     code_freq = collections.Counter(c for r in phish_ok for c in r["codes"])
     benign_mal = [r["object"] for r in benign_ok if r["verdict"] == "MALICIOUS"]
     benign_susp = [r["object"] for r in benign_ok if r["verdict"] == "SUSPICIOUS"]
@@ -196,6 +205,7 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
         "acceptance": acceptance,
         "per_category": per_category,
         "reason_code_frequency": dict(code_freq.most_common()),
+        "rule_contribution": contribution[:200],
         "benign_false_positives": {"malicious": benign_mal, "suspicious": benign_susp, "rule_hits": benign_rule_hits},
         "missed_phishing": [r["object"] for r in phish_ok if r["verdict"] == "CLEAN"][:200],
         "errors": [{"object": r["object"], "error": r["error"]} for r in rows if r["status"] == "error"][:200],

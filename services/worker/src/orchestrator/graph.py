@@ -130,6 +130,8 @@ def persist_node(state: PhishingState) -> PhishingState:
             "attachment": {k: v for k, v in public["attachment_evidence"].items() if k != "body_html"},
             "redirect_chain": public["redirect_chain"],
             "reason_details": public["reason_details"],
+            "reason_evidence": public["reason_evidence"],
+            "screenshot_source": state.screenshot_source,
             "agent_traces": public["agent_traces"],
         }
     })

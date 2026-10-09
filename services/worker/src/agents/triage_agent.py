@@ -42,6 +42,7 @@ def _forms_from(raw_forms: List[Dict[str, Any]], origin: str) -> List[FormEviden
             submit_target_url=submit.get("target_url"),
             submit_mechanism="telegram_bot" if submit.get("has_telegram") else "standard_submit",
             origin=origin,
+            snippet=f.get("snippet", "") or "",
         ))
     return forms
 

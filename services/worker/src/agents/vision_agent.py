@@ -41,6 +41,23 @@ def _parse_vlm_json(text: str) -> Dict[str, Any]:
             "lure": lure.group(1).strip() if lure else None, "confidence": 0.6}
 
 
+def _logo_box(vlm_result) -> Optional[list]:
+    """VLM logo box normalised to fractions [x1, y1, x2, y2]; None if absent or implausible."""
+    box = (vlm_result or {}).get("logo_box")
+    if not isinstance(box, (list, tuple)) or len(box) != 4:
+        return None
+    try:
+        x1, y1, x2, y2 = (float(v) for v in box)
+    except (TypeError, ValueError):
+        return None
+    if max(x1, y1, x2, y2) > 1.0:  # pixel coordinates (Qwen-VL convention: 0..1000 grid)
+        scale = 1000.0 if max(x1, y1, x2, y2) <= 1000 else max(x2, y2)
+        x1, y1, x2, y2 = (v / scale for v in (x1, y1, x2, y2))
+    if not (0 <= x1 < x2 <= 1 and 0 <= y1 < y2 <= 1):
+        return None
+    return [round(v, 4) for v in (x1, y1, x2, y2)]
+
+
 class VisionAgent:
     """Brand identification (display name, page title, VLM screenshot analysis, look-alike domains)
     + allowlist verification: the Phishpedia 'intended target vs. hosting domain' check."""
@@ -84,15 +101,18 @@ class VisionAgent:
                 email_brand = hit[0]
             if obfuscated:
                 state.add_reason("EMAIL_DISPLAYNAME_OBFUSCATED",
-                                 f"Имя отправителя замаскировано (невидимые символы / разрядка): «{display}»")
+                                 f"Имя отправителя замаскировано (невидимые символы / разрядка): «{display}»",
+                                 {"type": "header", "value": f"From: {att['from_name']!r} <{att.get('from_address', '')}>", "label": "Исходное имя отправителя"})
         if email_brand and from_domain and not self.registry.is_domain_allowed(email_brand["brand_id"], from_domain):
             state.add_reason("RC_BRAND_SPOOF_DISPLAYNAME",
-                             f"Отправитель «{att['from_name']}» имитирует {email_brand['display_name']}, но домен {from_domain} не принадлежит бренду")
+                             f"Отправитель «{att['from_name']}» имитирует {email_brand['display_name']}, но домен {from_domain} не принадлежит бренду",
+                             {"type": "header", "value": f"From: {att['from_name']} <{att.get('from_address', '')}>", "label": "Заголовок From"})
         elif att.get("subject") and from_domain and not email_brand:
             hit = self.registry.find_brand_in_text(att["subject"])
             if hit and not self.registry.is_domain_allowed(hit[0]["brand_id"], from_domain):
                 state.add_reason("EMAIL_SUBJECT_BRAND_OFF_DOMAIN",
-                                 f"Тема письма упоминает {hit[0]['display_name']}, отправитель {from_domain} не принадлежит бренду")
+                                 f"Тема письма упоминает {hit[0]['display_name']}, отправитель {from_domain} не принадлежит бренду",
+                                 {"type": "header", "value": f"Subject: {att['subject']}\nFrom: {att.get('from_address', '')}", "label": "Тема и отправитель"})
 
         # 2. Brand presented by the page / attachment
         page_brand, source, confidence = None, None, 0.0
@@ -112,7 +132,8 @@ class VisionAgent:
                 lure_type = str(vlm_result.get("lure") or "").strip().lower() or None
                 # An image attachment that renders a document / payment / delivery lure ("click to view invoice").
                 if state.screenshot_source == "image_file" and lure_type in VISUAL_DOCUMENT_LURES:
-                    state.add_reason("VISUAL_DOCUMENT_LURE", f"VLM: изображение-вложение изображает приманку типа «{lure_type}»")
+                    state.add_reason("VISUAL_DOCUMENT_LURE", f"VLM: изображение-вложение изображает приманку типа «{lure_type}»",
+                                     {"type": "image_region", "box": _logo_box(vlm_result), "label": f"Изображение: {lure_type}"})
                 name = str(vlm_result.get("brand") or "").strip().strip('"\'')
                 try:
                     conf = float(vlm_result.get("confidence", 0.7))
@@ -152,6 +173,7 @@ class VisionAgent:
             detection_source=source or ("display_name" if email_brand else None),
             vlm_confidence=confidence if page_brand else (0.85 if email_brand else 0.0),
             visual_lure_type=lure_type,
+            logo_box=_logo_box(vlm_result) if source == "vlm" else None,
         )
 
         if page_brand and source != "official_domain":
@@ -170,8 +192,15 @@ class VisionAgent:
                     asks_for_data = True
                 if source in ("vlm", "lookalike_domain") or (source == "title" and asks_for_data):
                     brand_ev.brand_impersonation_confirmed = True
+                    if source == "vlm":
+                        evidence = {"type": "image_region", "box": brand_ev.logo_box, "label": f"Логотип {page_brand['display_name']} (VLM)"}
+                    elif source == "title":
+                        title_snip = (page.get("evidence_snippets") or att.get("evidence_snippets") or {}).get("title") or title_text
+                        evidence = {"type": "dom", "value": title_snip, "label": "Заголовок страницы"}
+                    else:
+                        evidence = {"type": "url", "value": page_host, "label": "Домен-двойник"}
                     state.add_reason("BRAND_IMPERSONATION_CONFIRMED",
-                                     f"{page_brand['display_name']} (источник: {source}) на {where}")
+                                     f"{page_brand['display_name']} (источник: {source}) на {where}", evidence)
                     if lure_type and lure_type != "other":
                         state.add_reason("BRAND_VISUAL_LURE_MATCH", f"Тип приманки: {lure_type}")
                 else:

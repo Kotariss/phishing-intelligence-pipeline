@@ -24,12 +24,14 @@ try:
     from ..brands.matcher import get_brand_registry
     from ..features.url_features import registrable_domain, mask_url, is_shared_infrastructure
     from . import reason_codes as rc
+    from .engine import build_record, rule_matches
 except (ImportError, ValueError):
     from db.database import SessionLocal
     from db.models import IncidentModel, LSignatureModel
     from brands.matcher import get_brand_registry
     from features.url_features import registrable_domain, mask_url, is_shared_infrastructure
     from rules import reason_codes as rc
+    from rules.engine import build_record, rule_matches
 
 PACKAGE_FORMAT = "dw2-artifact-package/1.0"
 
@@ -44,12 +46,39 @@ def _next_version(out_dir: str) -> str:
     return str(max(existing, default=0) + 1)
 
 
+def record_from_incident(inc) -> Dict[str, Any]:
+    """Light-engine feature record rebuilt from a stored knowledge-base incident."""
+    ev = inc.evidence_data or {}
+    return build_record(url=inc.final_url or "", page=ev.get("page") or {}, attachment=ev.get("attachment") or {},
+                        forms=ev.get("forms") or [], dom_hash=inc.dom_hash,
+                        extra_names=[os.path.basename(str(inc.raw_target or ""))])
+
+
+def rule_contribution(rules: List[Dict[str, Any]], incidents) -> Dict[str, Any]:
+    """Contribution of each rule to the detected objects (ТЗ 4.1.5.2): hits, hits no other rule covers,
+    hits on objects the pipeline itself considered clean (should stay 0 for a good rule)."""
+    records = [(inc.id, inc.verdict, record_from_incident(inc)) for inc in incidents]
+    hits = {r["rule_id"]: {iid for iid, _, rec in records if rule_matches(r, rec)} for r in rules}
+    detected = {iid for iid, verdict, _ in records if verdict in ("MALICIOUS", "SUSPICIOUS")}
+    out = []
+    for r in rules:
+        own = hits[r["rule_id"]]
+        others = set().union(*(h for rid, h in hits.items() if rid != r["rule_id"])) if len(hits) > 1 else set()
+        out.append({"rule_id": r["rule_id"], "kind": r.get("kind"), "target_brand": r.get("target_brand"),
+                    "detected_objects": len(own & detected), "unique_objects": len((own & detected) - others),
+                    "clean_objects_matched": len(own - detected)})
+    covered = set().union(*hits.values()) & detected if hits else set()
+    return {"detected_objects_total": len(detected), "covered_by_package": len(covered),
+            "rules": sorted(out, key=lambda x: (-x["detected_objects"], -x["unique_objects"]))}
+
+
 def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
     registry = get_brand_registry()
     db = SessionLocal()
     try:
         signatures = db.query(LSignatureModel).filter(LSignatureModel.status == "ACTIVE_VERIFIED").all()
         incidents = db.query(IncidentModel).filter(IncidentModel.verdict == min_verdict).all()
+        all_incidents = db.query(IncidentModel).all()
     finally:
         db.close()
 
@@ -103,6 +132,7 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
         })
 
     yara_rules = [s.yara_rule for s in signatures if s.yara_rule]
+    contribution = rule_contribution(rules, all_incidents)
     return {
         "format": PACKAGE_FORMAT,
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
@@ -116,6 +146,7 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
         "reason_codes": {code: {"weight": info.weight, "category": info.category, "severity": info.severity,
                                 "description": info.description} for code, info in rc.REASON_CODES.items()},
         "yara": yara_rules,
+        "rule_contribution": contribution,
     }
 
 

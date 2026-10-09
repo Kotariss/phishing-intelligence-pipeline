@@ -91,6 +91,21 @@ def _absolute(url: str, base_url: str) -> str:
     return url
 
 
+def compact_html(fragment: str, limit: int = 700) -> str:
+    """Readable evidence fragment: long attribute values (data URIs, tokens) shortened, whitespace collapsed."""
+    text = re.sub(r'(=\s*["\'])([^"\']{80})[^"\']+(["\'])', r'\1\2…\3', str(fragment))
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text if len(text) <= limit else text[:limit] + " …"
+
+
+def window(text: str, pattern, before: int = 120, after: int = 220) -> str:
+    """Fragment of `text` around the first match of `pattern` (regex or compiled)."""
+    m = pattern.search(text) if hasattr(pattern, "search") else re.search(pattern, text, re.I)
+    if not m:
+        return ""
+    return compact_html(text[max(0, m.start() - before):m.end() + after], limit=before + after + 200)
+
+
 def normalize_url(url: str) -> str:
     """Repairs malformed links that browsers still follow: 'https:/host', 'https://https://host',
     'https//host', surrounding whitespace/quotes and trailing punctuation from plain text."""
@@ -239,6 +254,9 @@ def _merge_layer(base: Dict[str, Any], layer: Dict[str, Any]) -> None:
     for key in ("title", "meta_refresh", "favicon", "embedded_image_base64", "brand_context_text"):
         if not base.get(key) and layer.get(key):
             base[key] = layer[key]
+    snippets = base.setdefault("evidence_snippets", {})
+    for key, value in (layer.get("evidence_snippets") or {}).items():
+        snippets.setdefault(key, "[раскодировано] " + value)
     if layer.get("visible_text"):
         base["visible_text"] = (base.get("visible_text", "") + " " + layer["visible_text"]).strip()[:4000]
 
@@ -389,6 +407,7 @@ class AttachmentParser:
             "reply_to_domain": reply_to_domain,
             "reply_to_mismatch": bool(reply_to_domain and from_domain and _registrable(reply_to_domain) != _registrable(from_domain)),
             "date": date_header,
+            "auth_results_raw": str(msg.get("Authentication-Results", ""))[:400],
             "spf_pass": spf_pass,
             "spf_fail": spf_fail,
             "dkim_pass": dkim_pass,
@@ -549,6 +568,7 @@ class AttachmentParser:
             "prefilled_victim_email": prefilled_email,
             "is_external": is_external,
             "submit_button": submit_meta,
+            "snippet": compact_html(form),
         }
 
     @staticmethod
@@ -650,6 +670,35 @@ class AttachmentParser:
                 if len(data) > best_len:
                     embedded_img_b64, best_len = data, len(data)
 
+        # Evidence fragments (ТЗ 4.1.5.1): the exact HTML/JS that triggered a finding
+        evidence = {}
+        if soup.title:
+            evidence["title"] = compact_html(soup.title)
+        pw = soup.find("input", {"type": re.compile(r"^password$", re.I)})
+        if pw is not None:
+            evidence["password_input"] = compact_html(pw.find_parent("form") or pw)
+        if has_telegram:
+            evidence["telegram"] = window(html_str, TELEGRAM_ANY)
+        if has_discord:
+            evidence["discord"] = window(html_str, DISCORD_ANY)
+        refresh_tag = soup.find("meta", attrs={"http-equiv": re.compile(r"^refresh$", re.I)})
+        if refresh_tag is not None:
+            evidence["meta_refresh"] = compact_html(refresh_tag)
+        if js_redirects:
+            evidence["js_redirect"] = window(inline_js, JS_REDIRECT, 60, 160)
+        if js_external_endpoints:
+            evidence["js_endpoint"] = window(inline_js, JS_NETWORK_SINK, 60, 200)
+        if obfuscation_markers:
+            marker_rx = {"fromCharCode": r'fromCharCode', "packer": r'eval\s*\(\s*function', "unescape_document_write": r'unescape\(',
+                         "atob_eval": r'atob\(', "long_base64_blob": LONG_BASE64, "hex_escapes": HEX_ESCAPES}
+            evidence["obfuscation"] = window(inline_js, marker_rx[obfuscation_markers[0]], 40, 160)
+        if evasion_markers:
+            evidence["evasion"] = window(inline_js, re.escape(evasion_markers[0]), 60, 120)
+
+        # the bot token is the attacker's credential: keep the bot id (IOC), mask the secret
+        evidence = {k: TELEGRAM_BOT.sub(lambda m: f"api.telegram.org/bot{m.group(1)}:{m.group(2)[:4]}***", v)
+                    for k, v in evidence.items() if v}
+
         headings = " ".join(h.get_text(" ", strip=True) for h in soup.find_all(["h1", "h2"])[:6])
         brand_context = re.sub(r'\s+', ' ', f"{title} {headings}").strip()[:600]
 
@@ -686,6 +735,7 @@ class AttachmentParser:
             "embedded_image_base64": embedded_img_b64,
             "visible_text": visible_text,
             "brand_context_text": brand_context,
+            "evidence_snippets": evidence,
             "dom_skeleton": skel_data.get("dom_skeleton", ""),
             "dom_structural_hash": skel_data.get("dom_structural_hash"),
             "tags_count": skel_data.get("tags_count", 0)

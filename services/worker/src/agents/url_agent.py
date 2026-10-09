@@ -55,30 +55,31 @@ class URLAgent:
         }
 
         if len(state.redirect_chain) >= 2:
-            state.add_reason("RC_REDIRECT_MULTI_HOP", f"{len(state.redirect_chain)} перенаправлений до {state.final_url}")
+            state.add_reason("RC_REDIRECT_MULTI_HOP", f"{len(state.redirect_chain)} перенаправлений до {state.final_url}",
+                             {"type": "chain", "value": [h.url for h in state.redirect_chain] + [state.final_url or ""], "label": "Цепочка перенаправлений"})
 
         js_cross = [h for h in state.redirect_chain if h.hop_type != "http_redirect"]
         if js_cross and state.final_url and state.scan_url and \
                 registrable_domain(hostname(state.final_url)) != registrable_domain(hostname(state.scan_url)):
-            state.add_reason("RC_REDIRECT_CROSS_DOMAIN_JS", f"JS/meta-редирект {hostname(state.scan_url)} → {hostname(state.final_url)}")
+            state.add_reason("RC_REDIRECT_CROSS_DOMAIN_JS", f"JS/meta-редирект {hostname(state.scan_url)} → {hostname(state.final_url)}", {"type": "url", "value": state.final_url, "label": "Финальная страница"})
 
         for u in all_urls:
             if TRUSTED_REDIRECTORS.search(u):
-                state.add_reason("RC_REDIRECT_ABUSE_TRUSTED", f"Доверенный редиректор: {u[:120]}")
+                state.add_reason("RC_REDIRECT_ABUSE_TRUSTED", f"Доверенный редиректор: {u[:120]}", {"type": "url", "value": u, "label": "Ссылка через доверенный сервис"})
                 net["is_shortener_abuse"] = True
                 break
 
         for u in all_urls:
             low = u.lower()
             if "screenconnect.clientsetup" in low or "screenconnect.windowsclient" in low:
-                state.add_reason("RC_DROP_SCREENCONNECT_RAT", f"Загрузка ScreenConnect: {u[:160]}")
+                state.add_reason("RC_DROP_SCREENCONNECT_RAT", f"Загрузка ScreenConnect: {u[:160]}", {"type": "url", "value": u, "label": "Загружаемый файл"})
                 net["is_rat_drop"] = True
             elif EXECUTABLE_PAYLOADS.search(u.split("?")[0]):
-                state.add_reason("RC_DROP_EXECUTABLE_PAYLOAD", f"Ссылка на исполняемый файл: {u[:160]}")
+                state.add_reason("RC_DROP_EXECUTABLE_PAYLOAD", f"Ссылка на исполняемый файл: {u[:160]}", {"type": "url", "value": u, "label": "Загружаемый файл"})
                 net["is_executable_drop"] = True
 
         if state.http_status is not None and (state.http_status == 0 or state.http_status >= 400) and primary_urls:
-            state.add_reason("RC_EPHEMERAL_HOST_DEAD", f"HTTP статус {state.http_status} для {primary_urls[-1][:120]}")
+            state.add_reason("RC_EPHEMERAL_HOST_DEAD", f"HTTP статус {state.http_status} для {primary_urls[-1][:120]}", {"type": "url", "value": primary_urls[-1], "label": "Недоступный адрес"})
             net["is_dead_host"] = True
 
         inspected_hosts = []
@@ -91,24 +92,25 @@ class URLAgent:
 
         for h in inspected_hosts:
             if is_ip_host(h) and h in primary_hosts:
-                state.add_reason("URL_IP_HOST", f"Хост-IP: {h}")
+                state.add_reason("URL_IP_HOST", f"Хост-IP: {h}", {"type": "url", "value": h, "label": "IP-адрес вместо домена"})
             decoded = homograph_label(h)
             if decoded:
-                state.add_reason("BRAND_HOMOGRAPH_DOMAIN", f"IDN-омограф: {h} ({decoded})")
+                state.add_reason("BRAND_HOMOGRAPH_DOMAIN", f"IDN-омограф: {h} ({decoded})", {"type": "url", "value": f"{h} → {decoded}", "label": "Punycode → отображение"})
                 net["is_punycode"] = True
             # Look-alike domains are judged only on the lure path (primary link, landing page, redirect
             # chain): newsletters legitimately link to third-party sites named after products.
             look = self.registry.find_lookalike_brand(h) if h in lure_hosts else None
             if look:
                 brand, token = look
-                state.add_reason("BRAND_LOOKALIKE_DOMAIN", f"Домен {h} содержит '{token}' ({brand['display_name']}), но не входит в allowlist бренда")
+                state.add_reason("BRAND_LOOKALIKE_DOMAIN", f"Домен {h} содержит '{token}' ({brand['display_name']}), но не входит в allowlist бренда",
+                                 {"type": "url", "value": h, "label": f"Домен-двойник {brand['display_name']}"})
                 net.setdefault("lookalike_brand", brand["display_name"])
                 net.setdefault("lookalike_host", h)
 
         final_host = hostname(state.final_url or "")
         suffix = free_hosting_suffix(final_host) if final_host else None
         if suffix:
-            state.add_reason("URL_FREE_HOSTING", f"{final_host} размещён на {suffix}")
+            state.add_reason("URL_FREE_HOSTING", f"{final_host} размещён на {suffix}", {"type": "url", "value": state.final_url, "label": "Страница на бесплатном хостинге"})
 
         net["final_domain"] = registrable_domain(final_host) if final_host else None
         state.network_evidence.update(net)

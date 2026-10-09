@@ -165,7 +165,10 @@ def cmd_analyze_dir(args):
     counts = collections.Counter()
     processed = 0
     with open(args.out, "a", encoding="utf-8") as out:
+        own_outputs = {os.path.abspath(args.out), os.path.abspath(os.path.splitext(args.out)[0] + "_summary.json")}
         for obj in _iter_objects(args.root):
+            if os.path.abspath(obj) in own_outputs:
+                continue
             if args.limit and processed >= args.limit:
                 break
             if obj in done:
@@ -186,7 +189,39 @@ def cmd_analyze_dir(args):
             out.write(json.dumps(row, ensure_ascii=False) + "\n")
             out.flush()
             _log(f"{row.get('verdict', row['status']):10s} {obj}")
-    print(json.dumps(dict(counts), ensure_ascii=False, indent=2))
+    summary_path = os.path.splitext(args.out)[0] + "_summary.json"
+    summary = _batch_summary(args.out, args.root)
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+    print(json.dumps({"this_run": dict(counts), "total": summary["verdicts"]}, ensure_ascii=False, indent=2))
+    _log(f"summary written to {summary_path}")
+
+
+def _batch_summary(results_path: str, root: str) -> dict:
+    """Summary of a whole batch (all rows, including resumed runs) — ТЗ п. 4.1.9.3."""
+    rows = []
+    with open(results_path, "r", encoding="utf-8") as f:
+        for line in f:
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                continue
+    ok = [r for r in rows if r.get("status") == "ok"]
+    return {
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "root": os.path.abspath(root),
+        "results_file": os.path.abspath(results_path),
+        "objects": len(rows),
+        "processed_ok": len(ok),
+        "errors": [{"object": r["object"], "error": r.get("error")} for r in rows if r.get("status") != "ok"],
+        "verdicts": dict(collections.Counter(r["verdict"] for r in ok)),
+        "technique_frequency": dict(collections.Counter(c for r in ok for c in r.get("reason_codes", [])).most_common()),
+        "brands": dict(collections.Counter(r["brand"] for r in ok if r.get("brand")).most_common(30)),
+        "campaigns": dict(collections.Counter(r["campaign_id"] for r in ok if r.get("campaign_id")).most_common(30)),
+        "signatures": {"active": sum(1 for r in ok if r.get("signature_status") == "ACTIVE_VERIFIED"),
+                       "draft": sum(1 for r in ok if r.get("signature_status") == "DRAFT_REQUIRES_TUNING")},
+        "mean_seconds": round(sum(r.get("seconds", 0) for r in rows) / len(rows), 3) if rows else None,
+    }
 
 
 def cmd_kb_stats(args):
