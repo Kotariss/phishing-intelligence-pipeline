@@ -108,6 +108,7 @@ python phishctl.py --help
 | `export-package [--out exports/package]` | версионированный пакет артефактов (JSON + YARA) |
 | `apply <package.json> <файлы/каталоги>` | применение пакета лёгким модулем (без тяжёлых экстракторов) |
 | `metrics [--limit N] [--sources keis2,html,png]` | метрики приёмки → `reports/metrics.json` |
+| `robustness [--limit N]` | устойчивость: recall после замены домена/URL, смены оформления и отложенной загрузки → `reports/robustness.json` |
 | `build-benign-corpus` | пересборка признаков легитимного набора для Zero FPR Guard |
 
 Глобальный флаг `--llm off|local|cloud` переопределяет режим LLM для команды.

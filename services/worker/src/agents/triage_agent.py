@@ -22,6 +22,7 @@ NOISE_LINK = re.compile(
     r'(?i)(unsubscribe|optout|opt-out|list-manage|/preferences|privacy|w3\.org|schemas\.|'
     r'\.(?:png|jpe?g|gif|svg|ico|css|woff2?)(?:\?|$)|fonts\.googleapis|facebook\.com/sharer|twitter\.com/intent)'
 )
+PASSWORD_HINT = re.compile(r'type\s*=\s*["\']?password')
 BULKY_FEATURE_KEYS = ("embedded_image_base64", "dom_html", "screenshot_base64", "body_html")
 
 
@@ -110,13 +111,19 @@ class TriageAgent:
         # Primary link: lures embed genuine brand links to borrow trust, so links ending on an
         # official brand domain come last; then collected landing pages with content first.
         registry = get_brand_registry()
+        def asks_for_data(html: str) -> int:
+            low = html.lower()
+            return 2 if PASSWORD_HINT.search(low) else (1 if "<form" in low or "<input" in low else 0)
+
         ranked = sorted(
             state.precollected_links,
             key=lambda l: (not NOISE_LINK.search(l.get("url") or ""),
                            not registry.find_brand_for_domain(l.get("final_url") or l.get("url") or ""),
                            bool(l.get("html")) and len(l.get("html", "")) > 200,
+                           asks_for_data(l.get("html") or ""),
                            bool(l.get("screenshot_base64")),
                            not l.get("collection_error"),
+                           min(len(l.get("html") or ""), 200_000) // 2000,
                            len(l.get("redirect_chain") or [])),
             reverse=True)
         primary = ranked[0] if ranked else None
