@@ -75,7 +75,7 @@ class ContentAgent:
                 if result.get("is_phishing_lure") is True and conf >= self.MIN_CONFIDENCE:
                     indicators = "; ".join(str(i) for i in (result.get("indicators") or [])[:3])
                     state.add_reason("CONTENT_LLM_LURE", f"{result.get('lure_type')} (уверенность {conf:.2f}): {indicators}"[:300],
-                                     {"type": "text", "value": "\n".join(f"• {i}" for i in (result.get("indicators") or [])[:6]), "label": "Признаки приманки в тексте (LLM)"})
+                                     {"type": "text", "value": "\n".join(f"- {i}" for i in (result.get("indicators") or [])[:6]), "label": "Признаки приманки в тексте (LLM)"})
                     status = "TRIGGERED"
                 else:
                     status = "COMPLETED"

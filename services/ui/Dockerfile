@@ -8,8 +8,7 @@ COPY services/ui/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # The UI talks to the worker REST API; demo fixtures are synthetic samples (no customer data).
-COPY services/ui/app.py /app/services/ui/app.py
-COPY tests/fixtures/helpers_demo.py tests/fixtures/benign_samples.py /app/tests/fixtures/
+COPY services/ui/app.py services/ui/backend.py services/ui/render.py /app/services/ui/
 
 EXPOSE 8501
 

@@ -128,9 +128,10 @@ def mask_url(url: str) -> str:
     except ValueError:
         return "<unparseable>"
     query = "&".join(f"{kv.split('=', 1)[0]}=***" if "=" in kv else "***" for kv in p.query.split("&") if kv) if p.query else ""
+    fragment = "***" if p.fragment else ""
     path = _EMAIL.sub("***@***", p.path)
     path = re.sub(r'(?<=/)[A-Za-z0-9_-]{24,}(?=/|$)', "***", path)
-    return urlunparse((p.scheme, p.netloc, path, "", query, ""))
+    return urlunparse((p.scheme, p.netloc, path, "", query, fragment))
 
 
 def mask_urls_in_text(text: str) -> str:

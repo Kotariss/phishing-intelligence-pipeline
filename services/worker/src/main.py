@@ -257,6 +257,17 @@ def export_package():
     return {"version": info["version"], "sha256": info["sha256"], "package": package}
 
 
+@app.get("/api/v1/reason-codes")
+def get_reason_codes():
+    """Catalogue of reason codes: weight, category, severity, description."""
+    try:
+        from .rules.reason_codes import REASON_CODES
+    except (ImportError, ValueError):
+        from rules.reason_codes import REASON_CODES
+    return {code: {"weight": i.weight, "category": i.category, "severity": i.severity, "description": i.description}
+            for code, i in REASON_CODES.items()}
+
+
 @app.get("/api/v1/llm_audit")
 def get_llm_audit(limit: int = Query(20, ge=1, le=200)):
     """Returns recent LLM/VLM audit log entries."""

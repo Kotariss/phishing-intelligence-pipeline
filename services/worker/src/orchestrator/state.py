@@ -110,8 +110,10 @@ class PhishingState(BaseModel):
         self.reason_details.setdefault(code, mask_urls_in_text(detail))
         if evidence and evidence.get("value") not in (None, "", []) or (evidence or {}).get("box"):
             ev = dict(evidence)
-            if ev.get("type") in ("url", "dom", "header") and isinstance(ev.get("value"), str):
+            if ev.get("type") in ("url", "dom", "header", "text") and isinstance(ev.get("value"), str):
                 ev["value"] = mask_urls_in_text(ev["value"])
+            elif ev.get("type") == "chain" and isinstance(ev.get("value"), list):
+                ev["value"] = [mask_urls_in_text(u) for u in ev["value"]]
             self.reason_evidence.setdefault(code, ev)
 
     def drop_reason(self, code: str) -> None:
