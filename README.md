@@ -109,6 +109,7 @@ python phishctl.py --help
 | `export-package [--out exports/package]` | версионированный пакет артефактов (JSON + YARA) |
 | `apply <package.json> <файлы/каталоги>` | применение пакета лёгким модулем (без тяжёлых экстракторов) |
 | `metrics [--limit N] [--sources keis2,html,png]` | метрики приёмки → `reports/metrics.json` |
+| `eval-labeled <dir>` | оценка на размеченном наборе EML (`manifest.csv`): предсказания для `compare_labels.py` (строгий / мягкий вариант) и сводка |
 | `robustness [--limit N]` | устойчивость: recall после замены домена/URL, смены оформления и отложенной загрузки → `reports/robustness.json` |
 | `build-benign-corpus` | пересборка признаков легитимного набора для Zero FPR Guard |
 
