@@ -27,3 +27,7 @@ Thumbs.db
 docker-volumes/
 tmp/
 scratch/
+
+# Local databases & build bundles
+*.db
+*.zip

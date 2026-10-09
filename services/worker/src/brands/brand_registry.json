@@ -1,0 +1,3917 @@
+[
+  {
+    "brand_id": "7_eleven",
+    "raw_dir_name": "7-Eleven",
+    "display_name": "7-Eleven",
+    "category": "general",
+    "aliases": [
+      "7-Eleven"
+    ],
+    "official_domains": [
+      "7eleven.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*7eleven\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "aeon",
+    "raw_dir_name": "AEON (株式会社イオン銀行)",
+    "display_name": "AEON",
+    "category": "general",
+    "aliases": [
+      "AEON",
+      "AEON (株式会社イオン銀行)"
+    ],
+    "official_domains": [
+      "aeon.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*aeon\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "aeon_pay",
+    "raw_dir_name": "AEON Pay (イオンフィナンシャルサービス)",
+    "display_name": "AEON Pay",
+    "category": "general",
+    "aliases": [
+      "AEON Pay",
+      "AEON Pay (イオンフィナンシャルサービス)"
+    ],
+    "official_domains": [
+      "aeonpay.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*aeonpay\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ana",
+    "raw_dir_name": "ANA (全日本空輸)",
+    "display_name": "ANA",
+    "category": "general",
+    "aliases": [
+      "ANA",
+      "ANA (全日本空輸)"
+    ],
+    "official_domains": [
+      "ana.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ana\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "antai",
+    "raw_dir_name": "ANTAI",
+    "display_name": "ANTAI",
+    "category": "general",
+    "aliases": [
+      "ANTAI"
+    ],
+    "official_domains": [
+      "antai.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*antai\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "at_t",
+    "raw_dir_name": "AT&T",
+    "display_name": "AT&T",
+    "category": "general",
+    "aliases": [
+      "AT&T"
+    ],
+    "official_domains": [
+      "att.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*att\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "adobe",
+    "raw_dir_name": "Adobe",
+    "display_name": "Adobe",
+    "category": "tech_global",
+    "aliases": [
+      "Adobe",
+      "Adobe Acrobat",
+      "Adobe Sign",
+      "Creative Cloud"
+    ],
+    "official_domains": [
+      "adobe.com",
+      "adobesign.com",
+      "acrobat.adobe.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*adobe\\.com$",
+      "^([a-z0-9-]+\\.)*adobesign\\.com$",
+      "^([a-z0-9-]+\\.)*acrobat\\.adobe\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "alibaba",
+    "raw_dir_name": "Alibaba",
+    "display_name": "Alibaba",
+    "category": "general",
+    "aliases": [
+      "Alibaba"
+    ],
+    "official_domains": [
+      "alibaba.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*alibaba\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "amazon",
+    "raw_dir_name": "Amazon",
+    "display_name": "Amazon",
+    "category": "general",
+    "aliases": [
+      "Amazon"
+    ],
+    "official_domains": [
+      "amazon.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*amazon\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "amex",
+    "raw_dir_name": "American Express",
+    "display_name": "American Express",
+    "category": "finance_global",
+    "aliases": [
+      "American Express",
+      "Amex"
+    ],
+    "official_domains": [
+      "americanexpress.com",
+      "aexp.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*americanexpress\\.com$",
+      "^([a-z0-9-]+\\.)*aexp\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "apple_appstore",
+    "raw_dir_name": "Apple AppStore",
+    "display_name": "Apple App Store",
+    "category": "tech_global",
+    "aliases": [
+      "App Store",
+      "Apple AppStore"
+    ],
+    "official_domains": [
+      "apple.com",
+      "itunes.apple.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*apple\\.com$",
+      "^([a-z0-9-]+\\.)*itunes\\.apple\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "apple_id",
+    "raw_dir_name": "Apple ID",
+    "display_name": "Apple ID",
+    "category": "tech_global",
+    "aliases": [
+      "Apple",
+      "Apple Account",
+      "Apple ID"
+    ],
+    "official_domains": [
+      "apple.com",
+      "appleid.apple.com",
+      "icloud.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*apple\\.com$",
+      "^([a-z0-9-]+\\.)*appleid\\.apple\\.com$",
+      "^([a-z0-9-]+\\.)*icloud\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "apple_support",
+    "raw_dir_name": "Apple Support Team",
+    "display_name": "Apple Support",
+    "category": "tech_global",
+    "aliases": [
+      "Apple Care",
+      "Apple Support"
+    ],
+    "official_domains": [
+      "apple.com",
+      "support.apple.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*apple\\.com$",
+      "^([a-z0-9-]+\\.)*support\\.apple\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "apple_icloud",
+    "raw_dir_name": "Apple iCloud",
+    "display_name": "Apple iCloud",
+    "category": "tech_global",
+    "aliases": [
+      "Apple iCloud",
+      "iCloud"
+    ],
+    "official_domains": [
+      "icloud.com",
+      "apple.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*icloud\\.com$",
+      "^([a-z0-9-]+\\.)*apple\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "bnp_paribas",
+    "raw_dir_name": "BNP Paribas",
+    "display_name": "BNP Paribas",
+    "category": "banking_eu",
+    "aliases": [
+      "BNP Paribas"
+    ],
+    "official_domains": [
+      "bnpparibas.com",
+      "mabanque.bnpparibas"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*bnpparibas\\.com$",
+      "^([a-z0-9-]+\\.)*mabanque\\.bnpparibas$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "bank_of_america",
+    "raw_dir_name": "Bank of America",
+    "display_name": "Bank of America",
+    "category": "banking_us",
+    "aliases": [
+      "Bank of America",
+      "BofA"
+    ],
+    "official_domains": [
+      "bankofamerica.com",
+      "bofa.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*bankofamerica\\.com$",
+      "^([a-z0-9-]+\\.)*bofa\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "best_buy",
+    "raw_dir_name": "Best Buy",
+    "display_name": "Best Buy",
+    "category": "general",
+    "aliases": [
+      "Best Buy"
+    ],
+    "official_domains": [
+      "bestbuy.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*bestbuy\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "booking",
+    "raw_dir_name": "Booking",
+    "display_name": "Booking",
+    "category": "general",
+    "aliases": [
+      "Booking"
+    ],
+    "official_domains": [
+      "booking.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*booking\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "canal",
+    "raw_dir_name": "CANAL+",
+    "display_name": "CANAL+",
+    "category": "general",
+    "aliases": [
+      "CANAL+"
+    ],
+    "official_domains": [
+      "canal.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*canal\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "cvs_store",
+    "raw_dir_name": "CVS Store",
+    "display_name": "CVS Store",
+    "category": "general",
+    "aliases": [
+      "CVS Store"
+    ],
+    "official_domains": [
+      "cvsstore.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*cvsstore\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "capital_one",
+    "raw_dir_name": "Capital One",
+    "display_name": "Capital One",
+    "category": "banking_us",
+    "aliases": [
+      "Capital One"
+    ],
+    "official_domains": [
+      "capitalone.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*capitalone\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "citibank",
+    "raw_dir_name": "Citibank",
+    "display_name": "Citibank",
+    "category": "banking_global",
+    "aliases": [
+      "Citi",
+      "Citibank"
+    ],
+    "official_domains": [
+      "citibank.com",
+      "citi.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*citibank\\.com$",
+      "^([a-z0-9-]+\\.)*citi\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "coca_cola",
+    "raw_dir_name": "Coca-Cola",
+    "display_name": "Coca-Cola",
+    "category": "general",
+    "aliases": [
+      "Coca-Cola"
+    ],
+    "official_domains": [
+      "cocacola.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*cocacola\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "coinbase",
+    "raw_dir_name": "Coinbase",
+    "display_name": "Coinbase",
+    "category": "crypto",
+    "aliases": [
+      "Coinbase"
+    ],
+    "official_domains": [
+      "coinbase.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*coinbase\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "comcast",
+    "raw_dir_name": "Comcast",
+    "display_name": "Comcast",
+    "category": "general",
+    "aliases": [
+      "Comcast"
+    ],
+    "official_domains": [
+      "comcast.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*comcast\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "coolcove",
+    "raw_dir_name": "CoolCove",
+    "display_name": "CoolCove",
+    "category": "general",
+    "aliases": [
+      "CoolCove"
+    ],
+    "official_domains": [
+      "coolcove.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*coolcove\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "costco",
+    "raw_dir_name": "Costco",
+    "display_name": "Costco",
+    "category": "general",
+    "aliases": [
+      "Costco"
+    ],
+    "official_domains": [
+      "costco.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*costco\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "dhl",
+    "raw_dir_name": "DHL",
+    "display_name": "DHL Express",
+    "category": "logistics",
+    "aliases": [
+      "DHL",
+      "DHL Express",
+      "DHL Freight"
+    ],
+    "official_domains": [
+      "dhl.com",
+      "dhl.de",
+      "dhl-usa.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*dhl\\.com$",
+      "^([a-z0-9-]+\\.)*dhl\\.de$",
+      "^([a-z0-9-]+\\.)*dhl\\-usa\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "dpd",
+    "raw_dir_name": "DPD",
+    "display_name": "DPD Group",
+    "category": "logistics",
+    "aliases": [
+      "DPD"
+    ],
+    "official_domains": [
+      "dpd.com",
+      "dpd.ru",
+      "dpd.de"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*dpd\\.com$",
+      "^([a-z0-9-]+\\.)*dpd\\.ru$",
+      "^([a-z0-9-]+\\.)*dpd\\.de$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "dsl_su",
+    "raw_dir_name": "DSL.SU",
+    "display_name": "DSL.SU",
+    "category": "general",
+    "aliases": [
+      "DSL.SU"
+    ],
+    "official_domains": [
+      "dslsu.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*dslsu\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "dai_ichi_life",
+    "raw_dir_name": "Dai-ichi Life (第一生命グループ)",
+    "display_name": "Dai-ichi Life",
+    "category": "general",
+    "aliases": [
+      "Dai-ichi Life",
+      "Dai-ichi Life (第一生命グループ)"
+    ],
+    "official_domains": [
+      "daiichilife.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*daiichilife\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "delta_air_lines",
+    "raw_dir_name": "Delta Air Lines",
+    "display_name": "Delta Air Lines",
+    "category": "general",
+    "aliases": [
+      "Delta Air Lines"
+    ],
+    "official_domains": [
+      "deltaairlines.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*deltaairlines\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "demae_can",
+    "raw_dir_name": "Demae-Can (出前館)",
+    "display_name": "Demae-Can",
+    "category": "general",
+    "aliases": [
+      "Demae-Can",
+      "Demae-Can (出前館)"
+    ],
+    "official_domains": [
+      "demaecan.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*demaecan\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "desk_gear",
+    "raw_dir_name": "Desk Gear",
+    "display_name": "Desk Gear",
+    "category": "general",
+    "aliases": [
+      "Desk Gear"
+    ],
+    "official_domains": [
+      "deskgear.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*deskgear\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "deutsche_bank",
+    "raw_dir_name": "Deutsche Bank",
+    "display_name": "Deutsche Bank",
+    "category": "banking_eu",
+    "aliases": [
+      "Deutsche Bank"
+    ],
+    "official_domains": [
+      "db.com",
+      "deutsche-bank.de"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*db\\.com$",
+      "^([a-z0-9-]+\\.)*deutsche\\-bank\\.de$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "deutsche_telekom",
+    "raw_dir_name": "Deutsche Telekom",
+    "display_name": "Deutsche Telekom",
+    "category": "general",
+    "aliases": [
+      "Deutsche Telekom"
+    ],
+    "official_domains": [
+      "deutschetelekom.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*deutschetelekom\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "digital_agency",
+    "raw_dir_name": "Digital Agency (デジタル庁)",
+    "display_name": "Digital Agency",
+    "category": "general",
+    "aliases": [
+      "Digital Agency",
+      "Digital Agency (デジタル庁)"
+    ],
+    "official_domains": [
+      "digitalagency.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*digitalagency\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "docusign",
+    "raw_dir_name": "DocuSign",
+    "display_name": "DocuSign",
+    "category": "b2b_global",
+    "aliases": [
+      "DocuSign",
+      "Докьюсайн"
+    ],
+    "official_domains": [
+      "docusign.com",
+      "docusign.net"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*docusign\\.com$",
+      "^([a-z0-9-]+\\.)*docusign\\.net$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "dropbox",
+    "raw_dir_name": "Dropbox",
+    "display_name": "Dropbox",
+    "category": "cloud_global",
+    "aliases": [
+      "Dropbox"
+    ],
+    "official_domains": [
+      "dropbox.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*dropbox\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "e_tax",
+    "raw_dir_name": "E-Tax (国税電子申告・納税システム)",
+    "display_name": "E-Tax",
+    "category": "general",
+    "aliases": [
+      "E-Tax",
+      "E-Tax (国税電子申告・納税システム)"
+    ],
+    "official_domains": [
+      "etax.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*etax\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "epos_card",
+    "raw_dir_name": "EPOS Card (エポスカード)",
+    "display_name": "EPOS Card",
+    "category": "general",
+    "aliases": [
+      "EPOS Card",
+      "EPOS Card (エポスカード)"
+    ],
+    "official_domains": [
+      "eposcard.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*eposcard\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "etc",
+    "raw_dir_name": "ETC",
+    "display_name": "ETC",
+    "category": "general",
+    "aliases": [
+      "ETC"
+    ],
+    "official_domains": [
+      "etc.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*etc\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ekinet",
+    "raw_dir_name": "EkiNet (えきねっと)",
+    "display_name": "EkiNet",
+    "category": "general",
+    "aliases": [
+      "EkiNet",
+      "EkiNet (えきねっと)"
+    ],
+    "official_domains": [
+      "ekinet.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ekinet\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "fifa",
+    "raw_dir_name": "FIFA",
+    "display_name": "FIFA",
+    "category": "general",
+    "aliases": [
+      "FIFA"
+    ],
+    "official_domains": [
+      "fifa.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*fifa\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "facebook",
+    "raw_dir_name": "Facebook",
+    "display_name": "Facebook",
+    "category": "general",
+    "aliases": [
+      "Facebook"
+    ],
+    "official_domains": [
+      "facebook.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*facebook\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "familymart",
+    "raw_dir_name": "Familymart (ファミリーマート)",
+    "display_name": "Familymart",
+    "category": "general",
+    "aliases": [
+      "Familymart",
+      "Familymart (ファミリーマート)"
+    ],
+    "official_domains": [
+      "familymart.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*familymart\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "fedex",
+    "raw_dir_name": "FedEx",
+    "display_name": "FedEx",
+    "category": "logistics",
+    "aliases": [
+      "FedEx",
+      "Federal Express"
+    ],
+    "official_domains": [
+      "fedex.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*fedex\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "fidelity",
+    "raw_dir_name": "Fidelity",
+    "display_name": "Fidelity Investments",
+    "category": "finance_us",
+    "aliases": [
+      "Fidelity"
+    ],
+    "official_domains": [
+      "fidelity.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*fidelity\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "financial_services_agency",
+    "raw_dir_name": "Financial Services Agency (証券取引等監視委員会)",
+    "display_name": "Financial Services Agency",
+    "category": "general",
+    "aliases": [
+      "Financial Services Agency",
+      "Financial Services Agency (証券取引等監視委員会)"
+    ],
+    "official_domains": [
+      "financialservicesagency.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*financialservicesagency\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "fukuoka_financial_group",
+    "raw_dir_name": "Fukuoka Financial Group (ふくおかフィナンシャルグループ)",
+    "display_name": "Fukuoka Financial Group",
+    "category": "general",
+    "aliases": [
+      "Fukuoka Financial Group",
+      "Fukuoka Financial Group (ふくおかフィナンシャルグループ)"
+    ],
+    "official_domains": [
+      "fukuokafinancialgroup.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*fukuokafinancialgroup\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "hmrc",
+    "raw_dir_name": "HMRC",
+    "display_name": "HMRC",
+    "category": "general",
+    "aliases": [
+      "HMRC"
+    ],
+    "official_domains": [
+      "hmrc.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*hmrc\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "hsbc",
+    "raw_dir_name": "HSBC Bank",
+    "display_name": "HSBC Bank",
+    "category": "banking_global",
+    "aliases": [
+      "HSBC",
+      "HSBC Bank"
+    ],
+    "official_domains": [
+      "hsbc.com",
+      "hsbc.co.uk"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*hsbc\\.com$",
+      "^([a-z0-9-]+\\.)*hsbc\\.co\\.uk$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "icbc",
+    "raw_dir_name": "ICBC_",
+    "display_name": "ICBC_",
+    "category": "general",
+    "aliases": [
+      "ICBC_"
+    ],
+    "official_domains": [
+      "icbc.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*icbc\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "irs",
+    "raw_dir_name": "IRS",
+    "display_name": "IRS",
+    "category": "general",
+    "aliases": [
+      "IRS"
+    ],
+    "official_domains": [
+      "irs.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*irs\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "instagram",
+    "raw_dir_name": "Instagram",
+    "display_name": "Instagram",
+    "category": "general",
+    "aliases": [
+      "Instagram"
+    ],
+    "official_domains": [
+      "instagram.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*instagram\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ja_net_bank",
+    "raw_dir_name": "JA Net Bank (JAネットバンクよ)",
+    "display_name": "JA Net Bank",
+    "category": "general",
+    "aliases": [
+      "JA Net Bank",
+      "JA Net Bank (JAネットバンクよ)"
+    ],
+    "official_domains": [
+      "janetbank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*janetbank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jaccs",
+    "raw_dir_name": "JACCS (ジャックスカード)",
+    "display_name": "JACCS",
+    "category": "general",
+    "aliases": [
+      "JACCS",
+      "JACCS (ジャックスカード)"
+    ],
+    "official_domains": [
+      "jaccs.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jaccs\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jal_mileage_bank",
+    "raw_dir_name": "JAL Mileage Bank (JALマイレージバンク)",
+    "display_name": "JAL Mileage Bank",
+    "category": "general",
+    "aliases": [
+      "JAL Mileage Bank",
+      "JAL Mileage Bank (JALマイレージバンク)"
+    ],
+    "official_domains": [
+      "jalmileagebank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jalmileagebank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jcbcard",
+    "raw_dir_name": "JCBCard (JCBカード)",
+    "display_name": "JCBCard",
+    "category": "general",
+    "aliases": [
+      "JCBCard",
+      "JCBCard (JCBカード)"
+    ],
+    "official_domains": [
+      "jcbcard.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jcbcard\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jre_point",
+    "raw_dir_name": "JRE Point (JRE ポイント)",
+    "display_name": "JRE Point",
+    "category": "general",
+    "aliases": [
+      "JRE Point",
+      "JRE Point (JRE ポイント)"
+    ],
+    "official_domains": [
+      "jrepoint.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jrepoint\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jalan_net",
+    "raw_dir_name": "Jalan Net (総務省)",
+    "display_name": "Jalan Net",
+    "category": "general",
+    "aliases": [
+      "Jalan Net",
+      "Jalan Net (総務省)"
+    ],
+    "official_domains": [
+      "jalannet.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jalannet\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jalan_net_1",
+    "raw_dir_name": "Jalan.net (じゃらん)",
+    "display_name": "Jalan.net",
+    "category": "general",
+    "aliases": [
+      "Jalan.net",
+      "Jalan.net (じゃらん)"
+    ],
+    "official_domains": [
+      "jalannet.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jalannet\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "japan_pension_service",
+    "raw_dir_name": "Japan Pension Service (日本年金機構)",
+    "display_name": "Japan Pension Service",
+    "category": "general",
+    "aliases": [
+      "Japan Pension Service",
+      "Japan Pension Service (日本年金機構)"
+    ],
+    "official_domains": [
+      "japanpensionservice.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*japanpensionservice\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "japan_post",
+    "raw_dir_name": "Japan Post (日本郵政)",
+    "display_name": "Japan Post",
+    "category": "general",
+    "aliases": [
+      "Japan Post",
+      "Japan Post (日本郵政)"
+    ],
+    "official_domains": [
+      "japanpost.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*japanpost\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "japan_post_1",
+    "raw_dir_name": "Japan Post (日本郵政株式会社)",
+    "display_name": "Japan Post",
+    "category": "general",
+    "aliases": [
+      "Japan Post",
+      "Japan Post (日本郵政株式会社)"
+    ],
+    "official_domains": [
+      "japanpost.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*japanpost\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "japan_post_bank",
+    "raw_dir_name": "Japan Post Bank (ゆうちょ銀行)",
+    "display_name": "Japan Post Bank",
+    "category": "general",
+    "aliases": [
+      "Japan Post Bank",
+      "Japan Post Bank (ゆうちょ銀行)"
+    ],
+    "official_domains": [
+      "japanpostbank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*japanpostbank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "jibun_bank",
+    "raw_dir_name": "Jibun Bank (auじぶん銀行株式会社)",
+    "display_name": "Jibun Bank",
+    "category": "general",
+    "aliases": [
+      "Jibun Bank",
+      "Jibun Bank (auじぶん銀行株式会社)"
+    ],
+    "official_domains": [
+      "jibunbank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jibunbank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "joint_network_secretariat",
+    "raw_dir_name": "Joint Network Secretariat (JNS)",
+    "display_name": "Joint Network Secretariat",
+    "category": "general",
+    "aliases": [
+      "Joint Network Secretariat",
+      "Joint Network Secretariat (JNS)"
+    ],
+    "official_domains": [
+      "jointnetworksecretariat.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*jointnetworksecretariat\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "kroger",
+    "raw_dir_name": "Kroger",
+    "display_name": "Kroger",
+    "category": "general",
+    "aliases": [
+      "Kroger"
+    ],
+    "official_domains": [
+      "kroger.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*kroger\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "kuroneko_yamato",
+    "raw_dir_name": "Kuroneko Yamato (クロネコヤマト)",
+    "display_name": "Kuroneko Yamato",
+    "category": "general",
+    "aliases": [
+      "Kuroneko Yamato",
+      "Kuroneko Yamato (クロネコヤマト)"
+    ],
+    "official_domains": [
+      "kuronekoyamato.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*kuronekoyamato\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "line",
+    "raw_dir_name": "LINE",
+    "display_name": "LINE",
+    "category": "general",
+    "aliases": [
+      "LINE"
+    ],
+    "official_domains": [
+      "line.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*line\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "lowe_s",
+    "raw_dir_name": "LOWE'S",
+    "display_name": "LOWE'S",
+    "category": "general",
+    "aliases": [
+      "LOWE'S"
+    ],
+    "official_domains": [
+      "lowes.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*lowes\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "la_poste",
+    "raw_dir_name": "La Poste",
+    "display_name": "La Poste",
+    "category": "logistics_eu",
+    "aliases": [
+      "Chronopost",
+      "La Poste"
+    ],
+    "official_domains": [
+      "laposte.fr"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*laposte\\.fr$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "lawson",
+    "raw_dir_name": "Lawson (ローソン)",
+    "display_name": "Lawson",
+    "category": "general",
+    "aliases": [
+      "Lawson",
+      "Lawson (ローソン)"
+    ],
+    "official_domains": [
+      "lawson.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*lawson\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ledger",
+    "raw_dir_name": "Ledger",
+    "display_name": "Ledger",
+    "category": "crypto",
+    "aliases": [
+      "Ledger"
+    ],
+    "official_domains": [
+      "ledger.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ledger\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "lidl",
+    "raw_dir_name": "LiDl",
+    "display_name": "LiDl",
+    "category": "general",
+    "aliases": [
+      "LiDl"
+    ],
+    "official_domains": [
+      "lidl.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*lidl\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "linkedin",
+    "raw_dir_name": "LinkedIn",
+    "display_name": "LinkedIn",
+    "category": "general",
+    "aliases": [
+      "LinkedIn"
+    ],
+    "official_domains": [
+      "linkedin.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*linkedin\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "lufthansa",
+    "raw_dir_name": "Lufthansa",
+    "display_name": "Lufthansa",
+    "category": "general",
+    "aliases": [
+      "Lufthansa"
+    ],
+    "official_domains": [
+      "lufthansa.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*lufthansa\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "marriot",
+    "raw_dir_name": "MARRIOT",
+    "display_name": "MARRIOT",
+    "category": "general",
+    "aliases": [
+      "MARRIOT"
+    ],
+    "official_domains": [
+      "marriot.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*marriot\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mufg",
+    "raw_dir_name": "MUFG (三菱UFJ)",
+    "display_name": "MUFG",
+    "category": "general",
+    "aliases": [
+      "MUFG",
+      "MUFG (三菱UFJ)"
+    ],
+    "official_domains": [
+      "mufg.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mufg\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "muji",
+    "raw_dir_name": "MUJI (無印良品)",
+    "display_name": "MUJI",
+    "category": "general",
+    "aliases": [
+      "MUJI",
+      "MUJI (無印良品)"
+    ],
+    "official_domains": [
+      "muji.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*muji\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mailru",
+    "raw_dir_name": "Mailru",
+    "display_name": "Mail.ru",
+    "category": "tech_ru",
+    "aliases": [
+      "Mail.ru",
+      "VK",
+      "Почта Mail.ru"
+    ],
+    "official_domains": [
+      "mail.ru",
+      "vk.company",
+      "vk.com",
+      "trk.mail.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mail\\.ru$",
+      "^([a-z0-9-]+\\.)*vk\\.company$",
+      "^([a-z0-9-]+\\.)*vk\\.com$",
+      "^([a-z0-9-]+\\.)*trk\\.mail\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mastercard",
+    "raw_dir_name": "Mastercard",
+    "display_name": "Mastercard",
+    "category": "finance_global",
+    "aliases": [
+      "Mastercard",
+      "Мастеркард"
+    ],
+    "official_domains": [
+      "mastercard.com",
+      "mastercard.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mastercard\\.com$",
+      "^([a-z0-9-]+\\.)*mastercard\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mauritius_commercial_bank",
+    "raw_dir_name": "Mauritius Commercial Bank",
+    "display_name": "Mauritius Commercial Bank",
+    "category": "general",
+    "aliases": [
+      "Mauritius Commercial Bank"
+    ],
+    "official_domains": [
+      "mauritiuscommercialbank.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mauritiuscommercialbank\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "maxtv_japan",
+    "raw_dir_name": "MaxTV Japan (MAX無料視聴センター)",
+    "display_name": "MaxTV Japan",
+    "category": "general",
+    "aliases": [
+      "MaxTV Japan",
+      "MaxTV Japan (MAX無料視聴センター)"
+    ],
+    "official_domains": [
+      "maxtvjapan.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*maxtvjapan\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mercari",
+    "raw_dir_name": "Mercari (メルカリ)",
+    "display_name": "Mercari",
+    "category": "general",
+    "aliases": [
+      "Mercari",
+      "Mercari (メルカリ)"
+    ],
+    "official_domains": [
+      "mercari.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mercari\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "meta",
+    "raw_dir_name": "Meta",
+    "display_name": "Meta",
+    "category": "general",
+    "aliases": [
+      "Meta"
+    ],
+    "official_domains": [
+      "meta.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*meta\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "metamask",
+    "raw_dir_name": "MetaMask",
+    "display_name": "MetaMask",
+    "category": "crypto",
+    "aliases": [
+      "MetaMask"
+    ],
+    "official_domains": [
+      "metamask.io"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*metamask\\.io$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "microsoft_account",
+    "raw_dir_name": "Microsoft Account Team",
+    "display_name": "Microsoft Account",
+    "category": "cloud_global",
+    "aliases": [
+      "MS Account",
+      "Microsoft",
+      "Microsoft 365",
+      "Office 365"
+    ],
+    "official_domains": [
+      "microsoft.com",
+      "office.com",
+      "live.com",
+      "microsoftonline.com",
+      "login.microsoftonline.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*microsoft\\.com$",
+      "^([a-z0-9-]+\\.)*office\\.com$",
+      "^([a-z0-9-]+\\.)*live\\.com$",
+      "^([a-z0-9-]+\\.)*microsoftonline\\.com$",
+      "^([a-z0-9-]+\\.)*login\\.microsoftonline\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "microsoft_hr",
+    "raw_dir_name": "Microsoft HR",
+    "display_name": "Microsoft HR",
+    "category": "cloud_global",
+    "aliases": [
+      "MS HR",
+      "Microsoft HR"
+    ],
+    "official_domains": [
+      "microsoft.com",
+      "office.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*microsoft\\.com$",
+      "^([a-z0-9-]+\\.)*office\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "microsoft_onedrive",
+    "raw_dir_name": "Microsoft OneDrive",
+    "display_name": "Microsoft OneDrive",
+    "category": "cloud_global",
+    "aliases": [
+      "MS OneDrive",
+      "Microsoft OneDrive",
+      "OneDrive"
+    ],
+    "official_domains": [
+      "onedrive.live.com",
+      "microsoft.com",
+      "sharepoint.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*onedrive\\.live\\.com$",
+      "^([a-z0-9-]+\\.)*microsoft\\.com$",
+      "^([a-z0-9-]+\\.)*sharepoint\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "microsoft_outlook",
+    "raw_dir_name": "Microsoft Outlook",
+    "display_name": "Microsoft Outlook",
+    "category": "cloud_global",
+    "aliases": [
+      "MS Outlook",
+      "Outlook",
+      "Outlook 365"
+    ],
+    "official_domains": [
+      "outlook.com",
+      "office.com",
+      "microsoft.com",
+      "outlook.office365.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*outlook\\.com$",
+      "^([a-z0-9-]+\\.)*office\\.com$",
+      "^([a-z0-9-]+\\.)*microsoft\\.com$",
+      "^([a-z0-9-]+\\.)*outlook\\.office365\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mizuho_bank",
+    "raw_dir_name": "Mizuho Bank (みずほ銀行)",
+    "display_name": "Mizuho Bank",
+    "category": "general",
+    "aliases": [
+      "Mizuho Bank",
+      "Mizuho Bank (みずほ銀行)"
+    ],
+    "official_domains": [
+      "mizuhobank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mizuhobank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mos_ru",
+    "raw_dir_name": "Moc ру",
+    "display_name": "Мос.ру",
+    "category": "gov_ru",
+    "aliases": [
+      "Mos.ru",
+      "Мос.ру",
+      "Портал Мэра Москвы"
+    ],
+    "official_domains": [
+      "mos.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mos\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "monex_securities",
+    "raw_dir_name": "Monex Securities (マネックス証券)",
+    "display_name": "Monex Securities",
+    "category": "general",
+    "aliases": [
+      "Monex Securities",
+      "Monex Securities (マネックス証券)"
+    ],
+    "official_domains": [
+      "monexsecurities.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*monexsecurities\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "my_number_portal",
+    "raw_dir_name": "My Number portal (マイナポータル)",
+    "display_name": "My Number portal",
+    "category": "general",
+    "aliases": [
+      "My Number portal",
+      "My Number portal (マイナポータル)"
+    ],
+    "official_domains": [
+      "mynumberportal.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mynumberportal\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "myjcbcard",
+    "raw_dir_name": "MyJCBCARD (株式会社ジェーシービー)",
+    "display_name": "MyJCBCARD",
+    "category": "general",
+    "aliases": [
+      "MyJCBCARD",
+      "MyJCBCARD (株式会社ジェーシービー)"
+    ],
+    "official_domains": [
+      "myjcbcard.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*myjcbcard\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "navy_federal_credit_union",
+    "raw_dir_name": "NAVY FEDERAL CREDIT UNION",
+    "display_name": "NAVY FEDERAL CREDIT UNION",
+    "category": "general",
+    "aliases": [
+      "NAVY FEDERAL CREDIT UNION"
+    ],
+    "official_domains": [
+      "navyfederalcreditunion.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*navyfederalcreditunion\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "nhk",
+    "raw_dir_name": "NHK (日本放送協)",
+    "display_name": "NHK",
+    "category": "general",
+    "aliases": [
+      "NHK",
+      "NHK (日本放送協)"
+    ],
+    "official_domains": [
+      "nhk.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*nhk\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ntt_communications",
+    "raw_dir_name": "NTT Communications",
+    "display_name": "NTT Communications",
+    "category": "general",
+    "aliases": [
+      "NTT Communications"
+    ],
+    "official_domains": [
+      "nttcommunications.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*nttcommunications\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ntt_docomo",
+    "raw_dir_name": "NTT Docomo (NTTドコモ)",
+    "display_name": "NTT Docomo",
+    "category": "general",
+    "aliases": [
+      "NTT Docomo",
+      "NTT Docomo (NTTドコモ)"
+    ],
+    "official_domains": [
+      "nttdocomo.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*nttdocomo\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "national_tax_agency",
+    "raw_dir_name": "National Tax Agency (e-Tax税務署からの)",
+    "display_name": "National Tax Agency",
+    "category": "general",
+    "aliases": [
+      "National Tax Agency",
+      "National Tax Agency (e-Tax税務署からの)"
+    ],
+    "official_domains": [
+      "nationaltaxagency.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*nationaltaxagency\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "netflix",
+    "raw_dir_name": "Netflix",
+    "display_name": "Netflix",
+    "category": "general",
+    "aliases": [
+      "Netflix"
+    ],
+    "official_domains": [
+      "netflix.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*netflix\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "nintendo",
+    "raw_dir_name": "Nintendo",
+    "display_name": "Nintendo",
+    "category": "general",
+    "aliases": [
+      "Nintendo"
+    ],
+    "official_domains": [
+      "nintendo.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*nintendo\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "nintendo_1",
+    "raw_dir_name": "Nintendo (任天堂)",
+    "display_name": "Nintendo",
+    "category": "general",
+    "aliases": [
+      "Nintendo",
+      "Nintendo (任天堂)"
+    ],
+    "official_domains": [
+      "nintendo.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*nintendo\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "omaha_steaks",
+    "raw_dir_name": "Omaha Steaks",
+    "display_name": "Omaha Steaks",
+    "category": "general",
+    "aliases": [
+      "Omaha Steaks"
+    ],
+    "official_domains": [
+      "omahasteaks.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*omahasteaks\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "openai",
+    "raw_dir_name": "OpenAI",
+    "display_name": "OpenAI",
+    "category": "tech_global",
+    "aliases": [
+      "ChatGPT",
+      "OpenAI"
+    ],
+    "official_domains": [
+      "openai.com",
+      "chatgpt.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*openai\\.com$",
+      "^([a-z0-9-]+\\.)*chatgpt\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "orico_bank",
+    "raw_dir_name": "Orico Bank (eオリコ)",
+    "display_name": "Orico Bank",
+    "category": "general",
+    "aliases": [
+      "Orico Bank",
+      "Orico Bank (eオリコ)"
+    ],
+    "official_domains": [
+      "oricobank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*oricobank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ozon",
+    "raw_dir_name": "Ozon",
+    "display_name": "Ozon",
+    "category": "marketplace_ru",
+    "aliases": [
+      "Ozon",
+      "Ozon Банк",
+      "Озон"
+    ],
+    "official_domains": [
+      "ozon.ru",
+      "finance.ozon.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ozon\\.ru$",
+      "^([a-z0-9-]+\\.)*finance\\.ozon\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "paidy",
+    "raw_dir_name": "Paidy (あと払いペイディ)",
+    "display_name": "Paidy",
+    "category": "general",
+    "aliases": [
+      "Paidy",
+      "Paidy (あと払いペイディ)"
+    ],
+    "official_domains": [
+      "paidy.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*paidy\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "pairs",
+    "raw_dir_name": "Pairs",
+    "display_name": "Pairs",
+    "category": "general",
+    "aliases": [
+      "Pairs"
+    ],
+    "official_domains": [
+      "pairs.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*pairs\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "panel_group_lowes",
+    "raw_dir_name": "Panel Group Lowes",
+    "display_name": "Panel Group Lowes",
+    "category": "general",
+    "aliases": [
+      "Panel Group Lowes"
+    ],
+    "official_domains": [
+      "panelgrouplowes.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*panelgrouplowes\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "paypal",
+    "raw_dir_name": "PayPal",
+    "display_name": "PayPal",
+    "category": "finance_global",
+    "aliases": [
+      "PayPal",
+      "Пейпал"
+    ],
+    "official_domains": [
+      "paypal.com",
+      "paypal.me"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*paypal\\.com$",
+      "^([a-z0-9-]+\\.)*paypal\\.me$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "paypay_bank",
+    "raw_dir_name": "PayPay Bank (PayPay 銀行)",
+    "display_name": "PayPay Bank",
+    "category": "general",
+    "aliases": [
+      "PayPay Bank",
+      "PayPay Bank (PayPay 銀行)"
+    ],
+    "official_domains": [
+      "paypaybank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*paypaybank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "philips",
+    "raw_dir_name": "Philips",
+    "display_name": "Philips",
+    "category": "general",
+    "aliases": [
+      "Philips"
+    ],
+    "official_domains": [
+      "philips.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*philips\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "playstation",
+    "raw_dir_name": "PlayStation",
+    "display_name": "PlayStation",
+    "category": "general",
+    "aliases": [
+      "PlayStation"
+    ],
+    "official_domains": [
+      "playstation.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*playstation\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "pocket_card_co",
+    "raw_dir_name": "Pocket Card Co (ポケットカード)",
+    "display_name": "Pocket Card Co",
+    "category": "general",
+    "aliases": [
+      "Pocket Card Co",
+      "Pocket Card Co (ポケットカード)"
+    ],
+    "official_domains": [
+      "pocketcardco.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*pocketcardco\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "pony_express",
+    "raw_dir_name": "Pony Express",
+    "display_name": "Pony Express",
+    "category": "logistics",
+    "aliases": [
+      "Pony Express",
+      "Пони Экспресс"
+    ],
+    "official_domains": [
+      "ponyexpress.ru",
+      "ponyexpress-logistics.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ponyexpress\\.ru$",
+      "^([a-z0-9-]+\\.)*ponyexpress\\-logistics\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "postnl",
+    "raw_dir_name": "PostNL",
+    "display_name": "PostNL",
+    "category": "logistics_eu",
+    "aliases": [
+      "PostNL"
+    ],
+    "official_domains": [
+      "postnl.nl",
+      "postnl.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*postnl\\.nl$",
+      "^([a-z0-9-]+\\.)*postnl\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "quickbooks",
+    "raw_dir_name": "QuickBooks",
+    "display_name": "Intuit QuickBooks",
+    "category": "b2b_global",
+    "aliases": [
+      "Intuit",
+      "QuickBooks"
+    ],
+    "official_domains": [
+      "quickbooks.intuit.com",
+      "intuit.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*quickbooks\\.intuit\\.com$",
+      "^([a-z0-9-]+\\.)*intuit\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "rtl",
+    "raw_dir_name": "RTL",
+    "display_name": "RTL",
+    "category": "general",
+    "aliases": [
+      "RTL"
+    ],
+    "official_domains": [
+      "rtl.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*rtl\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "rakuten_bank",
+    "raw_dir_name": "Rakuten Bank (楽天カ_",
+    "display_name": "Rakuten Bank (楽天カ_",
+    "category": "general",
+    "aliases": [
+      "Rakuten Bank (楽天カ_"
+    ],
+    "official_domains": [
+      "rakutenbank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*rakutenbank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "resona_bank",
+    "raw_dir_name": "Resona Bank (りそな銀行)",
+    "display_name": "Resona Bank",
+    "category": "general",
+    "aliases": [
+      "Resona Bank",
+      "Resona Bank (りそな銀行)"
+    ],
+    "official_domains": [
+      "resonabank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*resonabank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "rikunabi",
+    "raw_dir_name": "Rikunabi (リクナビ ()",
+    "display_name": "Rikunabi",
+    "category": "general",
+    "aliases": [
+      "Rikunabi",
+      "Rikunabi (リクナビ ()"
+    ],
+    "official_domains": [
+      "rikunabi.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*rikunabi\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "roundcube",
+    "raw_dir_name": "Roundcube",
+    "display_name": "Roundcube",
+    "category": "general",
+    "aliases": [
+      "Roundcube"
+    ],
+    "official_domains": [
+      "roundcube.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*roundcube\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sbi_holdings",
+    "raw_dir_name": "SBI Holdings (SBIホールディングス株式会社)",
+    "display_name": "SBI Holdings",
+    "category": "general",
+    "aliases": [
+      "SBI Holdings",
+      "SBI Holdings (SBIホールディングス株式会社)"
+    ],
+    "official_domains": [
+      "sbiholdings.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sbiholdings\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sbi_neotrade_securities",
+    "raw_dir_name": "SBI NeoTrade Securities (SBIネオトレード証券)",
+    "display_name": "SBI NeoTrade Securities",
+    "category": "general",
+    "aliases": [
+      "SBI NeoTrade Securities",
+      "SBI NeoTrade Securities (SBIネオトレード証券)"
+    ],
+    "official_domains": [
+      "sbineotradesecurities.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sbineotradesecurities\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sbi_securities",
+    "raw_dir_name": "SBI Securities (SBI証券)",
+    "display_name": "SBI Securities",
+    "category": "general",
+    "aliases": [
+      "SBI Securities",
+      "SBI Securities (SBI証券)"
+    ],
+    "official_domains": [
+      "sbisecurities.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sbisecurities\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sbi_shinsei_bank",
+    "raw_dir_name": "SBI Shinsei Bank (SBI新生銀行)",
+    "display_name": "SBI Shinsei Bank",
+    "category": "general",
+    "aliases": [
+      "SBI Shinsei Bank",
+      "SBI Shinsei Bank (SBI新生銀行)"
+    ],
+    "official_domains": [
+      "sbishinseibank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sbishinseibank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sbi_shinsei_bank_1",
+    "raw_dir_name": "SBI Shinsei Bank (SBI新生銀行を)",
+    "display_name": "SBI Shinsei Bank",
+    "category": "general",
+    "aliases": [
+      "SBI Shinsei Bank",
+      "SBI Shinsei Bank (SBI新生銀行を)"
+    ],
+    "official_domains": [
+      "sbishinseibank.co.jp"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sbishinseibank\\.co\\.jp$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "smbc",
+    "raw_dir_name": "SMBC (株式会社三井住友銀行)",
+    "display_name": "SMBC",
+    "category": "general",
+    "aliases": [
+      "SMBC",
+      "SMBC (株式会社三井住友銀行)"
+    ],
+    "official_domains": [
+      "smbc.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*smbc\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ssa",
+    "raw_dir_name": "SSA",
+    "display_name": "SSA",
+    "category": "general",
+    "aliases": [
+      "SSA"
+    ],
+    "official_domains": [
+      "ssa.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ssa\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sagawa_express",
+    "raw_dir_name": "Sagawa Express (佐川急便)",
+    "display_name": "Sagawa Express",
+    "category": "general",
+    "aliases": [
+      "Sagawa Express",
+      "Sagawa Express (佐川急便)"
+    ],
+    "official_domains": [
+      "sagawaexpress.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sagawaexpress\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "saison_id",
+    "raw_dir_name": "Saison ID (クレディセゾン)",
+    "display_name": "Saison ID",
+    "category": "general",
+    "aliases": [
+      "Saison ID",
+      "Saison ID (クレディセゾン)"
+    ],
+    "official_domains": [
+      "saisonid.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*saisonid\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "saison_jp",
+    "raw_dir_name": "Saison JP (株式会社クレディセゾン)",
+    "display_name": "Saison JP",
+    "category": "general",
+    "aliases": [
+      "Saison JP",
+      "Saison JP (株式会社クレディセゾン)"
+    ],
+    "official_domains": [
+      "saisonjp.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*saisonjp\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "santander",
+    "raw_dir_name": "Santander",
+    "display_name": "Banco Santander",
+    "category": "banking_eu",
+    "aliases": [
+      "Santander"
+    ],
+    "official_domains": [
+      "santander.com",
+      "bancosantander.es"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*santander\\.com$",
+      "^([a-z0-9-]+\\.)*bancosantander\\.es$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sharefile",
+    "raw_dir_name": "ShareFile",
+    "display_name": "Citrix ShareFile",
+    "category": "cloud_global",
+    "aliases": [
+      "Citrix ShareFile",
+      "ShareFile"
+    ],
+    "official_domains": [
+      "sharefile.com",
+      "citrix.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sharefile\\.com$",
+      "^([a-z0-9-]+\\.)*citrix\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sharepoint",
+    "raw_dir_name": "SharePoint",
+    "display_name": "SharePoint",
+    "category": "cloud_global",
+    "aliases": [
+      "MS SharePoint",
+      "SharePoint"
+    ],
+    "official_domains": [
+      "sharepoint.com",
+      "microsoft.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sharepoint\\.com$",
+      "^([a-z0-9-]+\\.)*microsoft\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "shell",
+    "raw_dir_name": "Shell",
+    "display_name": "Shell",
+    "category": "general",
+    "aliases": [
+      "Shell"
+    ],
+    "official_domains": [
+      "shell.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*shell\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "shopify",
+    "raw_dir_name": "Shopify",
+    "display_name": "Shopify",
+    "category": "general",
+    "aliases": [
+      "Shopify"
+    ],
+    "official_domains": [
+      "shopify.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*shopify\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "softbank",
+    "raw_dir_name": "SoftBank_",
+    "display_name": "SoftBank_",
+    "category": "general",
+    "aliases": [
+      "SoftBank_"
+    ],
+    "official_domains": [
+      "softbank.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*softbank\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "spotify",
+    "raw_dir_name": "Spotify",
+    "display_name": "Spotify",
+    "category": "general",
+    "aliases": [
+      "Spotify"
+    ],
+    "official_domains": [
+      "spotify.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*spotify\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sumitomo_mitsui",
+    "raw_dir_name": "Sumitomo Mitsui (株式会社 三井住友銀行)",
+    "display_name": "Sumitomo Mitsui",
+    "category": "general",
+    "aliases": [
+      "Sumitomo Mitsui",
+      "Sumitomo Mitsui (株式会社 三井住友銀行)"
+    ],
+    "official_domains": [
+      "sumitomomitsui.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sumitomomitsui\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "tiktok",
+    "raw_dir_name": "TikTok",
+    "display_name": "TikTok",
+    "category": "general",
+    "aliases": [
+      "TikTok"
+    ],
+    "official_domains": [
+      "tiktok.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*tiktok\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "tokyo_electric_power_company",
+    "raw_dir_name": "Tokyo Electric Power Company (東京電力)",
+    "display_name": "Tokyo Electric Power Company",
+    "category": "general",
+    "aliases": [
+      "Tokyo Electric Power Company",
+      "Tokyo Electric Power Company (東京電力)"
+    ],
+    "official_domains": [
+      "tokyoelectricpowercompany.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*tokyoelectricpowercompany\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "trust_wallet",
+    "raw_dir_name": "Trust Wallet",
+    "display_name": "Trust Wallet",
+    "category": "crypto",
+    "aliases": [
+      "Trust Wallet"
+    ],
+    "official_domains": [
+      "trustwallet.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*trustwallet\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "turkish_airlines",
+    "raw_dir_name": "Turkish airlines",
+    "display_name": "Turkish airlines",
+    "category": "general",
+    "aliases": [
+      "Turkish airlines"
+    ],
+    "official_domains": [
+      "turkishairlines.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*turkishairlines\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "uniqlo",
+    "raw_dir_name": "UNIQLO (ユニクロ)",
+    "display_name": "UNIQLO",
+    "category": "general",
+    "aliases": [
+      "UNIQLO",
+      "UNIQLO (ユニクロ)"
+    ],
+    "official_domains": [
+      "uniqlo.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*uniqlo\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "ups",
+    "raw_dir_name": "UPS",
+    "display_name": "UPS",
+    "category": "logistics",
+    "aliases": [
+      "UPS",
+      "United Parcel Service"
+    ],
+    "official_domains": [
+      "ups.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ups\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "usaa",
+    "raw_dir_name": "USAA",
+    "display_name": "USAA",
+    "category": "general",
+    "aliases": [
+      "USAA"
+    ],
+    "official_domains": [
+      "usaa.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*usaa\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "usps",
+    "raw_dir_name": "USPS",
+    "display_name": "USPS",
+    "category": "logistics_us",
+    "aliases": [
+      "U.S. Postal Service",
+      "USPS"
+    ],
+    "official_domains": [
+      "usps.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*usps\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "visa",
+    "raw_dir_name": "Visa",
+    "display_name": "Visa",
+    "category": "finance_global",
+    "aliases": [
+      "Visa",
+      "Визa"
+    ],
+    "official_domains": [
+      "visa.com",
+      "visa.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*visa\\.com$",
+      "^([a-z0-9-]+\\.)*visa\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "waon_point",
+    "raw_dir_name": "WAON POINT",
+    "display_name": "WAON POINT",
+    "category": "general",
+    "aliases": [
+      "WAON POINT"
+    ],
+    "official_domains": [
+      "waonpoint.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*waonpoint\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "walmart",
+    "raw_dir_name": "Walmart",
+    "display_name": "Walmart",
+    "category": "general",
+    "aliases": [
+      "Walmart"
+    ],
+    "official_domains": [
+      "walmart.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*walmart\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "web_admin",
+    "raw_dir_name": "Web Admin",
+    "display_name": "Web Admin",
+    "category": "general",
+    "aliases": [
+      "Web Admin"
+    ],
+    "official_domains": [
+      "webadmin.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*webadmin\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "wells_fargo",
+    "raw_dir_name": "Wells Fargo",
+    "display_name": "Wells Fargo",
+    "category": "banking_us",
+    "aliases": [
+      "Wells Fargo"
+    ],
+    "official_domains": [
+      "wellsfargo.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*wellsfargo\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "whatsapp",
+    "raw_dir_name": "WhatsApp",
+    "display_name": "WhatsApp",
+    "category": "general",
+    "aliases": [
+      "WhatsApp"
+    ],
+    "official_domains": [
+      "whatsapp.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*whatsapp\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "wildberries",
+    "raw_dir_name": "Wildberries",
+    "display_name": "Wildberries",
+    "category": "marketplace_ru",
+    "aliases": [
+      "WB",
+      "Wildberries",
+      "Вайлдберриз",
+      "Вайлдберрис"
+    ],
+    "official_domains": [
+      "wildberries.ru",
+      "wb.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*wildberries\\.ru$",
+      "^([a-z0-9-]+\\.)*wb\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "yamato_transport",
+    "raw_dir_name": "Yamato Transport (ヤマト運輸株式会社)",
+    "display_name": "Yamato Transport",
+    "category": "general",
+    "aliases": [
+      "Yamato Transport",
+      "Yamato Transport (ヤマト運輸株式会社)"
+    ],
+    "official_domains": [
+      "yamatotransport.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*yamatotransport\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "yodobashi",
+    "raw_dir_name": "Yodobashi (ヨドバシドットコム)",
+    "display_name": "Yodobashi",
+    "category": "general",
+    "aliases": [
+      "Yodobashi",
+      "Yodobashi (ヨドバシドットコム)"
+    ],
+    "official_domains": [
+      "yodobashi.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*yodobashi\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "yu_pack",
+    "raw_dir_name": "Yu-Pack (ゆうパック)",
+    "display_name": "Yu-Pack",
+    "category": "general",
+    "aliases": [
+      "Yu-Pack",
+      "Yu-Pack (ゆうパック)"
+    ],
+    "official_domains": [
+      "yupack.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*yupack\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "au",
+    "raw_dir_name": "au",
+    "display_name": "au",
+    "category": "general",
+    "aliases": [
+      "au"
+    ],
+    "official_domains": [
+      "au.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*au\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "au_pay",
+    "raw_dir_name": "au PAY",
+    "display_name": "au PAY",
+    "category": "general",
+    "aliases": [
+      "au PAY"
+    ],
+    "official_domains": [
+      "aupay.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*aupay\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "cpanel",
+    "raw_dir_name": "cPanel",
+    "display_name": "cPanel",
+    "category": "general",
+    "aliases": [
+      "cPanel"
+    ],
+    "official_domains": [
+      "cpanel.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*cpanel\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "d_point",
+    "raw_dir_name": "d POINT (d ポ イ ン ト)",
+    "display_name": "d POINT",
+    "category": "general",
+    "aliases": [
+      "d POINT",
+      "d POINT (d ポ イ ン ト)"
+    ],
+    "official_domains": [
+      "dpoint.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*dpoint\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "drweb",
+    "raw_dir_name": "drweb",
+    "display_name": "Doctor Web",
+    "category": "security",
+    "aliases": [
+      "Doctor Web",
+      "Dr.Web",
+      "Доктор Веб"
+    ],
+    "official_domains": [
+      "drweb.ru",
+      "drweb.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*drweb\\.ru$",
+      "^([a-z0-9-]+\\.)*drweb\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "e_plus",
+    "raw_dir_name": "e+plus (イープラス)",
+    "display_name": "e+plus",
+    "category": "general",
+    "aliases": [
+      "e+plus",
+      "e+plus (イープラス)"
+    ],
+    "official_domains": [
+      "eplus.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*eplus\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "vtb",
+    "raw_dir_name": "ВТБ",
+    "display_name": "ВТБ",
+    "category": "banking_ru",
+    "aliases": [
+      "VTB",
+      "Банк ВТБ",
+      "ВТБ",
+      "ВТБ Онлайн"
+    ],
+    "official_domains": [
+      "vtb.ru",
+      "online.vtb.ru",
+      "vtb24.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*vtb\\.ru$",
+      "^([a-z0-9-]+\\.)*online\\.vtb\\.ru$",
+      "^([a-z0-9-]+\\.)*vtb24\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "stoloto",
+    "raw_dir_name": "Государственные лотереи",
+    "display_name": "Столото (Государственные лотереи)",
+    "category": "services_ru",
+    "aliases": [
+      "Stoloto",
+      "Государственные лотереи",
+      "Столото"
+    ],
+    "official_domains": [
+      "stoloto.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*stoloto\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "gosuslugi",
+    "raw_dir_name": "Госуслуги",
+    "display_name": "Госуслуги",
+    "category": "gov_ru",
+    "aliases": [
+      "Gosuslugi",
+      "Госуслуги",
+      "ЕПГУ",
+      "ЕСИА"
+    ],
+    "official_domains": [
+      "gosuslugi.ru",
+      "esia.gosuslugi.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*gosuslugi\\.ru$",
+      "^([a-z0-9-]+\\.)*esia\\.gosuslugi\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mvideo",
+    "raw_dir_name": "М.Видео",
+    "display_name": "М.Видео",
+    "category": "marketplace_ru",
+    "aliases": [
+      "M.Video",
+      "Mvideo",
+      "М.Видео",
+      "МВидео"
+    ],
+    "official_domains": [
+      "mvideo.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mvideo\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mfc",
+    "raw_dir_name": "МФЦ",
+    "display_name": "МФЦ Мои Документы",
+    "category": "gov_ru",
+    "aliases": [
+      "MFC",
+      "МФЦ",
+      "Мои Документы"
+    ],
+    "official_domains": [
+      "mfc.ru",
+      "моидокументы.рф",
+      "md.mos.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*mfc\\.ru$",
+      "^([a-z0-9-]+\\.)*моидокументы\\.рф$",
+      "^([a-z0-9-]+\\.)*md\\.mos\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "mintsifry",
+    "raw_dir_name": "Минцифры",
+    "display_name": "Минцифры России",
+    "category": "gov_ru",
+    "aliases": [
+      "Digital Gov",
+      "Министерство цифрового развития",
+      "Минцифры"
+    ],
+    "official_domains": [
+      "digital.gov.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*digital\\.gov\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "sber",
+    "raw_dir_name": "Сбер",
+    "display_name": "Сбер",
+    "category": "banking_ru",
+    "aliases": [
+      "Sber",
+      "Sberbank",
+      "Сбер",
+      "СберБизнес",
+      "СберОнлайн",
+      "Сбербанк"
+    ],
+    "official_domains": [
+      "sberbank.ru",
+      "sber.ru",
+      "online.sberbank.ru",
+      "sberbank.com"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*sberbank\\.ru$",
+      "^([a-z0-9-]+\\.)*sber\\.ru$",
+      "^([a-z0-9-]+\\.)*online\\.sberbank\\.ru$",
+      "^([a-z0-9-]+\\.)*sberbank\\.com$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  },
+  {
+    "brand_id": "tbank",
+    "raw_dir_name": "Т-Банк",
+    "display_name": "Т-Банк",
+    "category": "banking_ru",
+    "aliases": [
+      "T-Bank",
+      "Tinkoff",
+      "Т-Банк",
+      "ТБанк",
+      "Тинькофф"
+    ],
+    "official_domains": [
+      "tbank.ru",
+      "tinkoff.ru",
+      "id.tbank.ru"
+    ],
+    "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*tbank\\.ru$",
+      "^([a-z0-9-]+\\.)*tinkoff\\.ru$",
+      "^([a-z0-9-]+\\.)*id\\.tbank\\.ru$"
+    ],
+    "common_lures": [
+      "login_page",
+      "invoice",
+      "payment",
+      "security_alert"
+    ]
+  }
+]
