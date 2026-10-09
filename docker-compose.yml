@@ -22,6 +22,9 @@ x-sandbox: &sandbox-base
     - /tmp:rw,nosuid,nodev,size=512m
     - /var/run:rw,noexec,nosuid,size=16m
   user: "1000:1000"
+  # PID 1 that reaps exited children: headless Chromium and Tesseract leave zombie processes that
+  # would otherwise exhaust the pids limit during long batch runs.
+  init: true
   deploy:
     resources:
       limits:
