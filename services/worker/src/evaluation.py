@@ -204,6 +204,94 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
     }
 
 
+# --------------------------------------------------------------------- robustness (ТЗ табл. 11)
+def _mutate_design(html: str, seed: int) -> str:
+    """Changes the look without changing the technique: styles removed, class/id names randomised,
+    padding text injected, colours changed."""
+    import random
+    import re
+    rnd = random.Random(seed)
+    out = re.sub(r'<style[^>]*>.*?</style>', '<style>body{background:#%06x}</style>' % rnd.randrange(0xFFFFFF), html, flags=re.S | re.I)
+    out = re.sub(r'\sstyle="[^"]*"', "", out, flags=re.I)
+    out = re.sub(r'\s(class|id)="[^"]*"', lambda m: f' {m.group(1)}="x{rnd.randrange(10**8)}"', out, flags=re.I)
+    pad = "<div>" + " ".join(rnd.choice(["lorem", "ipsum", "dolor", "news", "update"]) for _ in range(40)) + "</div>"
+    return re.sub(r'(<body[^>]*>)', r'\1' + pad, out, count=1, flags=re.I) if re.search(r'<body', out, re.I) else pad + out
+
+
+def _mutate_delayed(html: str) -> str:
+    """Content inserted by script after a delay (absent from the static HTML)."""
+    import base64
+    payload = base64.b64encode(html.encode("utf-8")).decode("ascii")
+    return ('<html><head><title></title></head><body><div id="app"></div><script>'
+            f'setTimeout(function(){{document.open();document.write(atob("{payload}"));document.close();}},800);'
+            '</script></body></html>')
+
+
+def _mutate_url(url: str, seed: int) -> str:
+    import random
+    from urllib.parse import urlparse
+    rnd = random.Random(seed)
+    host = "".join(rnd.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(9)) + rnd.choice([".top", ".xyz", ".online", ".site"])
+    path = "/" + "/".join("".join(rnd.choice("abcdefghijk0123456789") for _ in range(6)) for _ in range(2))
+    return f"{urlparse(url).scheme or 'https'}://{host}{path}"
+
+
+def robustness(dataset_root: str, limit_per_source: int = 30, progress=None) -> Dict[str, Any]:
+    """Re-analyses detected phishing objects after domain/URL replacement, design change and
+    delayed loading; reports recall per scenario relative to the unmodified objects."""
+    import copy
+    from ingest.dataset import load_sample_dir
+    scenarios = collections.defaultdict(lambda: {"objects": 0, "still_detected": 0, "missed": []})
+    for category, object_id, factory in phishing_sources(dataset_root, limit_per_source, ("keis2", "html")):
+        try:
+            base = run_pipeline(factory())
+        except Exception:
+            continue
+        if base.verdict == "CLEAN":
+            continue
+        variants = []
+        if category == "html_attachment":
+            with open(object_id, "rb") as f:
+                html = f.read().decode("utf-8", errors="ignore")
+            for name, mutated in (("design_change", _mutate_design(html, 1)), ("delayed_loading", _mutate_delayed(html))):
+                variants.append((name, PhishingState(incident_id=f"rb_{uuid_hex()}", source_type="html", raw_target=object_id,
+                                                     raw_bytes=mutated.encode("utf-8"), offline_mode=True)))
+        else:
+            sample = load_sample_dir(object_id)
+            if not any(l.get("html") for l in sample["links"]):
+                continue
+            for name in ("domain_url_change", "design_change", "delayed_loading"):
+                links = copy.deepcopy(sample["links"])
+                for i, link in enumerate(links):
+                    if name == "domain_url_change":
+                        new = _mutate_url(link.get("final_url") or link.get("url") or "https://x", i)
+                        link["url"], link["final_url"], link["redirect_chain"] = new, new, []
+                    elif link.get("html"):
+                        link["html"] = _mutate_design(link["html"], i) if name == "design_change" else _mutate_delayed(link["html"])
+                variants.append((name, PhishingState(incident_id=f"rb_{uuid_hex()}", source_type="eml", raw_target=sample["eml_path"],
+                                                     raw_bytes=sample["eml_bytes"] or None, offline_mode=True, precollected_links=links)))
+        for name, state in variants:
+            res = run_pipeline(state)
+            sc = scenarios[name]
+            sc["objects"] += 1
+            if res.verdict != "CLEAN":
+                sc["still_detected"] += 1
+            else:
+                sc["missed"].append(os.path.relpath(object_id, REPO_ROOT))
+            if progress:
+                progress(f"[{name}] {object_id[-60:]} -> {res.verdict}")
+    for sc in scenarios.values():
+        sc["recall"] = _rate(sc["still_detected"], sc["objects"])
+        sc["recall_drop"] = round(1 - sc["recall"], 4) if sc["recall"] is not None else None
+        sc["missed"] = sc["missed"][:50]
+    return dict(scenarios)
+
+
+def uuid_hex() -> str:
+    import uuid
+    return uuid.uuid4().hex[:10]
+
+
 def save_report(report: Dict[str, Any], out_path: str) -> str:
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:

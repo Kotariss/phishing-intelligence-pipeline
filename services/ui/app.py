@@ -417,6 +417,19 @@ elif page == "📈 Метрики качества":
     else:
         st.info("Отчёт ещё не сформирован.")
 
+    robust_path = os.path.join(REPORTS, "robustness.json")
+    st.subheader("Устойчивость к обходу (`phishctl.py robustness`)")
+    if os.path.exists(robust_path):
+        with open(robust_path, "r", encoding="utf-8") as f:
+            robust = json.load(f)
+        names = {"domain_url_change": "Замена домена и URL", "design_change": "Изменение оформления",
+                 "delayed_loading": "Отложенная загрузка содержимого"}
+        st.dataframe([{"Сценарий": names.get(k, k), "Объектов": v["objects"], "Обнаружено": v["still_detected"],
+                       "Recall": v["recall"], "Падение recall": v["recall_drop"]} for k, v in robust["scenarios"].items()],
+                     hide_index=True, use_container_width=True)
+    else:
+        st.caption("Отчёт об устойчивости ещё не сформирован.")
+
 elif page == "🧠 Журнал LLM / VLM":
     st.title("🧠 Журнал обращений к LLM / VLM")
     try:

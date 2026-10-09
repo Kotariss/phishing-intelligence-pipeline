@@ -232,6 +232,17 @@ def cmd_metrics(args):
     _log(f"report written to {args.out}")
 
 
+def cmd_robustness(args):
+    from evaluation import robustness, save_report
+    report = {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+              "limit_per_source": args.limit,
+              "scenarios": robustness(args.dataset, args.limit, progress=_log if args.verbose else None)}
+    save_report(report, args.out)
+    print(json.dumps({k: {kk: v[kk] for kk in ("objects", "still_detected", "recall", "recall_drop")}
+                      for k, v in report["scenarios"].items()}, ensure_ascii=False, indent=2))
+    _log(f"report written to {args.out}")
+
+
 def cmd_build_benign_corpus(args):
     sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
     import build_benign_corpus
@@ -285,6 +296,13 @@ def main(argv=None):
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "metrics.json"))
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_metrics)
+
+    p = sub.add_parser("robustness", help="recall under domain/URL change, design change and delayed loading")
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.add_argument("--limit", type=int, default=30, help="objects per source")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "robustness.json"))
+    p.add_argument("--verbose", action="store_true")
+    p.set_defaults(func=cmd_robustness)
 
     p = sub.add_parser("build-benign-corpus", help="rebuild the known-legitimate feature corpus")
     p.set_defaults(func=cmd_build_benign_corpus)
