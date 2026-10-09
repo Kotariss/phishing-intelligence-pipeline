@@ -287,6 +287,75 @@ def robustness(dataset_root: str, limit_per_source: int = 30, progress=None) -> 
     return dict(scenarios)
 
 
+def evaluate_labeled_eml(root: str, out_dir: str, subset: str = "validation", limit: Optional[int] = None,
+                         progress=None) -> Dict[str, Any]:
+    """Labelled e-mail test set (manifest.csv: id, evaluation_path, evidence_dir, label, subset, ...).
+    Writes per-object results and two prediction files for the set's own compare_labels.py:
+      predictions_strict.csv  — phishing only for MALICIOUS (SUSPICIOUS counts as benign);
+      predictions_lenient.csv — phishing for MALICIOUS or SUSPICIOUS."""
+    import csv
+    from ingest.dataset import load_link_dir, _link_sort_key
+    with open(os.path.join(root, "manifest.csv"), encoding="utf-8-sig", newline="") as f:
+        rows = [r for r in csv.DictReader(f) if r.get("subset") == subset]
+    if limit:
+        rows = rows[:limit]
+    os.makedirs(out_dir, exist_ok=True)
+    results = []
+    started = time.time()
+    for r in rows:
+        t0 = time.time()
+        item = {"id": r["id"], "label": r["label"], "language": r.get("language", ""), "group_id": r.get("group_id", "")}
+        try:
+            with open(os.path.join(root, r["evaluation_path"]), "rb") as f:
+                eml = f.read()
+            links = []
+            ev = r.get("evidence_dir") or ""
+            if ev and os.path.isdir(os.path.join(root, ev)):
+                ev_dir = os.path.join(root, ev)
+                links = [load_link_dir(os.path.join(ev_dir, d)) for d in sorted(
+                    (d for d in os.listdir(ev_dir) if d.startswith("Link_")), key=_link_sort_key)]
+            state = run_pipeline(PhishingState(incident_id=f"lbl_{r['id']}", source_type="eml", raw_target=r["evaluation_path"],
+                                               raw_bytes=eml, offline_mode=True, precollected_links=links))
+            item.update(status="ok", verdict=state.verdict, risk=state.risk_score, codes=state.reason_codes,
+                        details=state.reason_details, brand=state.brand_evidence.detected_brand_name)
+        except Exception as e:
+            item.update(status="error", verdict="CLEAN", error=f"{type(e).__name__}: {str(e)[:200]}")
+        item["seconds"] = round(time.time() - t0, 3)
+        results.append(item)
+        if progress:
+            progress(f"{item['label']:8s} -> {item['verdict']:10s} {r['id']}")
+
+    for name, positive in (("predictions_strict.csv", {"MALICIOUS"}), ("predictions_lenient.csv", {"MALICIOUS", "SUSPICIOUS"})):
+        with open(os.path.join(out_dir, name), "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["id", "predicted_label"])
+            for it in results:
+                w.writerow([it["id"], "phishing" if it["verdict"] in positive else "benign"])
+    with open(os.path.join(out_dir, "results.jsonl"), "w", encoding="utf-8") as f:
+        for it in results:
+            f.write(json.dumps(it, ensure_ascii=False) + "\n")
+
+    phish = [i for i in results if i["label"] == "phishing"]
+    benign = [i for i in results if i["label"] == "benign"]
+    verdicts = lambda items: dict(collections.Counter(i["verdict"] for i in items))
+    summary = {
+        "objects": len(results), "errors": sum(i["status"] == "error" for i in results),
+        "elapsed_seconds": round(time.time() - started, 1),
+        "phishing_verdicts": verdicts(phish), "benign_verdicts": verdicts(benign),
+        "recall_strict": _rate(sum(i["verdict"] == "MALICIOUS" for i in phish), len(phish)),
+        "recall_phishing_plus_suspicious": _rate(sum(i["verdict"] != "CLEAN" for i in phish), len(phish)),
+        "benign_false_phishing": sum(i["verdict"] == "MALICIOUS" for i in benign),
+        "benign_suspicious_share": _rate(sum(i["verdict"] == "SUSPICIOUS" for i in benign), len(benign)),
+        "benign_false_phishing_ids": [i["id"] for i in benign if i["verdict"] == "MALICIOUS"],
+        "benign_suspicious_ids": [i["id"] for i in benign if i["verdict"] == "SUSPICIOUS"],
+        "missed_phishing_ids": [i["id"] for i in phish if i["verdict"] == "CLEAN"],
+        "benign_code_frequency": dict(collections.Counter(c for i in benign for c in i.get("codes", [])).most_common()),
+    }
+    with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+    return summary
+
+
 def uuid_hex() -> str:
     import uuid
     return uuid.uuid4().hex[:10]

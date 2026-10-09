@@ -87,6 +87,7 @@ class URLAgent:
             if h and h not in inspected_hosts:
                 inspected_hosts.append(h)
         primary_hosts = {hostname(u) for u in primary_urls}
+        lure_hosts = primary_hosts | {hostname(u) for u in chain_urls}
 
         for h in inspected_hosts:
             if is_ip_host(h) and h in primary_hosts:
@@ -95,7 +96,9 @@ class URLAgent:
             if decoded:
                 state.add_reason("BRAND_HOMOGRAPH_DOMAIN", f"IDN-омограф: {h} ({decoded})")
                 net["is_punycode"] = True
-            look = self.registry.find_lookalike_brand(h)
+            # Look-alike domains are judged only on the lure path (primary link, landing page, redirect
+            # chain): newsletters legitimately link to third-party sites named after products.
+            look = self.registry.find_lookalike_brand(h) if h in lure_hosts else None
             if look:
                 brand, token = look
                 state.add_reason("BRAND_LOOKALIKE_DOMAIN", f"Домен {h} содержит '{token}' ({brand['display_name']}), но не входит в allowlist бренда")

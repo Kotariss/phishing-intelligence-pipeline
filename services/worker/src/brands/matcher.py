@@ -13,7 +13,8 @@ COMMON_WORDS = {
 # Second-level labels that are too generic to be a look-alike signal on their own.
 LOOKALIKE_STOP = {"online", "account", "secure", "login", "mail", "bank", "card", "post", "cloud",
                   "support", "service", "team", "group", "store", "point", "money", "life", "express",
-                  "delta", "shell", "apple", "line", "meta", "visa", "booking", "ledger", "pairs"}
+                  "delta", "shell", "apple", "line", "meta", "visa", "booking", "ledger", "pairs",
+                  "outlook", "office", "teams", "drive", "share", "point", "store", "costco"}
 
 
 _CJK = re.compile(r'[぀-ヿ㐀-鿿가-힯]')

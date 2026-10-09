@@ -125,7 +125,10 @@ class VisionAgent:
                     else:
                         state.network_evidence["vlm_unregistered_brand"] = name[:80]
 
+        # The look-alike brand describes the page only if the page is actually hosted on that domain.
         lookalike_name = state.network_evidence.get("lookalike_brand")
+        if lookalike_name and extract_hostname(state.network_evidence.get("lookalike_host") or "") != page_host:
+            lookalike_name = None
         if not page_brand and lookalike_name:
             found = self.registry.find_brand(lookalike_name)
             if found:

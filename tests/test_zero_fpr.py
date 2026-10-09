@@ -74,3 +74,22 @@ def test_every_reason_code_is_explained():
     for code in state.reason_codes:
         assert state.reason_details.get(code), code
     assert "Обоснование" in state.explanation
+
+
+def test_newsletter_linking_to_product_named_domain_is_not_phishing():
+    """Regression (labelled EML test set): one link to a third-party domain named after a product
+    must not be counted twice as look-alike domain + brand impersonation of an unrelated page."""
+    eml = (b"From: Tech Weekly <news@techweekly-digest.com>\nTo: a@b.ru\nSubject: Weekly tips\nMIME-Version: 1.0\n"
+           b"Content-Type: text/html; charset=utf-8\n\n"
+           b'<a href="https://jake.example-blog.com/post">Read</a> <a href="https://outlook.4team.example/addins">Outlook add-ins</a>'
+           b' <a href="https://paypal-giftcards-review.example.org/">review</a>')
+    state = run_file("newsletter.eml", eml)
+    assert state.verdict != "MALICIOUS", state.reason_details
+    assert "BRAND_IMPERSONATION_CONFIRMED" not in state.reason_codes
+
+
+def test_lookalike_counts_when_the_page_is_hosted_on_it():
+    html = BRAND_LOGIN_KIT.format(title="Вход", h1="Вход", path="auth", footer="")
+    state = run_page("https://gosuslugi-pay.help-center.ru/auth/login", html)
+    assert "BRAND_LOOKALIKE_DOMAIN" in state.reason_codes
+    assert state.verdict == "MALICIOUS"

@@ -259,6 +259,15 @@ def cmd_robustness(args):
     _log(f"report written to {args.out}")
 
 
+def cmd_eval_labeled(args):
+    """Labelled e-mail test set: predictions for the set's compare_labels.py + summary."""
+    from evaluation import evaluate_labeled_eml
+    summary = evaluate_labeled_eml(args.root, args.out, limit=args.limit, progress=_log if args.verbose else None)
+    print(json.dumps({k: v for k, v in summary.items() if not k.endswith("_ids") and k != "benign_code_frequency"},
+                     ensure_ascii=False, indent=2))
+    _log(f"predictions and results written to {args.out}")
+
+
 def cmd_build_benign_corpus(args):
     sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
     import build_benign_corpus
@@ -321,6 +330,13 @@ def main(argv=None):
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "robustness.json"))
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_robustness)
+
+    p = sub.add_parser("eval-labeled", help="evaluate on a labelled EML set (manifest.csv with id/label/evidence_dir)")
+    p.add_argument("root")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "labeled_eval"))
+    p.add_argument("--limit", type=int)
+    p.add_argument("--verbose", action="store_true")
+    p.set_defaults(func=cmd_eval_labeled)
 
     p = sub.add_parser("build-benign-corpus", help="rebuild the known-legitimate feature corpus")
     p.set_defaults(func=cmd_build_benign_corpus)
