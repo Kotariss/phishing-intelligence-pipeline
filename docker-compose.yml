@@ -1,17 +1,47 @@
 name: phishing-pipeline
 
+# Zones:
+#   sandbox_net (internal: true) — the sandbox has NO route to the internet (ТЗ 4.5.2.1);
+#                                  it only renders/parses objects it receives from the worker.
+#   backend_net                  — worker, knowledge base, UI.
+# Live URL expansion (extended version) is opt-in: `docker compose --profile live-fetch up`
+# starts `sandbox-online`, attached to an egress network, and the worker can be pointed at it
+# with SANDBOX_HOST=sandbox-online.
+
+x-sandbox: &sandbox-base
+  build:
+    context: ./services/sandbox
+    dockerfile: Dockerfile
+  image: phishing-intelligence-pipeline-sandbox:latest
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,size=512m
+    - /var/run:rw,noexec,nosuid,size=16m
+  user: "1000:1000"
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 2048M
+        pids: 200
+  restart: unless-stopped
+
 services:
   db:
     image: postgres:16-alpine
     container_name: db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-phish_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-phish_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       POSTGRES_DB: ${POSTGRES_DB:-phishing_db}
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
-      - phish_network
+      - backend_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-phish_user} -d ${POSTGRES_DB:-phishing_db}"]
       interval: 5s
@@ -20,37 +50,30 @@ services:
     restart: unless-stopped
 
   sandbox:
-    build:
-      context: ./services/sandbox
-      dockerfile: Dockerfile
-    image: phishing-intelligence-pipeline-sandbox:latest
+    <<: *sandbox-base
     container_name: sandbox
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    read_only: true
-    tmpfs:
-      - /tmp:rw,nosuid,nodev,size=512m
-      - /var/run:rw,noexec,nosuid,size=16m
-    user: "1000:1000"
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2048M
-          pids: 100
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     environment:
       - PORT=8001
-      - ANTI_SSRF_ENABLED=${ANTI_SSRF_ENABLED:-true}
+      - ANTI_SSRF_ENABLED=true
       - SANDBOX_TIMEOUT_SECONDS=${SANDBOX_TIMEOUT_SECONDS:-10}
       - SANDBOX_MAX_REDIRECTS=${SANDBOX_MAX_REDIRECTS:-10}
+      - SANDBOX_MAX_FILE_SIZE_MB=${SANDBOX_MAX_FILE_SIZE_MB:-25}
     networks:
-      - phish_network
-    restart: unless-stopped
+      - sandbox_net
+
+  sandbox-online:
+    <<: *sandbox-base
+    container_name: sandbox-online
+    profiles: ["live-fetch"]
+    environment:
+      - PORT=8001
+      - ANTI_SSRF_ENABLED=true
+      - SANDBOX_TIMEOUT_SECONDS=${SANDBOX_TIMEOUT_SECONDS:-10}
+      - SANDBOX_MAX_REDIRECTS=${SANDBOX_MAX_REDIRECTS:-10}
+      - SANDBOX_MAX_FILE_SIZE_MB=${SANDBOX_MAX_FILE_SIZE_MB:-25}
+    networks:
+      - sandbox_net
+      - egress_net
 
   worker:
     build:
@@ -60,24 +83,33 @@ services:
     container_name: worker
     environment:
       - PORT=8000
-      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-phish_user}:${POSTGRES_PASSWORD:-phish_password}@db:5432/${POSTGRES_DB:-phishing_db}
-      - SANDBOX_HOST=sandbox
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-phish_user}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-phishing_db}
+      - SANDBOX_HOST=${SANDBOX_HOST_DOCKER:-sandbox}
       - SANDBOX_PORT=8001
-      - LLM_BASE_URL=${LLM_BASE_URL}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_TEXT_MODEL=${LLM_TEXT_MODEL}
-      - LLM_VISION_MODEL=${LLM_VISION_MODEL}
+      - SANDBOX_INPROCESS_FALLBACK=false
+      - LLM_MODE=${LLM_MODE:-off}
+      - LLM_LOCAL_BASE_URL=${LLM_LOCAL_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
+      - LLM_LOCAL_API_KEY=${LLM_LOCAL_API_KEY:-}
+      - LLM_CLOUD_BASE_URL=${LLM_CLOUD_BASE_URL:-}
+      - LLM_CLOUD_API_KEY=${LLM_CLOUD_API_KEY:-}
+      - LLM_TEXT_MODEL=${LLM_TEXT_MODEL:-qwen2.5:7b}
+      - LLM_VISION_MODEL=${LLM_VISION_MODEL:-qwen2.5vl:7b}
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
-      - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-45}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      - OLLAMA_ENABLED=${OLLAMA_ENABLED:-false}
+      - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-60}
       - SCORE_CLEAN_THRESHOLD=${SCORE_CLEAN_THRESHOLD:-0.30}
       - SCORE_MALICIOUS_THRESHOLD=${SCORE_MALICIOUS_THRESHOLD:-0.70}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8000:8000"   # REST API
     volumes:
       - ./exports:/app/exports
       - ./logs:/app/logs
+      - ./file_for_case:/app/file_for_case:ro
     networks:
-      - phish_network
+      - backend_net
+      - sandbox_net
+      - egress_net
     depends_on:
       db:
         condition: service_healthy
@@ -94,22 +126,24 @@ services:
     environment:
       - WORKER_HOST=worker
       - WORKER_PORT=8000
-      - STREAMLIT_SERVER_PORT=8501
-      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
     ports:
       - "127.0.0.1:8501:8501"
     volumes:
       - ./file_for_case:/app/file_for_case:ro
       - ./exports:/app/exports:ro
-      - ./logs:/app/logs
     networks:
-      - phish_network
+      - backend_net
     depends_on:
       - worker
     restart: unless-stopped
 
 networks:
-  phish_network:
+  backend_net:
+    driver: bridge
+  sandbox_net:
+    driver: bridge
+    internal: true
+  egress_net:
     driver: bridge
 
 volumes:

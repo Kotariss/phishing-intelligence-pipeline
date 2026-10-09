@@ -1,158 +1,130 @@
-import os
-import uuid
 import datetime
-from typing import List, Optional
+import re
+import uuid
+from typing import List, Optional, Tuple
+
+try:
+    import yara  # optional: used to self-validate generated rules
+except ImportError:  # pragma: no cover - depends on environment
+    yara = None
+
+
+def yara_escape(value: str) -> str:
+    """Escapes a value for a YARA text string; non-ASCII is emitted as UTF-8 \\xHH bytes."""
+    out = []
+    for byte in value.encode("utf-8"):
+        ch = chr(byte)
+        if ch == "\\":
+            out.append("\\\\")
+        elif ch == '"':
+            out.append('\\"')
+        elif 0x20 <= byte < 0x7f:
+            out.append(ch)
+        else:
+            out.append(f"\\x{byte:02x}")
+    return "".join(out)
+
+
+def _meta_str(value: str) -> str:
+    return yara_escape(value)[:200]
+
+
+def compile_check(rule_text: str) -> Tuple[bool, Optional[str]]:
+    if yara is None:
+        return True, None
+    try:
+        yara.compile(source=rule_text)
+        return True, None
+    except Exception as e:  # yara.SyntaxError and friends
+        return False, str(e)
+
 
 class YARAGenerator:
-    """Generates production-grade YARA rules for attachments, scripts and lures."""
+    """Generates content YARA rules for HTML pages / attachments / e-mails from sample-specific strings.
 
-    def __init__(self, exports_dir: Optional[str] = None):
-        self.exports_dir = exports_dir or os.path.join(os.getcwd(), "exports", "yara")
-        os.makedirs(self.exports_dir, exist_ok=True)
+    Rules are produced only when the sample yields at least one highly specific string (exfiltration
+    endpoint, kit marker, payload name, credential-post host) — a generic "contains password field"
+    rule would fire on every login page."""
 
-    def generate(
-        self,
-        reason_codes: List[str],
-        brand_name: Optional[str] = None,
-        risk_score: float = 0.95
-    ) -> Optional[str]:
-        rand_suffix = uuid.uuid4().hex[:6]
-        date_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+    def generate(self, state, rule_id: Optional[str] = None) -> Optional[str]:
+        page = state.page_features or {}
+        att = state.attachment_evidence or {}
+        html_items = [i for i in att.get("attachments_analysis") or [] if i.get("kind") == "html"]
+        if att.get("type") == "html":
+            html_items.append(att)
+        sources = [page] + html_items
 
-        if "RC_ATTACH_TELEGRAM_EXFIL" in reason_codes:
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_Telegram_Exfil_{rand_suffix} {{
-    meta:
-        description = "Detects phishing attachment exfiltrating credentials to Telegram Bot API"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = {risk_score:.2f}
-        target_brand = "{brand_name or 'Generic'}"
-    strings:
-        $tg1 = "api.telegram.org/bot" ascii nocase
-        $tg2 = "sendMessage" ascii nocase
-        $pass = /type\\s*=\\s*["']password["']/ ascii nocase
-    condition:
-        $tg1 and ($tg2 or $pass)
-}}
-"""
-        elif "RC_ATTACH_DISCORD_EXFIL" in reason_codes:
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_Discord_Exfil_{rand_suffix} {{
-    meta:
-        description = "Detects phishing attachment exfiltrating credentials to Discord Webhook"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = {risk_score:.2f}
-        target_brand = "{brand_name or 'Generic'}"
-    strings:
-        $dc1 = "discord.com/api/webhooks" ascii nocase
-        $pass = /type\\s*=\\s*["']password["']/ ascii nocase
-    condition:
-        $dc1 and $pass
-}}
-"""
-        elif "RC_DROP_SCREENCONNECT_RAT" in reason_codes:
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_ScreenConnect_RAT_{rand_suffix} {{
-    meta:
-        description = "Detects lure dropping ConnectWise ScreenConnect RAT"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = 1.00
-    strings:
-        $sc1 = "ScreenConnect.ClientSetup.msi" ascii nocase
-        $sc2 = "ScreenConnect.ClientSetup.exe" ascii nocase
-        $sc3 = "screenconnect.com" ascii nocase
-    condition:
-        $sc1 or $sc2 or ($sc3 and ($sc1 or $sc2))
-}}
-"""
-        elif "RC_LURE_DOUBLE_EXTENSION" in reason_codes:
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_Double_Extension_{rand_suffix} {{
-    meta:
-        description = "Detects graphic lures masquarading as office documents via double extension deception"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = {risk_score:.2f}
-    strings:
-        $ext1 = /\\.pdf\\.png$/i
-        $ext2 = /\\.pfd\\.png$/i
-        $ext3 = /\\.xlsx?\\.png$/i
-        $ext4 = /\\.docx?\\.png$/i
-    condition:
-        1 of them
-}}
-"""
-        elif "RC_ATTACH_PASSWORD_INPUT" in reason_codes or "FORM_PASSWORD_HARVESTING" in reason_codes:
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_Credential_Harvest_{rand_suffix} {{
-    meta:
-        description = "Detects offline HTML attachment containing password input field and external form action"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = {risk_score:.2f}
-        target_brand = "{brand_name or 'Generic'}"
-    strings:
-        $pass = /type\\s*=\\s*["']password["']/ ascii nocase
-        $form_post = /method\\s*=\\s*["']post["']/ ascii nocase
-        $ep1 = "login.php" ascii nocase
-        $ep2 = "post.php" ascii nocase
-        $ep3 = "formSubmit.php" ascii nocase
-    condition:
-        $pass and ($form_post or 1 of ($ep*))
-}}
-"""
-        elif "RC_ATTACH_OBFUSCATED_JS" in reason_codes:
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_Obfuscated_JS_{rand_suffix} {{
-    meta:
-        description = "Detects obfuscated JavaScript packers, hex decoders, or eval wrappers in attachment"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = {risk_score:.2f}
-        target_brand = "{brand_name or 'Generic'}"
-    strings:
-        $s1 = /fromCharCode\\s*\\(/ ascii nocase
-        $s2 = /unescape\\s*\\(/ ascii nocase
-        $s3 = /eval\\s*\\(\\s*function\\s*\\(p,a,c,k,e,r\\)/ ascii nocase
-        $s4 = /\\\\x[0-9a-f]{{2}}\\\\x[0-9a-f]{{2}}\\\\x[0-9a-f]{{2}}/ ascii nocase
-    condition:
-        2 of them
-}}
-"""
-        elif "BRAND_IMPERSONATION_CONFIRMED" in reason_codes or "RC_BRAND_SPOOF_DISPLAYNAME" in reason_codes:
-            safe_bname = (brand_name or "Generic").replace('"', '\\"')
-            rule = f"""/* Phishing Intelligence Pipeline Generated Rule */
-rule DrWeb_Phish_Brand_Spoof_{rand_suffix} {{
-    meta:
-        description = "Detects email or HTML lure spoofing brand display identity"
-        author = "Phishing Intelligence Pipeline"
-        date = "{date_str}"
-        risk_score = {risk_score:.2f}
-        target_brand = "{safe_bname}"
-    strings:
-        $brand = "{safe_bname}" nocase
-        $lure1 = "пароль" nocase
-        $lure2 = "вход" nocase
-        $lure3 = "личный кабинет" nocase
-        $lure4 = "безопасность" nocase
-        $lure5 = "подтверждение" nocase
-    condition:
-        $brand and (1 of ($lure*))
-}}
-"""
-        else:
+        strings: List[Tuple[str, str]] = []  # (identifier, yara string definition)
+        specific = 0
+
+        bot_ids = sorted({t.split(":")[0] for s in sources for t in s.get("telegram_bot_tokens") or []})
+        for i, bot in enumerate(bot_ids[:3]):
+            strings.append((f"$tg{i}", f'"api.telegram.org/bot{yara_escape(bot)}:" ascii wide nocase'))
+            specific += 1
+        if not bot_ids and any(s.get("has_telegram_exfil") for s in sources):
+            strings.append(("$tg_api", '"api.telegram.org/bot" ascii wide nocase'))
+        hooks = sorted({w for s in sources for w in s.get("discord_webhooks") or []})
+        for i, hook in enumerate(hooks[:3]):
+            strings.append((f"$dc{i}", f'"{yara_escape(hook)}" ascii wide nocase'))
+            specific += 1
+
+        if "RC_DROP_SCREENCONNECT_RAT" in state.reason_codes:
+            strings.append(("$sc", '"ScreenConnect.ClientSetup" ascii wide nocase'))
+            specific += 1
+
+        post_hosts = sorted({f.action_host for f in state.dom_forms if f.is_external_target and f.action_host})
+        post_hosts += [u.split("/")[2] for s in sources for u in s.get("js_external_endpoints") or [] if u.count("/") >= 2]
+        for i, host in enumerate(sorted(set(post_hosts))[:3]):
+            strings.append((f"$post{i}", f'"{yara_escape(host)}" ascii wide nocase'))
+            specific += 1
+
+        title = (page.get("title") or att.get("title") or "").strip()
+        if len(title) >= 8:
+            strings.append(("$title", f'"{yara_escape(title[:80])}" ascii wide nocase'))
+
+        has_pass = any(f.has_password for f in state.dom_forms) or page.get("has_password_field") or att.get("has_password_field")
+        if has_pass:
+            strings.append(("$pass", r'/type\s*=\s*["\']?password/ nocase'))
+
+        if specific == 0:
             return None
 
-        # Save to export folder
-        rule_name = f"drweb_rule_{rand_suffix}.yar"
-        file_path = os.path.join(self.exports_dir, rule_name)
-        try:
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(rule)
-        except Exception:
-            pass
+        strong_ids = [s for s, _ in strings if s.startswith(("$tg", "$dc", "$sc")) and s != "$tg_api"]
+        weak_ids = [s for s, _ in strings if s.startswith("$post")]
+        context_ids = [s for s, _ in strings if s in ("$title", "$pass", "$tg_api")]
+        if strong_ids:
+            # exfiltration endpoints / payload names are unique to the actor
+            used = strong_ids
+            condition = f"filesize < 5MB and 1 of ({', '.join(used)})"
+        elif context_ids:
+            # a host name alone also appears in benign pages that merely link to it
+            used = weak_ids + context_ids
+            condition = f"filesize < 5MB and 1 of ({', '.join(weak_ids)}) and 1 of ({', '.join(context_ids)})"
+        else:
+            return None
+        strings = [(ident, definition) for ident, definition in strings if ident in used]  # YARA rejects unreferenced strings
 
+        name_suffix = re.sub(r'[^A-Za-z0-9_]', '_', rule_id or uuid.uuid4().hex[:8])
+        brand = state.brand_evidence.detected_brand_name or "Generic"
+        body = "\n".join(f"        {ident} = {definition}" for ident, definition in strings)
+        rule = f"""/* Phishing Intelligence Pipeline — generated from incident {_meta_str(state.incident_id)} */
+rule DrWeb_Phish_{name_suffix}
+{{
+    meta:
+        description = "{_meta_str('Phishing content: ' + ', '.join(sorted(state.reason_codes))[:150])}"
+        author = "Phishing Intelligence Pipeline"
+        date = "{datetime.date.today().isoformat()}"
+        target_brand = "{_meta_str(brand)}"
+        risk_score = "{state.risk_score:.2f}"
+        source_incident = "{_meta_str(state.incident_id)}"
+    strings:
+{body}
+    condition:
+        {condition}
+}}
+"""
+        ok, err = compile_check(rule)
+        if not ok:
+            state.execution_steps.append(f"yara_gen: generated rule rejected by YARA compiler: {err}")
+            return None
         return rule

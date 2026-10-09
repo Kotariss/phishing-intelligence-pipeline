@@ -31,3 +31,11 @@ scratch/
 # Local databases & build bundles
 *.db
 *.zip
+
+# Runtime outputs (regenerate with the CLI / benchmark)
+exports/
+reports/
+logs/
+services/worker/src/exports/
+services/worker/src/logs/
+.pytest_cache/

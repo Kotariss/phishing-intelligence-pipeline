@@ -1,9 +1,9 @@
-import io
 import base64
-import time
-import requests
 from typing import Dict, Any, List, Optional
-from PIL import Image, ImageDraw, ImageFont
+from urllib.parse import urljoin
+
+import requests
+
 try:
     from .security import validate_url_safety, SecurityError
     from .attachment_parser import AttachmentParser
@@ -21,38 +21,29 @@ DEFAULT_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/128.0.0.0 Safari/537.36"
 )
+MAX_BODY_BYTES = 5 * 1024 * 1024
+REDIRECT_CODES = (301, 302, 303, 307, 308)
 
-def create_synthetic_screenshot(url: str, title: str, forms_count: int) -> str:
-    """Generates an in-memory image representation when headless browser binary is not present."""
-    img = Image.new("RGB", (800, 600), color=(245, 247, 250))
-    draw = ImageDraw.Draw(img)
-    
-    # Header bar
-    draw.rectangle([(0, 0), (800, 50)], fill=(41, 74, 110))
-    draw.text((20, 15), f"Browser Snapshot: {url[:70]}", fill=(255, 255, 255))
-    
-    # Body card
-    draw.rectangle([(50, 80), (750, 520)], fill=(255, 255, 255), outline=(210, 215, 225), width=2)
-    draw.text((80, 110), f"Page Title: {title or 'Untitled Page'}", fill=(20, 20, 20))
-    draw.text((80, 150), f"Target URL: {url}", fill=(70, 70, 70))
-    draw.text((80, 190), f"Interactive Forms Detected: {forms_count}", fill=(200, 30, 30) if forms_count > 0 else (40, 140, 40))
 
-    if forms_count > 0:
-        draw.rectangle([(80, 230), (450, 380)], fill=(248, 249, 250), outline=(200, 200, 200))
-        draw.text((100, 250), "Input: [ Username / Email / Phone ]", fill=(100, 100, 100))
-        draw.text((100, 290), "Input: [ Password ********** ]", fill=(100, 100, 100))
-        draw.rectangle([(100, 330), (250, 365)], fill=(30, 120, 220))
-        draw.text((120, 340), "Sign In / Submit", fill=(255, 255, 255))
+def _playwright_available() -> bool:
+    try:
+        import playwright.sync_api  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 class BrowserController:
-    """Safe crawler and page extractor with Anti-SSRF enforcement."""
+    """Safe crawler and page extractor with Anti-SSRF enforcement on every hop and sub-request."""
 
-    def __init__(self, anti_ssrf_enabled: bool = True):
+    def __init__(self, anti_ssrf_enabled: bool = True, max_redirects: int = 10):
         self.anti_ssrf_enabled = anti_ssrf_enabled
+        self.max_redirects = max_redirects
+
+    def _check(self, url: str) -> None:
+        safe, msg = validate_url_safety(url, self.anti_ssrf_enabled)
+        if not safe:
+            raise SecurityError(f"Security validation blocked URL: {msg}")
 
     def extract_url(
         self,
@@ -60,144 +51,168 @@ class BrowserController:
         timeout_seconds: int = 10,
         user_agent: str = DEFAULT_USER_AGENT
     ) -> Dict[str, Any]:
-        # 1. Anti-SSRF check
-        safe, msg = validate_url_safety(url, self.anti_ssrf_enabled)
-        if not safe:
-            raise SecurityError(f"Security validation blocked URL: {msg}")
+        self._check(url)
+        if _playwright_available():
+            try:
+                return self._extract_with_playwright(url, timeout_seconds, user_agent)
+            except SecurityError:
+                raise
+            except Exception as e:
+                # Browser could not start (missing binaries etc.): degrade to plain HTTP.
+                result = self._extract_with_requests(url, timeout_seconds, user_agent)
+                result["engine_note"] = f"playwright failed: {type(e).__name__}"
+                return result
+        return self._extract_with_requests(url, timeout_seconds, user_agent)
 
-        # 2. Try Playwright headless if available
-        try:
-            from playwright.sync_api import sync_playwright
-            return self._extract_with_playwright(url, timeout_seconds, user_agent)
-        except (ImportError, Exception):
-            # 3. Resilient fallback using requests session with redirect tracking
-            return self._extract_with_requests(url, timeout_seconds, user_agent)
+    # ------------------------------------------------------------------ helpers
+    @staticmethod
+    def _result(url: str, final_url: str, http_status: int, redirect_chain: List[Dict[str, Any]],
+                dom_html: str, screenshot_b64: str, engine: str, error: Optional[str] = None) -> Dict[str, Any]:
+        parsed_html = AttachmentParser.parse_html(dom_html, base_url=final_url) if dom_html else {}
+        parsed_html.pop("type", None)
+        result = {
+            "initial_url": url,
+            "final_url": final_url,
+            "http_status": http_status,
+            "redirect_chain": redirect_chain,
+            "dom_html": dom_html,
+            "screenshot_base64": screenshot_b64,
+            "engine": engine,
+            "qr_codes": [],
+        }
+        result.update(parsed_html)
+        if error:
+            result["error"] = error
+        return result
 
-    def _extract_with_playwright(
-        self,
-        url: str,
-        timeout_seconds: int,
-        user_agent: str
-    ) -> Dict[str, Any]:
-        from playwright.sync_api import sync_playwright
-        
-        redirect_chain = []
+    # ---------------------------------------------------------------- playwright
+    def _extract_with_playwright(self, url: str, timeout_seconds: int, user_agent: str) -> Dict[str, Any]:
+        from playwright.sync_api import sync_playwright, Error as PlaywrightError
+
+        redirect_chain: List[Dict[str, Any]] = []
+        blocked: List[str] = []
         screenshot_b64 = ""
         dom_html = ""
         final_url = url
-        http_status = 200
+        http_status = 0
+        error = None
+        checked_hosts: Dict[str, bool] = {}
+
+        def guard(route, request):
+            target = request.url
+            if target.startswith(("data:", "blob:", "about:")):
+                return route.continue_()
+            host_key = target.split("/")[2] if "//" in target else target
+            if host_key not in checked_hosts:
+                checked_hosts[host_key] = validate_url_safety(target, self.anti_ssrf_enabled)[0]
+            if not checked_hosts[host_key]:
+                blocked.append(target[:200])
+                return route.abort("blockedbyclient")
+            return route.continue_()
 
         with sync_playwright() as p:
             browser = p.chromium.launch(
                 headless=True,
-                args=[
-                    "--disable-gpu",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                    "--disable-extensions",
-                    "--deny-permission-prompts",
-                    "--block-new-web-contents"
-                ]
+                args=["--disable-gpu", "--disable-dev-shm-usage", "--disable-extensions",
+                      "--deny-permission-prompts", "--block-new-web-contents"]
             )
-            context = browser.new_context(user_agent=user_agent)
+            context = browser.new_context(user_agent=user_agent, accept_downloads=False,
+                                          java_script_enabled=True, ignore_https_errors=True)
+            context.route("**/*", guard)
             page = context.new_page()
 
-            # Record redirects
-            def on_response(response):
-                if response.status in (301, 302, 303, 307, 308):
-                    redirect_chain.append({
-                        "url": response.url,
-                        "status": response.status,
-                        "type": "http_redirect"
-                    })
-
-            page.on("response", on_response)
+            main_frame_navs: List[str] = []
+            page.on("framenavigated", lambda frame: main_frame_navs.append(frame.url) if frame == page.main_frame else None)
 
             try:
                 resp = page.goto(url, timeout=timeout_seconds * 1000, wait_until="domcontentloaded")
+                try:
+                    page.wait_for_load_state("networkidle", timeout=3000)
+                except PlaywrightError:
+                    pass
                 final_url = page.url
-                http_status = resp.status if resp else 200
+                http_status = resp.status if resp else 0
+                if resp is not None:
+                    hops = []
+                    req = resp.request.redirected_from
+                    while req is not None:
+                        r = req.response()
+                        hops.append({"url": req.url, "status": r.status if r else 0, "type": "http_redirect"})
+                        req = req.redirected_from
+                    redirect_chain.extend(reversed(hops))
+                # JS / meta-refresh navigations after the document loaded
+                http_urls = {h["url"] for h in redirect_chain} | {resp.url if resp else url}
+                for nav in main_frame_navs:
+                    if nav not in http_urls and nav != final_url and nav.startswith("http"):
+                        redirect_chain.append({"url": nav, "status": 200, "type": "js_or_meta_redirect"})
                 dom_html = page.content()
-                
-                # Take screenshot in memory
-                screenshot_bytes = page.screenshot(type="png", full_page=False)
-                screenshot_b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
+                screenshot_b64 = base64.b64encode(page.screenshot(type="png", full_page=False)).decode("utf-8")
+            except PlaywrightError as e:
+                error = f"Navigation failed: {str(e).splitlines()[0][:300]}"
             finally:
                 context.close()
                 browser.close()
 
-        # Parse DOM structures
-        parsed_html = AttachmentParser.parse_html(dom_html, base_url=final_url)
+        result = self._result(url, final_url, http_status, redirect_chain, dom_html, screenshot_b64, "playwright", error)
+        result["blocked_requests"] = blocked[:50]
+        return result
 
-        return {
-            "initial_url": url,
-            "final_url": final_url,
-            "http_status": http_status,
-            "redirect_chain": redirect_chain,
-            "dom_html": dom_html,
-            "screenshot_base64": screenshot_b64,
-            "forms": parsed_html.get("forms", []),
-            "has_password_field": parsed_html.get("has_password_field", False),
-            "scripts": parsed_html.get("external_scripts", []),
-            "has_script_obfuscation": parsed_html.get("has_script_obfuscation", False),
-            "has_telegram_exfil": parsed_html.get("has_telegram_exfil", False),
-            "has_discord_exfil": parsed_html.get("has_discord_exfil", False),
-            "qr_codes": []
-        }
+    def render_html_offline(self, html: str, timeout_seconds: int = 10) -> str:
+        """Renders an HTML attachment with ALL network access blocked and returns a PNG screenshot (base64)."""
+        if not _playwright_available():
+            return ""
+        from playwright.sync_api import sync_playwright
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--disable-dev-shm-usage"])
+                context = browser.new_context(java_script_enabled=False, accept_downloads=False)
+                context.route("**/*", lambda route, request: route.continue_()
+                              if request.url.startswith(("data:", "about:")) else route.abort())
+                page = context.new_page()
+                page.set_content(html, timeout=timeout_seconds * 1000, wait_until="domcontentloaded")
+                shot = page.screenshot(type="png", full_page=False)
+                context.close()
+                browser.close()
+                return base64.b64encode(shot).decode("utf-8")
+        except Exception:
+            return ""
 
-    def _extract_with_requests(
-        self,
-        url: str,
-        timeout_seconds: int,
-        user_agent: str
-    ) -> Dict[str, Any]:
-        redirect_chain = []
-        final_url = url
-        http_status = 200
-        dom_html = ""
-
-        headers = {"User-Agent": user_agent}
+    # ------------------------------------------------------------------ requests
+    def _extract_with_requests(self, url: str, timeout_seconds: int, user_agent: str) -> Dict[str, Any]:
+        redirect_chain: List[Dict[str, Any]] = []
         session = requests.Session()
+        session.headers["User-Agent"] = user_agent
+        current = url
+        http_status = 0
+        dom_html = ""
+        error = None
 
         try:
-            connect_timeout = min(timeout_seconds, 3)
-            read_timeout = min(timeout_seconds, 5)
-            resp = session.get(url, headers=headers, timeout=(connect_timeout, read_timeout), allow_redirects=True)
-            http_status = resp.status_code
-            final_url = resp.url
-            dom_html = resp.text
-
-            # Extract history
-            for hop in resp.history:
-                redirect_chain.append({
-                    "url": hop.url,
-                    "status": hop.status_code,
-                    "type": "http_redirect"
-                })
+            for _ in range(self.max_redirects + 1):
+                # Every hop is re-validated (redirect-based SSRF). A blocked hop ends the crawl
+                # but the chain collected so far is still returned as evidence.
+                safe, msg = validate_url_safety(current, self.anti_ssrf_enabled)
+                if not safe:
+                    error = f"Redirect hop blocked by Anti-SSRF: {msg}"
+                    http_status = 0
+                    break
+                resp = session.get(current, timeout=(min(timeout_seconds, 5), timeout_seconds),
+                                   allow_redirects=False, stream=True)
+                http_status = resp.status_code
+                if resp.status_code in REDIRECT_CODES and resp.headers.get("Location"):
+                    redirect_chain.append({"url": current, "status": resp.status_code, "type": "http_redirect"})
+                    current = urljoin(current, resp.headers["Location"])
+                    resp.close()
+                    continue
+                body = resp.raw.read(MAX_BODY_BYTES, decode_content=True) or b""
+                resp.close()
+                dom_html = body.decode(resp.encoding or "utf-8", errors="ignore")
+                break
+            else:
+                error = f"Too many redirects (>{self.max_redirects})"
         except requests.exceptions.RequestException as e:
-            # Website could be down, unreachable, or dead link (38% of phishing links)
+            error = f"Failed to reach host: {type(e).__name__}"
             http_status = 0
-            dom_html = f"<html><body><p>Failed to reach host: {e}</p></body></html>"
 
-        parsed_html = AttachmentParser.parse_html(dom_html, base_url=final_url)
-        screenshot_b64 = create_synthetic_screenshot(
-            url=final_url,
-            title=parsed_html.get("title", ""),
-            forms_count=parsed_html.get("forms_count", 0)
-        )
-
-        return {
-            "initial_url": url,
-            "final_url": final_url,
-            "http_status": http_status,
-            "redirect_chain": redirect_chain,
-            "dom_html": dom_html,
-            "screenshot_base64": screenshot_b64,
-            "forms": parsed_html.get("forms", []),
-            "has_password_field": parsed_html.get("has_password_field", False),
-            "scripts": parsed_html.get("external_scripts", []),
-            "has_script_obfuscation": parsed_html.get("has_script_obfuscation", False),
-            "has_telegram_exfil": parsed_html.get("has_telegram_exfil", False),
-            "has_discord_exfil": parsed_html.get("has_discord_exfil", False),
-            "qr_codes": []
-        }
+        # No screenshot without a real browser: a fabricated image would mislead the vision agent.
+        return self._result(url, current, http_status, redirect_chain, dom_html, "", "requests", error)

@@ -5,13 +5,21 @@
     "display_name": "7-Eleven",
     "category": "general",
     "aliases": [
-      "7-Eleven"
+      "7-Eleven",
+      "セブン-イレブン",
+      "セブンイレブン"
     ],
     "official_domains": [
-      "7eleven.com"
+      "7-eleven.com",
+      "7eleven.com",
+      "7-eleven.co.jp",
+      "sej.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*7eleven\\.com$"
+      "^([a-z0-9-]+\\.)*7\\-eleven\\.com$",
+      "^([a-z0-9-]+\\.)*7eleven\\.com$",
+      "^([a-z0-9-]+\\.)*7\\-eleven\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*sej\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -27,13 +35,18 @@
     "category": "general",
     "aliases": [
       "AEON",
-      "AEON (株式会社イオン銀行)"
+      "AEON (株式会社イオン銀行)",
+      "株式会社イオン銀行"
     ],
     "official_domains": [
-      "aeon.com"
+      "aeon.co.jp",
+      "aeon.com",
+      "aeonbank.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*aeon\\.com$"
+      "^([a-z0-9-]+\\.)*aeon\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*aeon\\.com$",
+      "^([a-z0-9-]+\\.)*aeonbank\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -49,13 +62,18 @@
     "category": "general",
     "aliases": [
       "AEON Pay",
-      "AEON Pay (イオンフィナンシャルサービス)"
+      "AEON Pay (イオンフィナンシャルサービス)",
+      "イオンフィナンシャルサービス"
     ],
     "official_domains": [
-      "aeonpay.com"
+      "aeon.co.jp",
+      "aeon.com",
+      "aeonbank.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*aeonpay\\.com$"
+      "^([a-z0-9-]+\\.)*aeon\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*aeon\\.com$",
+      "^([a-z0-9-]+\\.)*aeonbank\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -71,12 +89,15 @@
     "category": "general",
     "aliases": [
       "ANA",
-      "ANA (全日本空輸)"
+      "ANA (全日本空輸)",
+      "全日本空輸"
     ],
     "official_domains": [
+      "ana.co.jp",
       "ana.com"
     ],
     "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*ana\\.co\\.jp$",
       "^([a-z0-9-]+\\.)*ana\\.com$"
     ],
     "common_lures": [
@@ -95,10 +116,10 @@
       "ANTAI"
     ],
     "official_domains": [
-      "antai.com"
+      "antai.gouv.fr"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*antai\\.com$"
+      "^([a-z0-9-]+\\.)*antai\\.gouv\\.fr$"
     ],
     "common_lures": [
       "login_page",
@@ -116,10 +137,12 @@
       "AT&T"
     ],
     "official_domains": [
-      "att.com"
+      "att.com",
+      "att.net"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*att\\.com$"
+      "^([a-z0-9-]+\\.)*att\\.com$",
+      "^([a-z0-9-]+\\.)*att\\.net$"
     ],
     "common_lures": [
       "login_page",
@@ -165,10 +188,12 @@
       "Alibaba"
     ],
     "official_domains": [
-      "alibaba.com"
+      "alibaba.com",
+      "aliexpress.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*alibaba\\.com$"
+      "^([a-z0-9-]+\\.)*alibaba\\.com$",
+      "^([a-z0-9-]+\\.)*aliexpress\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -183,13 +208,26 @@
     "display_name": "Amazon",
     "category": "general",
     "aliases": [
-      "Amazon"
+      "Amazon",
+      "アマゾン"
     ],
     "official_domains": [
-      "amazon.com"
+      "amazon.com",
+      "amazon.co.jp",
+      "amazon.de",
+      "amazon.co.uk",
+      "amazon.fr",
+      "amazon.it",
+      "amazon.es"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*amazon\\.com$"
+      "^([a-z0-9-]+\\.)*amazon\\.com$",
+      "^([a-z0-9-]+\\.)*amazon\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*amazon\\.de$",
+      "^([a-z0-9-]+\\.)*amazon\\.co\\.uk$",
+      "^([a-z0-9-]+\\.)*amazon\\.fr$",
+      "^([a-z0-9-]+\\.)*amazon\\.it$",
+      "^([a-z0-9-]+\\.)*amazon\\.es$"
     ],
     "common_lures": [
       "login_page",
@@ -254,7 +292,8 @@
     "aliases": [
       "Apple",
       "Apple Account",
-      "Apple ID"
+      "Apple ID",
+      "アップル"
     ],
     "official_domains": [
       "apple.com",
@@ -419,10 +458,12 @@
       "CANAL+"
     ],
     "official_domains": [
-      "canal.com"
+      "canalplus.com",
+      "canal-plus.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*canal\\.com$"
+      "^([a-z0-9-]+\\.)*canalplus\\.com$",
+      "^([a-z0-9-]+\\.)*canal\\-plus\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -440,10 +481,10 @@
       "CVS Store"
     ],
     "official_domains": [
-      "cvsstore.com"
+      "cvs.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*cvsstore\\.com$"
+      "^([a-z0-9-]+\\.)*cvs\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -506,10 +547,12 @@
       "Coca-Cola"
     ],
     "official_domains": [
-      "cocacola.com"
+      "coca-cola.com",
+      "coca-colacompany.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*cocacola\\.com$"
+      "^([a-z0-9-]+\\.)*coca\\-cola\\.com$",
+      "^([a-z0-9-]+\\.)*coca\\-colacompany\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -548,10 +591,14 @@
       "Comcast"
     ],
     "official_domains": [
-      "comcast.com"
+      "comcast.com",
+      "comcast.net",
+      "xfinity.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*comcast\\.com$"
+      "^([a-z0-9-]+\\.)*comcast\\.com$",
+      "^([a-z0-9-]+\\.)*comcast\\.net$",
+      "^([a-z0-9-]+\\.)*xfinity\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -568,12 +615,8 @@
     "aliases": [
       "CoolCove"
     ],
-    "official_domains": [
-      "coolcove.com"
-    ],
-    "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*coolcove\\.com$"
-    ],
+    "official_domains": [],
+    "allowed_domain_patterns": [],
     "common_lures": [
       "login_page",
       "invoice",
@@ -590,10 +633,12 @@
       "Costco"
     ],
     "official_domains": [
-      "costco.com"
+      "costco.com",
+      "costco.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*costco\\.com$"
+      "^([a-z0-9-]+\\.)*costco\\.com$",
+      "^([a-z0-9-]+\\.)*costco\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -663,10 +708,10 @@
       "DSL.SU"
     ],
     "official_domains": [
-      "dslsu.com"
+      "dsl.su"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*dslsu\\.com$"
+      "^([a-z0-9-]+\\.)*dsl\\.su$"
     ],
     "common_lures": [
       "login_page",
@@ -682,13 +727,14 @@
     "category": "general",
     "aliases": [
       "Dai-ichi Life",
-      "Dai-ichi Life (第一生命グループ)"
+      "Dai-ichi Life (第一生命グループ)",
+      "第一生命グループ"
     ],
     "official_domains": [
-      "daiichilife.com"
+      "dai-ichi-life.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*daiichilife\\.com$"
+      "^([a-z0-9-]+\\.)*dai\\-ichi\\-life\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -706,10 +752,10 @@
       "Delta Air Lines"
     ],
     "official_domains": [
-      "deltaairlines.com"
+      "delta.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*deltaairlines\\.com$"
+      "^([a-z0-9-]+\\.)*delta\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -725,13 +771,14 @@
     "category": "general",
     "aliases": [
       "Demae-Can",
-      "Demae-Can (出前館)"
+      "Demae-Can (出前館)",
+      "出前館"
     ],
     "official_domains": [
-      "demaecan.com"
+      "demae-can.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*demaecan\\.com$"
+      "^([a-z0-9-]+\\.)*demae\\-can\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -748,12 +795,8 @@
     "aliases": [
       "Desk Gear"
     ],
-    "official_domains": [
-      "deskgear.com"
-    ],
-    "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*deskgear\\.com$"
-    ],
+    "official_domains": [],
+    "allowed_domain_patterns": [],
     "common_lures": [
       "login_page",
       "invoice",
@@ -793,10 +836,12 @@
       "Deutsche Telekom"
     ],
     "official_domains": [
-      "deutschetelekom.com"
+      "telekom.de",
+      "telekom.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*deutschetelekom\\.com$"
+      "^([a-z0-9-]+\\.)*telekom\\.de$",
+      "^([a-z0-9-]+\\.)*telekom\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -812,13 +857,14 @@
     "category": "general",
     "aliases": [
       "Digital Agency",
-      "Digital Agency (デジタル庁)"
+      "Digital Agency (デジタル庁)",
+      "デジタル庁"
     ],
     "official_domains": [
-      "digitalagency.com"
+      "digital.go.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*digitalagency\\.com$"
+      "^([a-z0-9-]+\\.)*digital\\.go\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -879,13 +925,14 @@
     "category": "general",
     "aliases": [
       "E-Tax",
-      "E-Tax (国税電子申告・納税システム)"
+      "E-Tax (国税電子申告・納税システム)",
+      "国税電子申告・納税システム"
     ],
     "official_domains": [
-      "etax.com"
+      "nta.go.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*etax\\.com$"
+      "^([a-z0-9-]+\\.)*nta\\.go\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -901,13 +948,14 @@
     "category": "general",
     "aliases": [
       "EPOS Card",
-      "EPOS Card (エポスカード)"
+      "EPOS Card (エポスカード)",
+      "エポスカード"
     ],
     "official_domains": [
-      "eposcard.com"
+      "eposcard.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*eposcard\\.com$"
+      "^([a-z0-9-]+\\.)*eposcard\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -925,10 +973,12 @@
       "ETC"
     ],
     "official_domains": [
-      "etc.com"
+      "etc-meisai.jp",
+      "go-etc.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*etc\\.com$"
+      "^([a-z0-9-]+\\.)*etc\\-meisai\\.jp$",
+      "^([a-z0-9-]+\\.)*go\\-etc\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -944,13 +994,14 @@
     "category": "general",
     "aliases": [
       "EkiNet",
-      "EkiNet (えきねっと)"
+      "EkiNet (えきねっと)",
+      "えきねっと"
     ],
     "official_domains": [
-      "ekinet.com"
+      "eki-net.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*ekinet\\.com$"
+      "^([a-z0-9-]+\\.)*eki\\-net\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -989,10 +1040,14 @@
       "Facebook"
     ],
     "official_domains": [
-      "facebook.com"
+      "facebook.com",
+      "fb.com",
+      "meta.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*facebook\\.com$"
+      "^([a-z0-9-]+\\.)*facebook\\.com$",
+      "^([a-z0-9-]+\\.)*fb\\.com$",
+      "^([a-z0-9-]+\\.)*meta\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -1008,13 +1063,14 @@
     "category": "general",
     "aliases": [
       "Familymart",
-      "Familymart (ファミリーマート)"
+      "Familymart (ファミリーマート)",
+      "ファミリーマート"
     ],
     "official_domains": [
-      "familymart.com"
+      "family.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*familymart\\.com$"
+      "^([a-z0-9-]+\\.)*family\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1073,13 +1129,14 @@
     "category": "general",
     "aliases": [
       "Financial Services Agency",
-      "Financial Services Agency (証券取引等監視委員会)"
+      "Financial Services Agency (証券取引等監視委員会)",
+      "証券取引等監視委員会"
     ],
     "official_domains": [
-      "financialservicesagency.com"
+      "fsa.go.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*financialservicesagency\\.com$"
+      "^([a-z0-9-]+\\.)*fsa\\.go\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1095,13 +1152,16 @@
     "category": "general",
     "aliases": [
       "Fukuoka Financial Group",
-      "Fukuoka Financial Group (ふくおかフィナンシャルグループ)"
+      "Fukuoka Financial Group (ふくおかフィナンシャルグループ)",
+      "ふくおかフィナンシャルグループ"
     ],
     "official_domains": [
-      "fukuokafinancialgroup.com"
+      "fukuoka-fg.com",
+      "fukuokabank.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*fukuokafinancialgroup\\.com$"
+      "^([a-z0-9-]+\\.)*fukuoka\\-fg\\.com$",
+      "^([a-z0-9-]+\\.)*fukuokabank\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1119,10 +1179,10 @@
       "HMRC"
     ],
     "official_domains": [
-      "hmrc.com"
+      "gov.uk"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*hmrc\\.com$"
+      "^([a-z0-9-]+\\.)*gov\\.uk$"
     ],
     "common_lures": [
       "login_page",
@@ -1164,10 +1224,12 @@
       "ICBC_"
     ],
     "official_domains": [
-      "icbc.com"
+      "icbc.com.cn",
+      "icbc-ltd.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*icbc\\.com$"
+      "^([a-z0-9-]+\\.)*icbc\\.com\\.cn$",
+      "^([a-z0-9-]+\\.)*icbc\\-ltd\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -1185,10 +1247,10 @@
       "IRS"
     ],
     "official_domains": [
-      "irs.com"
+      "irs.gov"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*irs\\.com$"
+      "^([a-z0-9-]+\\.)*irs\\.gov$"
     ],
     "common_lures": [
       "login_page",
@@ -1225,13 +1287,14 @@
     "category": "general",
     "aliases": [
       "JA Net Bank",
-      "JA Net Bank (JAネットバンクよ)"
+      "JA Net Bank (JAネットバンクよ)",
+      "JAネットバンクよ"
     ],
     "official_domains": [
-      "janetbank.co.jp"
+      "jabank.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*janetbank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*jabank\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1247,13 +1310,14 @@
     "category": "general",
     "aliases": [
       "JACCS",
-      "JACCS (ジャックスカード)"
+      "JACCS (ジャックスカード)",
+      "ジャックスカード"
     ],
     "official_domains": [
-      "jaccs.com"
+      "jaccs.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jaccs\\.com$"
+      "^([a-z0-9-]+\\.)*jaccs\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1269,13 +1333,16 @@
     "category": "general",
     "aliases": [
       "JAL Mileage Bank",
-      "JAL Mileage Bank (JALマイレージバンク)"
+      "JAL Mileage Bank (JALマイレージバンク)",
+      "JALマイレージバンク"
     ],
     "official_domains": [
-      "jalmileagebank.co.jp"
+      "jal.co.jp",
+      "jal.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jalmileagebank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*jal\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*jal\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -1291,13 +1358,18 @@
     "category": "general",
     "aliases": [
       "JCBCard",
-      "JCBCard (JCBカード)"
+      "JCBCard (JCBカード)",
+      "JCBカード"
     ],
     "official_domains": [
-      "jcbcard.com"
+      "jcb.co.jp",
+      "jcb.jp",
+      "jcb.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jcbcard\\.com$"
+      "^([a-z0-9-]+\\.)*jcb\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*jcb\\.jp$",
+      "^([a-z0-9-]+\\.)*jcb\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -1313,13 +1385,14 @@
     "category": "general",
     "aliases": [
       "JRE Point",
-      "JRE Point (JRE ポイント)"
+      "JRE Point (JRE ポイント)",
+      "JRE ポイント"
     ],
     "official_domains": [
-      "jrepoint.com"
+      "jrepoint.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jrepoint\\.com$"
+      "^([a-z0-9-]+\\.)*jrepoint\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1335,13 +1408,14 @@
     "category": "general",
     "aliases": [
       "Jalan Net",
-      "Jalan Net (総務省)"
+      "Jalan Net (総務省)",
+      "総務省"
     ],
     "official_domains": [
-      "jalannet.com"
+      "jalan.net"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jalannet\\.com$"
+      "^([a-z0-9-]+\\.)*jalan\\.net$"
     ],
     "common_lures": [
       "login_page",
@@ -1357,13 +1431,14 @@
     "category": "general",
     "aliases": [
       "Jalan.net",
-      "Jalan.net (じゃらん)"
+      "Jalan.net (じゃらん)",
+      "じゃらん"
     ],
     "official_domains": [
-      "jalannet.com"
+      "jalan.net"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jalannet\\.com$"
+      "^([a-z0-9-]+\\.)*jalan\\.net$"
     ],
     "common_lures": [
       "login_page",
@@ -1379,13 +1454,14 @@
     "category": "general",
     "aliases": [
       "Japan Pension Service",
-      "Japan Pension Service (日本年金機構)"
+      "Japan Pension Service (日本年金機構)",
+      "日本年金機構"
     ],
     "official_domains": [
-      "japanpensionservice.co.jp"
+      "nenkin.go.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*japanpensionservice\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*nenkin\\.go\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1401,13 +1477,15 @@
     "category": "general",
     "aliases": [
       "Japan Post",
-      "Japan Post (日本郵政)"
+      "Japan Post (日本郵政)",
+      "日本郵政",
+      "郵便局"
     ],
     "official_domains": [
-      "japanpost.co.jp"
+      "japanpost.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*japanpost\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*japanpost\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1423,13 +1501,15 @@
     "category": "general",
     "aliases": [
       "Japan Post",
-      "Japan Post (日本郵政株式会社)"
+      "Japan Post (日本郵政株式会社)",
+      "日本郵政株式会社",
+      "郵便局"
     ],
     "official_domains": [
-      "japanpost.co.jp"
+      "japanpost.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*japanpost\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*japanpost\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1445,13 +1525,16 @@
     "category": "general",
     "aliases": [
       "Japan Post Bank",
-      "Japan Post Bank (ゆうちょ銀行)"
+      "Japan Post Bank (ゆうちょ銀行)",
+      "ゆうちょ銀行"
     ],
     "official_domains": [
-      "japanpostbank.co.jp"
+      "japanpost.jp",
+      "jp-bank.japanpost.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*japanpostbank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*japanpost\\.jp$",
+      "^([a-z0-9-]+\\.)*jp\\-bank\\.japanpost\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1467,7 +1550,8 @@
     "category": "general",
     "aliases": [
       "Jibun Bank",
-      "Jibun Bank (auじぶん銀行株式会社)"
+      "Jibun Bank (auじぶん銀行株式会社)",
+      "auじぶん銀行株式会社"
     ],
     "official_domains": [
       "jibunbank.co.jp"
@@ -1488,15 +1572,12 @@
     "display_name": "Joint Network Secretariat",
     "category": "general",
     "aliases": [
+      "JNS",
       "Joint Network Secretariat",
       "Joint Network Secretariat (JNS)"
     ],
-    "official_domains": [
-      "jointnetworksecretariat.com"
-    ],
-    "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*jointnetworksecretariat\\.com$"
-    ],
+    "official_domains": [],
+    "allowed_domain_patterns": [],
     "common_lures": [
       "login_page",
       "invoice",
@@ -1532,13 +1613,16 @@
     "category": "general",
     "aliases": [
       "Kuroneko Yamato",
-      "Kuroneko Yamato (クロネコヤマト)"
+      "Kuroneko Yamato (クロネコヤマト)",
+      "クロネコヤマト"
     ],
     "official_domains": [
-      "kuronekoyamato.com"
+      "kuronekoyamato.co.jp",
+      "yamato-hd.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*kuronekoyamato\\.com$"
+      "^([a-z0-9-]+\\.)*kuronekoyamato\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*yamato\\-hd\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1553,13 +1637,20 @@
     "display_name": "LINE",
     "category": "general",
     "aliases": [
-      "LINE"
+      "LINE",
+      "LINEヤフー"
     ],
     "official_domains": [
-      "line.com"
+      "line.me",
+      "line.biz",
+      "linecorp.com",
+      "lycorp.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*line\\.com$"
+      "^([a-z0-9-]+\\.)*line\\.me$",
+      "^([a-z0-9-]+\\.)*line\\.biz$",
+      "^([a-z0-9-]+\\.)*linecorp\\.com$",
+      "^([a-z0-9-]+\\.)*lycorp\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1618,13 +1709,16 @@
     "category": "general",
     "aliases": [
       "Lawson",
-      "Lawson (ローソン)"
+      "Lawson (ローソン)",
+      "ローソン"
     ],
     "official_domains": [
-      "lawson.com"
+      "lawson.co.jp",
+      "lawson.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*lawson\\.com$"
+      "^([a-z0-9-]+\\.)*lawson\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*lawson\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1663,10 +1757,16 @@
       "LiDl"
     ],
     "official_domains": [
-      "lidl.com"
+      "lidl.com",
+      "lidl.de",
+      "lidl.fr",
+      "lidl.co.uk"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*lidl\\.com$"
+      "^([a-z0-9-]+\\.)*lidl\\.com$",
+      "^([a-z0-9-]+\\.)*lidl\\.de$",
+      "^([a-z0-9-]+\\.)*lidl\\.fr$",
+      "^([a-z0-9-]+\\.)*lidl\\.co\\.uk$"
     ],
     "common_lures": [
       "login_page",
@@ -1726,10 +1826,10 @@
       "MARRIOT"
     ],
     "official_domains": [
-      "marriot.com"
+      "marriott.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*marriot\\.com$"
+      "^([a-z0-9-]+\\.)*marriott\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -1745,13 +1845,16 @@
     "category": "general",
     "aliases": [
       "MUFG",
-      "MUFG (三菱UFJ)"
+      "MUFG (三菱UFJ)",
+      "三菱UFJ"
     ],
     "official_domains": [
-      "mufg.com"
+      "mufg.jp",
+      "bk.mufg.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*mufg\\.com$"
+      "^([a-z0-9-]+\\.)*mufg\\.jp$",
+      "^([a-z0-9-]+\\.)*bk\\.mufg\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1767,13 +1870,18 @@
     "category": "general",
     "aliases": [
       "MUJI",
-      "MUJI (無印良品)"
+      "MUJI (無印良品)",
+      "無印良品"
     ],
     "official_domains": [
-      "muji.com"
+      "muji.com",
+      "muji.net",
+      "muji.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*muji\\.com$"
+      "^([a-z0-9-]+\\.)*muji\\.com$",
+      "^([a-z0-9-]+\\.)*muji\\.net$",
+      "^([a-z0-9-]+\\.)*muji\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -1844,10 +1952,10 @@
       "Mauritius Commercial Bank"
     ],
     "official_domains": [
-      "mauritiuscommercialbank.com"
+      "mcb.mu"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*mauritiuscommercialbank\\.com$"
+      "^([a-z0-9-]+\\.)*mcb\\.mu$"
     ],
     "common_lures": [
       "login_page",
@@ -1862,15 +1970,12 @@
     "display_name": "MaxTV Japan",
     "category": "general",
     "aliases": [
+      "MAX無料視聴センター",
       "MaxTV Japan",
       "MaxTV Japan (MAX無料視聴センター)"
     ],
-    "official_domains": [
-      "maxtvjapan.co.jp"
-    ],
-    "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*maxtvjapan\\.co\\.jp$"
-    ],
+    "official_domains": [],
+    "allowed_domain_patterns": [],
     "common_lures": [
       "login_page",
       "invoice",
@@ -1885,7 +1990,8 @@
     "category": "general",
     "aliases": [
       "Mercari",
-      "Mercari (メルカリ)"
+      "Mercari (メルカリ)",
+      "メルカリ"
     ],
     "official_domains": [
       "mercari.com"
@@ -1909,10 +2015,14 @@
       "Meta"
     ],
     "official_domains": [
-      "meta.com"
+      "meta.com",
+      "facebook.com",
+      "fb.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*meta\\.com$"
+      "^([a-z0-9-]+\\.)*meta\\.com$",
+      "^([a-z0-9-]+\\.)*facebook\\.com$",
+      "^([a-z0-9-]+\\.)*fb\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -2061,13 +2171,16 @@
     "category": "general",
     "aliases": [
       "Mizuho Bank",
-      "Mizuho Bank (みずほ銀行)"
+      "Mizuho Bank (みずほ銀行)",
+      "みずほ銀行"
     ],
     "official_domains": [
-      "mizuhobank.co.jp"
+      "mizuhobank.co.jp",
+      "mizuho-fg.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*mizuhobank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*mizuhobank\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*mizuho\\-fg\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2106,13 +2219,14 @@
     "category": "general",
     "aliases": [
       "Monex Securities",
-      "Monex Securities (マネックス証券)"
+      "Monex Securities (マネックス証券)",
+      "マネックス証券"
     ],
     "official_domains": [
-      "monexsecurities.com"
+      "monex.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*monexsecurities\\.com$"
+      "^([a-z0-9-]+\\.)*monex\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2128,13 +2242,16 @@
     "category": "general",
     "aliases": [
       "My Number portal",
-      "My Number portal (マイナポータル)"
+      "My Number portal (マイナポータル)",
+      "マイナポータル"
     ],
     "official_domains": [
-      "mynumberportal.com"
+      "myna.go.jp",
+      "digital.go.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*mynumberportal\\.com$"
+      "^([a-z0-9-]+\\.)*myna\\.go\\.jp$",
+      "^([a-z0-9-]+\\.)*digital\\.go\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2150,13 +2267,18 @@
     "category": "general",
     "aliases": [
       "MyJCBCARD",
-      "MyJCBCARD (株式会社ジェーシービー)"
+      "MyJCBCARD (株式会社ジェーシービー)",
+      "株式会社ジェーシービー"
     ],
     "official_domains": [
-      "myjcbcard.com"
+      "jcb.co.jp",
+      "jcb.jp",
+      "jcb.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*myjcbcard\\.com$"
+      "^([a-z0-9-]+\\.)*jcb\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*jcb\\.jp$",
+      "^([a-z0-9-]+\\.)*jcb\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -2174,10 +2296,10 @@
       "NAVY FEDERAL CREDIT UNION"
     ],
     "official_domains": [
-      "navyfederalcreditunion.com"
+      "navyfederal.org"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*navyfederalcreditunion\\.com$"
+      "^([a-z0-9-]+\\.)*navyfederal\\.org$"
     ],
     "common_lures": [
       "login_page",
@@ -2193,13 +2315,16 @@
     "category": "general",
     "aliases": [
       "NHK",
-      "NHK (日本放送協)"
+      "NHK (日本放送協)",
+      "日本放送協"
     ],
     "official_domains": [
-      "nhk.com"
+      "nhk.or.jp",
+      "nhk.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*nhk\\.com$"
+      "^([a-z0-9-]+\\.)*nhk\\.or\\.jp$",
+      "^([a-z0-9-]+\\.)*nhk\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2217,10 +2342,12 @@
       "NTT Communications"
     ],
     "official_domains": [
-      "nttcommunications.com"
+      "ntt.com",
+      "ocn.ne.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*nttcommunications\\.com$"
+      "^([a-z0-9-]+\\.)*ntt\\.com$",
+      "^([a-z0-9-]+\\.)*ocn\\.ne\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2236,13 +2363,16 @@
     "category": "general",
     "aliases": [
       "NTT Docomo",
-      "NTT Docomo (NTTドコモ)"
+      "NTT Docomo (NTTドコモ)",
+      "NTTドコモ"
     ],
     "official_domains": [
-      "nttdocomo.com"
+      "docomo.ne.jp",
+      "nttdocomo.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*nttdocomo\\.com$"
+      "^([a-z0-9-]+\\.)*docomo\\.ne\\.jp$",
+      "^([a-z0-9-]+\\.)*nttdocomo\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2258,13 +2388,14 @@
     "category": "general",
     "aliases": [
       "National Tax Agency",
-      "National Tax Agency (e-Tax税務署からの)"
+      "National Tax Agency (e-Tax税務署からの)",
+      "e-Tax税務署からの"
     ],
     "official_domains": [
-      "nationaltaxagency.com"
+      "nta.go.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*nationaltaxagency\\.com$"
+      "^([a-z0-9-]+\\.)*nta\\.go\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2303,10 +2434,12 @@
       "Nintendo"
     ],
     "official_domains": [
-      "nintendo.com"
+      "nintendo.com",
+      "nintendo.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*nintendo\\.com$"
+      "^([a-z0-9-]+\\.)*nintendo\\.com$",
+      "^([a-z0-9-]+\\.)*nintendo\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2322,13 +2455,16 @@
     "category": "general",
     "aliases": [
       "Nintendo",
-      "Nintendo (任天堂)"
+      "Nintendo (任天堂)",
+      "任天堂"
     ],
     "official_domains": [
-      "nintendo.com"
+      "nintendo.com",
+      "nintendo.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*nintendo\\.com$"
+      "^([a-z0-9-]+\\.)*nintendo\\.com$",
+      "^([a-z0-9-]+\\.)*nintendo\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2389,13 +2525,14 @@
     "category": "general",
     "aliases": [
       "Orico Bank",
-      "Orico Bank (eオリコ)"
+      "Orico Bank (eオリコ)",
+      "eオリコ"
     ],
     "official_domains": [
-      "oricobank.co.jp"
+      "orico.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*oricobank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*orico\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2436,7 +2573,8 @@
     "category": "general",
     "aliases": [
       "Paidy",
-      "Paidy (あと払いペイディ)"
+      "Paidy (あと払いペイディ)",
+      "あと払いペイディ"
     ],
     "official_domains": [
       "paidy.com"
@@ -2460,10 +2598,10 @@
       "Pairs"
     ],
     "official_domains": [
-      "pairs.com"
+      "pairs.lv"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*pairs\\.com$"
+      "^([a-z0-9-]+\\.)*pairs\\.lv$"
     ],
     "common_lures": [
       "login_page",
@@ -2480,12 +2618,8 @@
     "aliases": [
       "Panel Group Lowes"
     ],
-    "official_domains": [
-      "panelgrouplowes.com"
-    ],
-    "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*panelgrouplowes\\.com$"
-    ],
+    "official_domains": [],
+    "allowed_domain_patterns": [],
     "common_lures": [
       "login_page",
       "invoice",
@@ -2524,13 +2658,16 @@
     "category": "general",
     "aliases": [
       "PayPay Bank",
-      "PayPay Bank (PayPay 銀行)"
+      "PayPay Bank (PayPay 銀行)",
+      "PayPay 銀行"
     ],
     "official_domains": [
-      "paypaybank.co.jp"
+      "paypay-bank.co.jp",
+      "paypay.ne.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*paypaybank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*paypay\\-bank\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*paypay\\.ne\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2569,10 +2706,12 @@
       "PlayStation"
     ],
     "official_domains": [
-      "playstation.com"
+      "playstation.com",
+      "sony.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*playstation\\.com$"
+      "^([a-z0-9-]+\\.)*playstation\\.com$",
+      "^([a-z0-9-]+\\.)*sony\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -2588,13 +2727,14 @@
     "category": "general",
     "aliases": [
       "Pocket Card Co",
-      "Pocket Card Co (ポケットカード)"
+      "Pocket Card Co (ポケットカード)",
+      "ポケットカード"
     ],
     "official_domains": [
-      "pocketcardco.com"
+      "pocketcard.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*pocketcardco\\.com$"
+      "^([a-z0-9-]+\\.)*pocketcard\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2683,10 +2823,14 @@
       "RTL"
     ],
     "official_domains": [
-      "rtl.com"
+      "rtl.de",
+      "rtl.com",
+      "rtl.nl"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*rtl\\.com$"
+      "^([a-z0-9-]+\\.)*rtl\\.de$",
+      "^([a-z0-9-]+\\.)*rtl\\.com$",
+      "^([a-z0-9-]+\\.)*rtl\\.nl$"
     ],
     "common_lures": [
       "login_page",
@@ -2704,10 +2848,14 @@
       "Rakuten Bank (楽天カ_"
     ],
     "official_domains": [
-      "rakutenbank.co.jp"
+      "rakuten-bank.co.jp",
+      "rakuten.co.jp",
+      "rakuten-card.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*rakutenbank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*rakuten\\-bank\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*rakuten\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*rakuten\\-card\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2723,13 +2871,16 @@
     "category": "general",
     "aliases": [
       "Resona Bank",
-      "Resona Bank (りそな銀行)"
+      "Resona Bank (りそな銀行)",
+      "りそな銀行"
     ],
     "official_domains": [
-      "resonabank.co.jp"
+      "resonabank.co.jp",
+      "resona-gr.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*resonabank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*resonabank\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*resona\\-gr\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2745,13 +2896,16 @@
     "category": "general",
     "aliases": [
       "Rikunabi",
-      "Rikunabi (リクナビ ()"
+      "Rikunabi (リクナビ ()",
+      "リクナビ"
     ],
     "official_domains": [
-      "rikunabi.com"
+      "rikunabi.com",
+      "recruit.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*rikunabi\\.com$"
+      "^([a-z0-9-]+\\.)*rikunabi\\.com$",
+      "^([a-z0-9-]+\\.)*recruit\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2769,10 +2923,10 @@
       "Roundcube"
     ],
     "official_domains": [
-      "roundcube.com"
+      "roundcube.net"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*roundcube\\.com$"
+      "^([a-z0-9-]+\\.)*roundcube\\.net$"
     ],
     "common_lures": [
       "login_page",
@@ -2788,13 +2942,14 @@
     "category": "general",
     "aliases": [
       "SBI Holdings",
-      "SBI Holdings (SBIホールディングス株式会社)"
+      "SBI Holdings (SBIホールディングス株式会社)",
+      "SBIホールディングス株式会社"
     ],
     "official_domains": [
-      "sbiholdings.com"
+      "sbigroup.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sbiholdings\\.com$"
+      "^([a-z0-9-]+\\.)*sbigroup\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2810,13 +2965,14 @@
     "category": "general",
     "aliases": [
       "SBI NeoTrade Securities",
-      "SBI NeoTrade Securities (SBIネオトレード証券)"
+      "SBI NeoTrade Securities (SBIネオトレード証券)",
+      "SBIネオトレード証券"
     ],
     "official_domains": [
-      "sbineotradesecurities.com"
+      "sbineotrade.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sbineotradesecurities\\.com$"
+      "^([a-z0-9-]+\\.)*sbineotrade\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2832,13 +2988,14 @@
     "category": "general",
     "aliases": [
       "SBI Securities",
-      "SBI Securities (SBI証券)"
+      "SBI Securities (SBI証券)",
+      "SBI証券"
     ],
     "official_domains": [
-      "sbisecurities.com"
+      "sbisec.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sbisecurities\\.com$"
+      "^([a-z0-9-]+\\.)*sbisec\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2854,13 +3011,16 @@
     "category": "general",
     "aliases": [
       "SBI Shinsei Bank",
-      "SBI Shinsei Bank (SBI新生銀行)"
+      "SBI Shinsei Bank (SBI新生銀行)",
+      "SBI新生銀行"
     ],
     "official_domains": [
-      "sbishinseibank.co.jp"
+      "sbishinseibank.co.jp",
+      "shinseibank.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sbishinseibank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*sbishinseibank\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*shinseibank\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -2876,13 +3036,16 @@
     "category": "general",
     "aliases": [
       "SBI Shinsei Bank",
-      "SBI Shinsei Bank (SBI新生銀行を)"
+      "SBI Shinsei Bank (SBI新生銀行を)",
+      "SBI新生銀行を"
     ],
     "official_domains": [
-      "sbishinseibank.co.jp"
+      "sbishinseibank.co.jp",
+      "shinseibank.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sbishinseibank\\.co\\.jp$"
+      "^([a-z0-9-]+\\.)*sbishinseibank\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*shinseibank\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -2898,13 +3061,16 @@
     "category": "general",
     "aliases": [
       "SMBC",
-      "SMBC (株式会社三井住友銀行)"
+      "SMBC (株式会社三井住友銀行)",
+      "株式会社三井住友銀行"
     ],
     "official_domains": [
-      "smbc.com"
+      "smbc.co.jp",
+      "smbc-card.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*smbc\\.com$"
+      "^([a-z0-9-]+\\.)*smbc\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*smbc\\-card\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -2922,10 +3088,10 @@
       "SSA"
     ],
     "official_domains": [
-      "ssa.com"
+      "ssa.gov"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*ssa\\.com$"
+      "^([a-z0-9-]+\\.)*ssa\\.gov$"
     ],
     "common_lures": [
       "login_page",
@@ -2941,13 +3107,14 @@
     "category": "general",
     "aliases": [
       "Sagawa Express",
-      "Sagawa Express (佐川急便)"
+      "Sagawa Express (佐川急便)",
+      "佐川急便"
     ],
     "official_domains": [
-      "sagawaexpress.com"
+      "sagawa-exp.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sagawaexpress\\.com$"
+      "^([a-z0-9-]+\\.)*sagawa\\-exp\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2963,13 +3130,16 @@
     "category": "general",
     "aliases": [
       "Saison ID",
-      "Saison ID (クレディセゾン)"
+      "Saison ID (クレディセゾン)",
+      "クレディセゾン"
     ],
     "official_domains": [
-      "saisonid.com"
+      "saisoncard.co.jp",
+      "credit-saison.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*saisonid\\.com$"
+      "^([a-z0-9-]+\\.)*saisoncard\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*credit\\-saison\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -2985,13 +3155,16 @@
     "category": "general",
     "aliases": [
       "Saison JP",
-      "Saison JP (株式会社クレディセゾン)"
+      "Saison JP (株式会社クレディセゾン)",
+      "株式会社クレディセゾン"
     ],
     "official_domains": [
-      "saisonjp.com"
+      "saisoncard.co.jp",
+      "credit-saison.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*saisonjp\\.com$"
+      "^([a-z0-9-]+\\.)*saisoncard\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*credit\\-saison\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3122,9 +3295,11 @@
       "SoftBank_"
     ],
     "official_domains": [
+      "softbank.jp",
       "softbank.com"
     ],
     "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*softbank\\.jp$",
       "^([a-z0-9-]+\\.)*softbank\\.com$"
     ],
     "common_lures": [
@@ -3162,13 +3337,16 @@
     "category": "general",
     "aliases": [
       "Sumitomo Mitsui",
-      "Sumitomo Mitsui (株式会社 三井住友銀行)"
+      "Sumitomo Mitsui (株式会社 三井住友銀行)",
+      "株式会社 三井住友銀行"
     ],
     "official_domains": [
-      "sumitomomitsui.com"
+      "smbc.co.jp",
+      "smfg.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*sumitomomitsui\\.com$"
+      "^([a-z0-9-]+\\.)*smbc\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*smfg\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3205,13 +3383,14 @@
     "category": "general",
     "aliases": [
       "Tokyo Electric Power Company",
-      "Tokyo Electric Power Company (東京電力)"
+      "Tokyo Electric Power Company (東京電力)",
+      "東京電力"
     ],
     "official_domains": [
-      "tokyoelectricpowercompany.com"
+      "tepco.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*tokyoelectricpowercompany\\.com$"
+      "^([a-z0-9-]+\\.)*tepco\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3269,7 +3448,8 @@
     "category": "general",
     "aliases": [
       "UNIQLO",
-      "UNIQLO (ユニクロ)"
+      "UNIQLO (ユニクロ)",
+      "ユニクロ"
     ],
     "official_domains": [
       "uniqlo.com"
@@ -3382,10 +3562,12 @@
       "WAON POINT"
     ],
     "official_domains": [
-      "waonpoint.com"
+      "waon.net",
+      "aeon.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*waonpoint\\.com$"
+      "^([a-z0-9-]+\\.)*waon\\.net$",
+      "^([a-z0-9-]+\\.)*aeon\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3423,12 +3605,8 @@
     "aliases": [
       "Web Admin"
     ],
-    "official_domains": [
-      "webadmin.com"
-    ],
-    "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*webadmin\\.com$"
-    ],
+    "official_domains": [],
+    "allowed_domain_patterns": [],
     "common_lures": [
       "login_page",
       "invoice",
@@ -3511,13 +3689,16 @@
     "category": "general",
     "aliases": [
       "Yamato Transport",
-      "Yamato Transport (ヤマト運輸株式会社)"
+      "Yamato Transport (ヤマト運輸株式会社)",
+      "ヤマト運輸株式会社"
     ],
     "official_domains": [
-      "yamatotransport.com"
+      "kuronekoyamato.co.jp",
+      "yamato-hd.co.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*yamatotransport\\.com$"
+      "^([a-z0-9-]+\\.)*kuronekoyamato\\.co\\.jp$",
+      "^([a-z0-9-]+\\.)*yamato\\-hd\\.co\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3533,7 +3714,8 @@
     "category": "general",
     "aliases": [
       "Yodobashi",
-      "Yodobashi (ヨドバシドットコム)"
+      "Yodobashi (ヨドバシドットコム)",
+      "ヨドバシドットコム"
     ],
     "official_domains": [
       "yodobashi.com"
@@ -3555,13 +3737,14 @@
     "category": "general",
     "aliases": [
       "Yu-Pack",
-      "Yu-Pack (ゆうパック)"
+      "Yu-Pack (ゆうパック)",
+      "ゆうパック"
     ],
     "official_domains": [
-      "yupack.com"
+      "japanpost.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*yupack\\.com$"
+      "^([a-z0-9-]+\\.)*japanpost\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3579,10 +3762,12 @@
       "au"
     ],
     "official_domains": [
-      "au.com"
+      "au.com",
+      "kddi.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*au\\.com$"
+      "^([a-z0-9-]+\\.)*au\\.com$",
+      "^([a-z0-9-]+\\.)*kddi\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -3600,10 +3785,12 @@
       "au PAY"
     ],
     "official_domains": [
-      "aupay.com"
+      "auone.jp",
+      "au.com"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*aupay\\.com$"
+      "^([a-z0-9-]+\\.)*auone\\.jp$",
+      "^([a-z0-9-]+\\.)*au\\.com$"
     ],
     "common_lures": [
       "login_page",
@@ -3621,9 +3808,11 @@
       "cPanel"
     ],
     "official_domains": [
+      "cpanel.net",
       "cpanel.com"
     ],
     "allowed_domain_patterns": [
+      "^([a-z0-9-]+\\.)*cpanel\\.net$",
       "^([a-z0-9-]+\\.)*cpanel\\.com$"
     ],
     "common_lures": [
@@ -3640,13 +3829,14 @@
     "category": "general",
     "aliases": [
       "d POINT",
-      "d POINT (d ポ イ ン ト)"
+      "d POINT (d ポ イ ン ト)",
+      "d ポ イ ン ト"
     ],
     "official_domains": [
-      "dpoint.com"
+      "docomo.ne.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*dpoint\\.com$"
+      "^([a-z0-9-]+\\.)*docomo\\.ne\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3687,13 +3877,14 @@
     "category": "general",
     "aliases": [
       "e+plus",
-      "e+plus (イープラス)"
+      "e+plus (イープラス)",
+      "イープラス"
     ],
     "official_domains": [
-      "eplus.com"
+      "eplus.jp"
     ],
     "allowed_domain_patterns": [
-      "^([a-z0-9-]+\\.)*eplus\\.com$"
+      "^([a-z0-9-]+\\.)*eplus\\.jp$"
     ],
     "common_lures": [
       "login_page",
@@ -3870,13 +4061,21 @@
       "sberbank.ru",
       "sber.ru",
       "online.sberbank.ru",
-      "sberbank.com"
+      "sberbank.com",
+      "sbrf.ru",
+      "sberbank-ast.ru",
+      "sberins.ru",
+      "sberleasing.ru"
     ],
     "allowed_domain_patterns": [
       "^([a-z0-9-]+\\.)*sberbank\\.ru$",
       "^([a-z0-9-]+\\.)*sber\\.ru$",
       "^([a-z0-9-]+\\.)*online\\.sberbank\\.ru$",
-      "^([a-z0-9-]+\\.)*sberbank\\.com$"
+      "^([a-z0-9-]+\\.)*sberbank\\.com$",
+      "^([a-z0-9-]+\\.)*sbrf\\.ru$",
+      "^([a-z0-9-]+\\.)*sberbank\\-ast\\.ru$",
+      "^([a-z0-9-]+\\.)*sberins\\.ru$",
+      "^([a-z0-9-]+\\.)*sberleasing\\.ru$"
     ],
     "common_lures": [
       "login_page",

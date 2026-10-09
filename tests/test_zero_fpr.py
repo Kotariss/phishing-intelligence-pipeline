@@ -1,52 +1,76 @@
-import sys
-import os
+"""Verdict policy (ТЗ п. 4.1.4.6, таблица 4): single indicators never yield "phishing";
+known-legitimate objects never get "phishing" and rarely "suspicious"."""
 import pytest
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(ROOT_DIR, "services", "worker", "src"))
+import benign_samples
+from rules import reason_codes as rc
+from helpers import run_page, run_file, BRAND_LOGIN_KIT
 
-from rules.zero_fpr_guard import ZeroFPRGuard, BENIGN_BASELINE_CORPUS
-from rules.compiler import LSignatureCompiler
 
-def test_zero_fpr_level1_brand_allowlist():
-    guard = ZeroFPRGuard()
-    
-    # Official domains must return True (is legitimate)
-    assert guard.check_level1_brand_allowlist("Сбер", "https://online.sberbank.ru/auth") is True
-    assert guard.check_level1_brand_allowlist("Госуслуги", "https://esia.gosuslugi.ru/login") is True
-    assert guard.check_level1_brand_allowlist("Т-Банк", "https://www.tbank.ru") is True
-    
-    # Phishing domain must return False
-    assert guard.check_level1_brand_allowlist("Сбер", "https://sber-hack.org") is False
+@pytest.mark.parametrize("code", sorted(c for c, info in rc.REASON_CODES.items()
+                                        if info.severity not in ("critical",) and info.category != "combo"))
+def test_no_single_non_critical_indicator_reaches_block(code):
+    assert rc.combine([code]) < 0.70
 
-def test_zero_fpr_benign_baseline_regression():
-    compiler = LSignatureCompiler()
-    guard = ZeroFPRGuard()
 
-    # Create a rule targeting fake Sberbank
-    rule = compiler.compile(
-        target_brand="Сбер",
-        risk_score=0.95,
-        reason_codes=["BRAND_IMPERSONATION_CONFIRMED", "FORM_PASSWORD_HARVESTING"],
-        final_url="https://sber-phish.net/login.php",
-        has_password=True,
-        has_external_action=True,
-        allowed_domains=["sberbank.ru", "sber.ru"]
-    )
+def test_two_independent_strong_indicators_block():
+    assert rc.combine(["RC_BRAND_SPOOF_DISPLAYNAME", "ATTACH_OFFLINE_FORM"]) >= 0.70
+    assert rc.combine(["BRAND_IMPERSONATION_CONFIRMED", "COMBO_BRAND_CREDENTIAL_FORM"]) >= 0.70
 
-    passed, fp_count, fp_details = guard.evaluate_rule_on_baseline(rule)
-    assert passed is True, f"False Positives triggered: {fp_details}"
-    assert fp_count == 0
 
-def test_verify_blocks_fpr_violation():
-    guard = ZeroFPRGuard()
-    
-    # Legitimate URL should be clamped to CLEAN
-    approved, note, score = guard.verify(
-        risk_score=0.85,
-        target_brand="Сбер",
-        target_url="https://online.sberbank.ru/auth"
-    )
-    assert approved is True
-    assert score < 0.30  # Clamped to CLEAN
-    assert "Level 1" in note
+@pytest.mark.parametrize("sample", benign_samples.HTML_PAGES, ids=lambda s: s["id"])
+def test_benign_pages_are_never_phishing(sample):
+    state = run_page(sample["url"], sample["html"])
+    assert state.verdict != "MALICIOUS", (state.reason_codes, state.reason_details)
+    assert state.generated_l_signature is None or state.signature_status != "ACTIVE_VERIFIED"
+
+
+@pytest.mark.parametrize("sample", benign_samples.EMAILS, ids=lambda s: s["id"])
+def test_benign_emails_are_clean(sample):
+    state = run_file(f"{sample['id']}.eml", sample["eml"])
+    assert state.verdict == "CLEAN", (state.reason_codes, state.reason_details)
+
+
+def test_benign_suspicious_share_within_limit():
+    verdicts = [run_page(s["url"], s["html"]).verdict for s in benign_samples.HTML_PAGES]
+    verdicts += [run_file(f"{s['id']}.eml", s["eml"]).verdict for s in benign_samples.EMAILS]
+    assert verdicts.count("MALICIOUS") == 0
+    assert verdicts.count("SUSPICIOUS") / len(verdicts) <= 0.10
+
+
+def test_password_form_alone_is_not_phishing():
+    html = BRAND_LOGIN_KIT.format(title="Личный кабинет", h1="Вход", path="lk", footer="")
+    assert run_page("https://my-small-shop.ru/lk/login", html).verdict == "CLEAN"
+
+
+def test_brand_news_without_form_is_not_impersonation():
+    html = "<html><head><title>Сбербанк повысил ставки</title></head><body><h1>Сбербанк повысил ставки</h1></body></html>"
+    state = run_page("https://news.example.ru/a", html)
+    assert "BRAND_IMPERSONATION_CONFIRMED" not in state.reason_codes
+    assert state.verdict == "CLEAN"
+
+
+def test_official_landing_neutralises_page_evidence_but_keeps_email_evidence():
+    from orchestrator.state import PhishingState
+    from orchestrator.graph import run_pipeline
+    eml = (b"From: =?utf-8?B?0KHQsdC10YDQsdCw0L3Qug==?= <alert@sber-notify.top>\nReply-To: x@mail.ru\nTo: a@b.ru\n"
+           b"Subject: test\nMIME-Version: 1.0\nContent-Type: text/html; charset=utf-8\n\n"
+           b'<a href="https://track.evil-redirect.top/r?id=1">Open</a>')
+    landing = "<html><head><title>СберБанк</title></head><body><form><input type='password'></form></body></html>"
+    state = run_pipeline(PhishingState(
+        incident_id="t_cloak", source_type="eml", raw_target="m.eml", raw_bytes=eml, offline_mode=True,
+        precollected_links=[{"url": "https://track.evil-redirect.top/r?id=1", "final_url": "https://www.sberbank.ru/",
+                             "html": landing, "redirect_chain": [{"from": "https://track.evil-redirect.top/r?id=1",
+                                                                  "to": "https://www.sberbank.ru/", "status_code": 302}]}]))
+    assert "RC_ATTACH_PASSWORD_INPUT" not in state.reason_codes          # official page evidence neutralised
+    assert {"RC_BRAND_SPOOF_DISPLAYNAME", "RC_CLOAKING_TO_OFFICIAL"} <= set(state.reason_codes)
+    assert state.verdict == "MALICIOUS"
+
+
+def test_every_reason_code_is_explained():
+    state = run_page("https://gosuslugi-vhod.online/esia/login",
+                     BRAND_LOGIN_KIT.format(title="Госуслуги", h1="Госуслуги", path="esia", footer=""))
+    assert state.reason_codes
+    for code in state.reason_codes:
+        assert state.reason_details.get(code), code
+    assert "Обоснование" in state.explanation

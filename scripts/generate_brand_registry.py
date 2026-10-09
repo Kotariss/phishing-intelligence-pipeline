@@ -14,7 +14,7 @@ BRAND_DOMAINS_MAP = {
         "display_name": "Сбер",
         "category": "banking_ru",
         "aliases": ["Сбербанк", "Сбер", "Sber", "Sberbank", "СберБизнес", "СберОнлайн"],
-        "domains": ["sberbank.ru", "sber.ru", "online.sberbank.ru", "sberbank.com"]
+        "domains": ["sberbank.ru", "sber.ru", "online.sberbank.ru", "sberbank.com", "sbrf.ru", "sberbank-ast.ru", "sberins.ru", "sberleasing.ru"]
     },
     "Т-Банк": {
         "id": "tbank",
@@ -397,6 +397,143 @@ BRAND_DOMAINS_MAP = {
     },
 }
 
+# Verified official domains for brands that are not in BRAND_DOMAINS_MAP (keyed by brand slug).
+# Never guess a domain: an invented "official" domain is an allowlist bypass for whoever registers it.
+VERIFIED_DOMAINS = {
+    "7_eleven": ["7-eleven.com", "7eleven.com", "7-eleven.co.jp", "sej.co.jp"],
+    "aeon": ["aeon.co.jp", "aeon.com", "aeonbank.co.jp"],
+    "aeon_pay": ["aeon.co.jp", "aeon.com", "aeonbank.co.jp"],
+    "ana": ["ana.co.jp", "ana.com"],
+    "antai": ["antai.gouv.fr"],
+    "at_t": ["att.com", "att.net"],
+    "alibaba": ["alibaba.com", "aliexpress.com"],
+    "amazon": ["amazon.com", "amazon.co.jp", "amazon.de", "amazon.co.uk", "amazon.fr", "amazon.it", "amazon.es"],
+    "best_buy": ["bestbuy.com"],
+    "booking": ["booking.com"],
+    "canal": ["canalplus.com", "canal-plus.com"],
+    "cvs_store": ["cvs.com"],
+    "coca_cola": ["coca-cola.com", "coca-colacompany.com"],
+    "comcast": ["comcast.com", "comcast.net", "xfinity.com"],
+    "costco": ["costco.com", "costco.co.jp"],
+    "dsl_su": ["dsl.su"],
+    "dai_ichi_life": ["dai-ichi-life.co.jp"],
+    "delta_air_lines": ["delta.com"],
+    "demae_can": ["demae-can.com"],
+    "deutsche_telekom": ["telekom.de", "telekom.com"],
+    "digital_agency": ["digital.go.jp"],
+    "e_tax": ["nta.go.jp"],
+    "epos_card": ["eposcard.co.jp"],
+    "etc": ["etc-meisai.jp", "go-etc.jp"],
+    "ekinet": ["eki-net.com"],
+    "fifa": ["fifa.com"],
+    "facebook": ["facebook.com", "fb.com", "meta.com"],
+    "familymart": ["family.co.jp"],
+    "financial_services_agency": ["fsa.go.jp"],
+    "fukuoka_financial_group": ["fukuoka-fg.com", "fukuokabank.co.jp"],
+    "hmrc": ["gov.uk"],
+    "icbc": ["icbc.com.cn", "icbc-ltd.com"],
+    "irs": ["irs.gov"],
+    "instagram": ["instagram.com"],
+    "ja_net_bank": ["jabank.jp"],
+    "jaccs": ["jaccs.co.jp"],
+    "jal_mileage_bank": ["jal.co.jp", "jal.com"],
+    "jcbcard": ["jcb.co.jp", "jcb.jp", "jcb.com"],
+    "myjcbcard": ["jcb.co.jp", "jcb.jp", "jcb.com"],
+    "jre_point": ["jrepoint.jp"],
+    "jalan_net": ["jalan.net"],
+    "japan_pension_service": ["nenkin.go.jp"],
+    "japan_post": ["japanpost.jp"],
+    "japan_post_bank": ["japanpost.jp", "jp-bank.japanpost.jp"],
+    "jibun_bank": ["jibunbank.co.jp"],
+    "kroger": ["kroger.com"],
+    "kuroneko_yamato": ["kuronekoyamato.co.jp", "yamato-hd.co.jp"],
+    "yamato_transport": ["kuronekoyamato.co.jp", "yamato-hd.co.jp"],
+    "line": ["line.me", "line.biz", "linecorp.com", "lycorp.co.jp"],
+    "lowe_s": ["lowes.com"],
+    "la_poste": ["laposte.fr", "laposte.net"],
+    "lawson": ["lawson.co.jp", "lawson.jp"],
+    "lidl": ["lidl.com", "lidl.de", "lidl.fr", "lidl.co.uk"],
+    "linkedin": ["linkedin.com"],
+    "lufthansa": ["lufthansa.com"],
+    "marriot": ["marriott.com"],
+    "mufg": ["mufg.jp", "bk.mufg.jp"],
+    "muji": ["muji.com", "muji.net", "muji.jp"],
+    "mauritius_commercial_bank": ["mcb.mu"],
+    "mercari": ["mercari.com"],
+    "meta": ["meta.com", "facebook.com", "fb.com"],
+    "mizuho_bank": ["mizuhobank.co.jp", "mizuho-fg.co.jp"],
+    "monex_securities": ["monex.co.jp"],
+    "my_number_portal": ["myna.go.jp", "digital.go.jp"],
+    "navy_federal_credit_union": ["navyfederal.org"],
+    "nhk": ["nhk.or.jp", "nhk.jp"],
+    "ntt_communications": ["ntt.com", "ocn.ne.jp"],
+    "ntt_docomo": ["docomo.ne.jp", "nttdocomo.co.jp"],
+    "national_tax_agency": ["nta.go.jp"],
+    "netflix": ["netflix.com"],
+    "nintendo": ["nintendo.com", "nintendo.co.jp"],
+    "omaha_steaks": ["omahasteaks.com"],
+    "orico_bank": ["orico.co.jp"],
+    "paidy": ["paidy.com"],
+    "pairs": ["pairs.lv"],
+    "paypay_bank": ["paypay-bank.co.jp", "paypay.ne.jp"],
+    "philips": ["philips.com"],
+    "playstation": ["playstation.com", "sony.com"],
+    "pocket_card_co": ["pocketcard.co.jp"],
+    "rtl": ["rtl.de", "rtl.com", "rtl.nl"],
+    "rakuten_bank": ["rakuten-bank.co.jp", "rakuten.co.jp", "rakuten-card.co.jp"],
+    "resona_bank": ["resonabank.co.jp", "resona-gr.co.jp"],
+    "rikunabi": ["rikunabi.com", "recruit.co.jp"],
+    "roundcube": ["roundcube.net"],
+    "sbi_holdings": ["sbigroup.co.jp"],
+    "sbi_neotrade_securities": ["sbineotrade.jp"],
+    "sbi_securities": ["sbisec.co.jp"],
+    "sbi_shinsei_bank": ["sbishinseibank.co.jp", "shinseibank.com"],
+    "smbc": ["smbc.co.jp", "smbc-card.com"],
+    "ssa": ["ssa.gov"],
+    "sagawa_express": ["sagawa-exp.co.jp"],
+    "saison_id": ["saisoncard.co.jp", "credit-saison.co.jp"],
+    "saison_jp": ["saisoncard.co.jp", "credit-saison.co.jp"],
+    "shell": ["shell.com"],
+    "shopify": ["shopify.com"],
+    "softbank": ["softbank.jp", "softbank.com"],
+    "spotify": ["spotify.com"],
+    "sumitomo_mitsui": ["smbc.co.jp", "smfg.co.jp"],
+    "tiktok": ["tiktok.com"],
+    "tokyo_electric_power_company": ["tepco.co.jp"],
+    "turkish_airlines": ["turkishairlines.com"],
+    "uniqlo": ["uniqlo.com"],
+    "usaa": ["usaa.com"],
+    "waon_point": ["waon.net", "aeon.co.jp"],
+    "walmart": ["walmart.com"],
+    "whatsapp": ["whatsapp.com"],
+    "yodobashi": ["yodobashi.com"],
+    "yu_pack": ["japanpost.jp"],
+    "au": ["au.com", "kddi.com"],
+    "au_pay": ["auone.jp", "au.com"],
+    "cpanel": ["cpanel.net", "cpanel.com"],
+    "d_point": ["docomo.ne.jp"],
+    "e_plus": ["eplus.jp"],
+}
+
+
+# Native-script names used in lures that are not part of the dataset folder names.
+EXTRA_ALIASES = {
+    "7_eleven": ["セブン-イレブン", "セブンイレブン"],
+    "amazon": ["アマゾン"],
+    "apple_id": ["Apple ID", "アップル"],
+    "apple_icloud": ["iCloud"],
+    "apple_appstore": ["App Store"],
+    "japan_post": ["郵便局"],
+    "line": ["LINEヤフー"],
+}
+
+
+def original_name(dirname: str) -> str:
+    """'Japan Pension Service (日本年金機構)' -> '日本年金機構' (the name shown in Japanese lures)."""
+    m = re.search(r'\(([^)]+)\)', dirname)
+    return m.group(1).strip(" (") if m else ""
+
+
 def clean_brand_name(dirname: str) -> str:
     cleaned = re.sub(r'\(.*?\)', '', dirname).strip()
     return cleaned
@@ -421,18 +558,20 @@ def generate_registry(keis2_dir: str, output_file: str):
             if not slug:
                 slug = f"brand_{len(registry)+1}"
             
-            # infer domain heuristic
-            domain_guess = f"{slug.replace('_', '')}.com"
-            if "japan" in d.lower() or "bank" in d.lower() and any(ord(c) > 127 for c in d):
-                domain_guess = f"{slug.replace('_', '')}.co.jp"
-
+            # Unknown brand: no guessed domains (empty allowlist = never treated as official)
             info = {
                 "id": slug,
                 "display_name": base_clean,
                 "category": "general",
                 "aliases": [base_clean, d],
-                "domains": [domain_guess]
+                "domains": list(VERIFIED_DOMAINS.get(slug, []))
             }
+        extra = [a for a in EXTRA_ALIASES.get(info["id"], []) if a not in info["aliases"]]
+        if extra:
+            info = dict(info, aliases=list(info["aliases"]) + extra)
+        orig = original_name(d)
+        if orig and len(orig) >= 2 and orig not in info["aliases"]:
+            info = dict(info, aliases=list(info["aliases"]) + [orig])
 
         # Format regex patterns
         allowed_patterns = []

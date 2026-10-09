@@ -8,16 +8,21 @@ class RedirectHop(BaseModel):
 
 class FormEvidence(BaseModel):
     action: str = ""
+    action_host: str = ""
     method: str = "GET"
     has_password: bool = False
     has_email: bool = False
     has_card: bool = False
+    prefilled_victim_email: bool = False
     is_external_target: bool = False
     submit_target_url: Optional[str] = None
     submit_mechanism: str = "standard_submit"  # standard_submit, onclick_ajax, telegram_bot
+    origin: str = "page"  # page | attachment
 
 class BrandEvidence(BaseModel):
     detected_brand_name: Optional[str] = None
+    brand_id: Optional[str] = None
+    detection_source: Optional[str] = None  # display_name | vlm | title | lookalike_domain | body_text | official_domain
     vlm_confidence: float = 0.0
     visual_lure_type: Optional[str] = None  # b2b_invoice, banking_login, delivery_awb, security_alert
     is_domain_in_allowlist: bool = True
@@ -41,16 +46,22 @@ class AgentStepTrace(BaseModel):
 class PhishingState(BaseModel):
     # Ingestion Metadata
     incident_id: str
-    source_type: str = "url"  # url, eml, html, pdf, office, image
-    raw_target: str = ""      # Target URL or file path/name
+    source_type: str = "url"  # url, eml, html, pdf, office, image, sample_dir
+    raw_target: str = ""      # Target URL or file path/name (never overwritten)
     raw_bytes: Optional[bytes] = None
+    offline_mode: bool = False  # True: never touch the network (pre-collected dataset artefacts only)
+    # Pre-collected link artefacts (dataset: Link_N/{url.txt, chain_info.json, html.html, screenshot.png})
+    precollected_links: List[Dict[str, Any]] = Field(default_factory=list)
 
     # Sandbox Raw Artifacts
+    scan_url: Optional[str] = None  # URL currently being analysed (initial URL or rescan target)
     final_url: Optional[str] = None
     http_status: Optional[int] = None
     redirect_chain: List[RedirectHop] = Field(default_factory=list)
     dom_html: Optional[str] = None
+    page_features: Dict[str, Any] = Field(default_factory=dict)
     screenshot_base64: Optional[str] = None
+    screenshot_source: Optional[str] = None  # browser | attachment_render | dataset | image_file | embedded_image
     discovered_urls_from_attachments: List[str] = Field(default_factory=list)
     has_rescanned_url: bool = False
     should_rescan: bool = False
@@ -69,11 +80,35 @@ class PhishingState(BaseModel):
     confidence: str = "LOW"   # LOW, MEDIUM, HIGH
     verdict: str = "CLEAN"    # CLEAN, SUSPICIOUS, MALICIOUS
     reason_codes: List[str] = Field(default_factory=list)
+    reason_details: Dict[str, str] = Field(default_factory=dict)  # code -> human-readable evidence
     explanation: Optional[str] = None
 
-    # Output Signatures & Rules
+    # Output Signatures, Fingerprints & Campaigns
     generated_l_signature: Optional[Dict[str, Any]] = None
     generated_yara_rule: Optional[str] = None
+    signature_status: Optional[str] = None  # ACTIVE_VERIFIED | DRAFT_REQUIRES_TUNING | NOT_GENERATED
+    fingerprints: Dict[str, Any] = Field(default_factory=dict)
+    campaign_id: Optional[str] = None
     zero_fpr_passed: bool = True
+    zero_fpr_note: Optional[str] = None
     execution_steps: List[str] = Field(default_factory=list)
     agent_traces: List[AgentStepTrace] = Field(default_factory=list)
+
+    def add_reason(self, code: str, detail: str) -> None:
+        if code not in self.reason_codes:
+            self.reason_codes.append(code)
+            self.reason_codes.sort()
+        self.reason_details.setdefault(code, detail)
+
+    def drop_reason(self, code: str) -> None:
+        if code in self.reason_codes:
+            self.reason_codes.remove(code)
+        self.reason_details.pop(code, None)
+
+    @property
+    def current_url(self) -> str:
+        return self.scan_url or self.raw_target
+
+    def public_dump(self) -> Dict[str, Any]:
+        """JSON-safe representation for the API / database (no raw sample bytes)."""
+        return self.model_dump(mode="json", exclude={"raw_bytes", "precollected_links"})
