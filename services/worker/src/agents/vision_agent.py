@@ -8,14 +8,12 @@ try:
     from ..orchestrator.state import PhishingState, BrandEvidence, AgentStepTrace
     from ..brands.matcher import get_brand_registry, extract_hostname, normalize_display_text
     from ..features.image_text import image_lure_signals
-    from ..features.url_features import mask_emails_in_text
     from ..llm.client import get_llm_client
     from ..llm import prompts
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, BrandEvidence, AgentStepTrace
     from brands.matcher import get_brand_registry, extract_hostname, normalize_display_text
     from features.image_text import image_lure_signals
-    from features.url_features import mask_emails_in_text
     from llm.client import get_llm_client
     from llm import prompts
 
@@ -122,7 +120,7 @@ class VisionAgent:
         ocr_text = (att.get("ocr_text") or "") if state.screenshot_source == "image_file" else ""
         image_signals = image_lure_signals(ocr_text)
         if image_signals["credential_prompt"]:
-            ocr_evidence = {"type": "text", "value": mask_emails_in_text("\n".join(f"… {s} …" for s in image_signals["snippets"])),
+            ocr_evidence = {"type": "text", "value": "\n".join(f"… {s} …" for s in image_signals["snippets"]),
                             "label": "Текст на изображении (OCR)"}
             state.add_reason("IMAGE_CREDENTIAL_PROMPT", "На изображении — запрос пароля / входа в учётную запись", ocr_evidence)
             if image_signals["document_gate"]:

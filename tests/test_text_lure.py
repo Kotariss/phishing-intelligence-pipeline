@@ -1,8 +1,7 @@
-"""Deterministic lure signals in e-mail / HTML-attachment text, IPFS links, masking of victim addresses."""
+"""Deterministic lure signals in e-mail / HTML-attachment text, IPFS links."""
 import base64
 
 from features.text_lure import text_lure_signals
-from features.url_features import mask_emails_in_text
 from benign_samples import EMAILS
 from helpers import run_file
 
@@ -30,12 +29,11 @@ def test_signals_quiet_on_ordinary_mail():
         assert not s["account_threat"] and not s["human_check"]
 
 
-def test_webmail_kit_attachment_is_suspicious_with_masked_evidence():
+def test_webmail_kit_attachment_is_suspicious_with_evidence():
     state = run_file("notice.html", WEBMAIL_KIT.encode("utf-8"))
     assert {"CONTENT_ACCOUNT_THREAT", "CONTENT_VICTIM_ADDRESSED", "URL_IPFS_LINK"} <= set(state.reason_codes)
     assert state.verdict in ("SUSPICIOUS", "MALICIOUS")
-    for code in ("CONTENT_ACCOUNT_THREAT", "CONTENT_VICTIM_ADDRESSED"):
-        assert "info@" not in state.reason_evidence[code]["value"] and "info@" not in state.reason_details[code]
+    assert "info@victim-company.cz" in state.reason_evidence["CONTENT_VICTIM_ADDRESSED"]["value"]
 
 
 def test_known_legit_mail_gets_no_text_lure_codes():
@@ -43,6 +41,3 @@ def test_known_legit_mail_gets_no_text_lure_codes():
         state = run_file(f"{sample['id']}.eml", sample["eml"])
         assert not {"CONTENT_ACCOUNT_THREAT", "ATTACH_FAKE_HUMAN_CHECK"} & set(state.reason_codes), sample["id"]
 
-
-def test_mask_emails_keeps_domain():
-    assert mask_emails_in_text("Hello user@victim.example!") == "Hello ***@victim.example!"

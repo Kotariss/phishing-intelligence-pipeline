@@ -9,13 +9,11 @@ try:
     from ..llm.client import get_llm_client
     from ..llm import prompts
     from ..features.text_lure import text_lure_signals
-    from ..features.url_features import mask_emails_in_text
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from llm.client import get_llm_client
     from llm import prompts
     from features.text_lure import text_lure_signals
-    from features.url_features import mask_emails_in_text
 
 
 _CACHE: Dict[str, Dict[str, Any]] = {}
@@ -68,12 +66,12 @@ class ContentAgent:
                                            page_text if att.get("type") == "html" else None]))
         lure = text_lure_signals(sent_text)
         if lure["account_threat"]:
-            state.add_reason("CONTENT_ACCOUNT_THREAT", mask_emails_in_text(f"Угроза доступу к почте / учётной записи: «{lure['account_threat'][0][:150]}»"),
-                             {"type": "text", "value": mask_emails_in_text("\n".join(f"… {t} …" for t in lure["account_threat"])),
+            state.add_reason("CONTENT_ACCOUNT_THREAT", f"Угроза доступу к почте / учётной записи: «{lure['account_threat'][0][:150]}»",
+                             {"type": "text", "value": "\n".join(f"… {t} …" for t in lure["account_threat"]),
                               "label": "Фразы-предлоги в тексте"})
         if lure["victim_address"] and (lure["account_threat"] or state.discovered_urls_from_attachments):
-            state.add_reason("CONTENT_VICTIM_ADDRESSED", mask_emails_in_text(f"Обращение к получателю по адресу ящика {lure['victim_address']}"),
-                             {"type": "text", "value": mask_emails_in_text(f"… {lure['victim_snippet']} …"), "label": "Обращение по адресу почты"})
+            state.add_reason("CONTENT_VICTIM_ADDRESSED", f"Обращение к получателю по адресу ящика {lure['victim_address']}",
+                             {"type": "text", "value": f"… {lure['victim_snippet']} …", "label": "Обращение по адресу почты"})
         if lure["human_check"] and att.get("type") == "html" and not state.final_url:
             state.add_reason("ATTACH_FAKE_HUMAN_CHECK", "HTML-вложение изображает проверку «вы не робот»",
                              {"type": "text", "value": f"… {lure['human_check']} …", "label": "Текст вложения"})
