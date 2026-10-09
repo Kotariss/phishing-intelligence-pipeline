@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 # take part in domain look-alike detection: "line", "meta", "visa", "shell", "au", ...
 COMMON_WORDS = {
     "line", "meta", "visa", "shell", "apple", "booking", "delta", "ledger", "pairs", "etc",
-    "ana", "au", "wb", "vk", "rtl", "citi", "web admin", "desk gear", "pony express", "costco",
+    "ana", "au", "wb", "vk", "rtl", "citi", "mcb", "web admin", "desk gear", "pony express", "costco",
 }
 # Second-level labels that are too generic to be a look-alike signal on their own.
 LOOKALIKE_STOP = {"online", "account", "secure", "login", "mail", "bank", "card", "post", "cloud",
@@ -17,18 +17,44 @@ LOOKALIKE_STOP = {"online", "account", "secure", "login", "mail", "bank", "card"
                   "outlook", "office", "teams", "drive", "share", "point", "store", "costco"}
 
 
+_FULLWIDTH_LATIN = re.compile(r'[Ａ-Ｚａ-ｚ]')
+_LATIN = re.compile(r'[A-Za-z]')
+_LETTER_RUN = re.compile(r'[^\W\d_]+')
+_HOMOGLYPH_MAP = str.maketrans("АВЕКМНОРСТХаеорсухіјѕΑΒΕΗΙΚΜΝΟΡΤΧΥΖο",
+                               "ABEKMHOPCTXaeopcyxijsABEHIKMNOPTXYZo")
+_HOMOGLYPH_CHARS = re.compile("[" + "АВЕКМНОРСТХаеорсухіјѕΑΒΕΗΙΚΜΝΟΡΤΧΥΖο" + "]")
 _CJK = re.compile(r'[぀-ヿ㐀-鿿가-힯]')
 _ZERO_WIDTH = re.compile(r'[­​-‏⁠-⁤﻿]')
 
 
+def _unmask_letters(text: str) -> Tuple[str, bool]:
+    """Full-width Latin letters ('MOＮEX') and Cyrillic / Greek look-alikes inside Latin words ('МONEX')."""
+    changed = False
+    if _FULLWIDTH_LATIN.search(text):
+        text = _FULLWIDTH_LATIN.sub(lambda m: chr(ord(m.group(0)) - 0xFEE0), text)
+        changed = True
+
+    def fix(m: re.Match) -> str:  # one run of letters: 'Яндекс.Go' is two runs, 'МONEX' is one
+        nonlocal changed
+        word = m.group(0)
+        if _LATIN.search(word) and _HOMOGLYPH_CHARS.search(word):
+            changed = True
+            return word.translate(_HOMOGLYPH_MAP)
+        return word
+    return _LETTER_RUN.sub(fix, text), changed
+
+
 def normalize_display_text(text: str) -> Tuple[str, bool]:
     """Removes obfuscation used to evade brand matching in sender names / titles:
-    zero-width characters ('セ​ブ​ン') and letter spacing ('A m a z o n').
+    zero-width characters ('セ​ブ​ン'), letter spacing ('A m a z o n'), full-width Latin letters
+    ('MOＮEX') and Cyrillic / Greek look-alike letters mixed into Latin words ('МONEX').
     Returns (normalized_text, was_obfuscated)."""
     if not text:
         return "", False
     cleaned = _ZERO_WIDTH.sub("", text).replace(" ", " ")
     obfuscated = cleaned != text.replace(" ", " ")
+    cleaned, unmasked = _unmask_letters(cleaned)
+    obfuscated = obfuscated or unmasked
     out: List[str] = []
     run: List[str] = []
     for tok in cleaned.split(" ") + [""]:

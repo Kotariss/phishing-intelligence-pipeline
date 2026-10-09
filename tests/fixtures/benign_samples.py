@@ -148,3 +148,35 @@ EMAILS = [
      "eml": _eml("Microsoft account team <account-security-noreply@accountprotection.microsoft.com>", "Microsoft account security info was added",
                  '<p>The following security info was added.</p><a href="https://account.live.com/proofs/manage">Review</a>')},
 ]
+
+
+def _text_image(lines, size=(900, 520)) -> bytes:
+    """A plain legitimate image with text (rendered locally, no external files)."""
+    import io
+    from PIL import Image, ImageDraw, ImageFont
+    img = Image.new("RGB", size, "white")
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.load_default(size=30)
+    except TypeError:  # Pillow without FreeType default font
+        font = ImageFont.load_default()
+    y = 30
+    for line in lines:
+        draw.text((40, y), line, fill="black", font=font)
+        y += 48
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()
+
+
+# Image attachments of legitimate mail: banners, receipts, scanned invoices, a how-to screenshot.
+IMAGES = [
+    {"id": "benign-img-sale-banner", "lines": ["SUMMER SALE", "-30% on all shoes", "Shop now in our stores", "Unsubscribe"]},
+    {"id": "benign-img-receipt", "lines": ["Receipt #48213", "Cappuccino      2.50", "Croissant       1.80", "Total           4.30", "Thank you for your purchase!"]},
+    {"id": "benign-img-invoice-scan", "lines": ["INVOICE No 2026-118", "Date: 12.09.2026", "Consulting services", "Amount due: 1200 EUR", "Payment by bank transfer"]},
+    {"id": "benign-img-teams-invite", "lines": ["Microsoft Teams meeting", "Friday 15:00-16:00", "Join on your computer or mobile app", "Meeting ID: 312 456 789"]},
+    {"id": "benign-img-ru-promo", "lines": ["Акция недели!", "Скидка 20% на всю технику", "Подробности на сайте магазина"]},
+    {"id": "benign-img-howto-portal", "lines": ["How to open the HR portal", "1. Go to portal.company.local", "2. Enter your login and password", "3. Open Documents > Payslips"]},
+]
+for _img in IMAGES:
+    _img["png"] = _text_image(_img["lines"])

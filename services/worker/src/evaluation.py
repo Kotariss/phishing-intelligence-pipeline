@@ -23,11 +23,13 @@ try:
     from .orchestrator.graph import run_pipeline
     from .ingest.dataset import build_state_from_sample_dir, iter_brand_samples
     from .rules.engine import record_from_state, rule_matches
+    from .ingest.split import in_part, sample_order
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState
     from orchestrator.graph import run_pipeline
     from ingest.dataset import build_state_from_sample_dir, iter_brand_samples
     from rules.engine import record_from_state, rule_matches
+    from ingest.split import in_part, sample_order
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 FIXTURES_DIR = os.path.join(REPO_ROOT, "tests", "fixtures")
@@ -37,27 +39,33 @@ SampleFactory = Callable[[], PhishingState]
 
 # ------------------------------------------------------------------ sample sources
 def phishing_sources(dataset_root: str, limit_per_source: Optional[int] = None,
-                     sources=("keis2", "html", "png")) -> Iterator[Tuple[str, str, SampleFactory]]:
-    """Yields (category, object_id, factory) for the customer's phishing corpus."""
+                     sources=("keis2", "html", "png"), split: Optional[Dict[str, Any]] = None,
+                     part: Optional[str] = None) -> Iterator[Tuple[str, str, SampleFactory]]:
+    """Yields (category, object_id, factory) for the customer's phishing corpus.
+
+    With a split manifest and part ("dev" / "test") only that part is used, in a deterministic spread-out
+    order, so ``limit_per_source`` takes a sample across groups instead of the first folders."""
+    def pick(paths: List[str]) -> List[str]:
+        if split and part:
+            paths = sample_order([p for p in paths if in_part(split, dataset_root, p, part)])
+        return paths[:limit_per_source] if limit_per_source else paths
+
     keis2 = os.path.join(dataset_root, "keis2")
     if "keis2" in sources and os.path.isdir(keis2):
-        for i, (brand, sample_dir) in enumerate(iter_brand_samples(keis2)):
-            if limit_per_source is not None and i >= limit_per_source:
-                break
+        for sample_dir in pick([d for _, d in iter_brand_samples(keis2)]):
             yield "keis2_email", sample_dir, (lambda d=sample_dir: build_state_from_sample_dir(d))
 
     html_dir = os.path.join(dataset_root, "html_phishing2026")
     if "html" in sources and os.path.isdir(html_dir):
         names = sorted(f for f in os.listdir(html_dir) if f.lower().endswith((".html", ".htm")))
-        for name in names[:limit_per_source] if limit_per_source else names:
-            path = os.path.join(html_dir, name)
+        for path in pick([os.path.join(html_dir, n) for n in names]):
             yield "html_attachment", path, (lambda p=path: _file_state(p))
 
     png_dir = os.path.join(dataset_root, "grouped_png_phishing2026")
     if "png" in sources and os.path.isdir(png_dir):
         files = sorted(os.path.join(png_dir, c, f) for c in os.listdir(png_dir)
                        if os.path.isdir(os.path.join(png_dir, c)) for f in os.listdir(os.path.join(png_dir, c)))
-        for path in files[:limit_per_source] if limit_per_source else files:
+        for path in pick(files):
             yield "image_lure", path, (lambda p=path: _file_state(p))
 
 
@@ -73,6 +81,10 @@ def benign_sources() -> Iterator[Tuple[str, str, SampleFactory]]:
         yield "benign_email", s["id"], (lambda s=s: PhishingState(
             incident_id=f"bn_{s['id']}", source_type="eml", raw_target=f"{s['id']}.eml",
             raw_bytes=s["eml"], offline_mode=True))
+    for s in getattr(benign_samples, "IMAGES", []):
+        yield "benign_image", s["id"], (lambda s=s: PhishingState(
+            incident_id=f"bn_{s['id']}", source_type="png", raw_target=f"{s['id']}.png",
+            raw_bytes=s["png"], offline_mode=True))
 
 
 def _file_state(path: str) -> PhishingState:
@@ -101,10 +113,11 @@ def summarize(state: PhishingState, elapsed: float) -> Dict[str, Any]:
 
 
 def evaluate(dataset_root: str, limit_per_source: Optional[int] = None, sources=("keis2", "html", "png"),
-             progress: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+             progress: Optional[Callable[[str], None]] = None, split: Optional[Dict[str, Any]] = None,
+             part: Optional[str] = None) -> Dict[str, Any]:
     started = time.time()
     rows: List[Dict[str, Any]] = []
-    for group, iterator in (("phishing", phishing_sources(dataset_root, limit_per_source, sources)),
+    for group, iterator in (("phishing", phishing_sources(dataset_root, limit_per_source, sources, split, part)),
                             ("benign", benign_sources())):
         for category, object_id, factory in iterator:
             t0 = time.time()
@@ -119,7 +132,9 @@ def evaluate(dataset_root: str, limit_per_source: Optional[int] = None, sources=
             rows.append(row)
             if progress:
                 progress(f"[{group}/{category}] {row['object'][:70]} -> {row.get('verdict', row['status'])}")
-    return build_report(rows, time.time() - started, dataset_root, limit_per_source)
+    report = build_report(rows, time.time() - started, dataset_root, limit_per_source)
+    report["split"] = {"part": part, "version": split.get("version"), "created_at": split.get("created_at")}         if split and part else None
+    return report
 
 
 def _rate(n: int, d: int) -> Optional[float]:

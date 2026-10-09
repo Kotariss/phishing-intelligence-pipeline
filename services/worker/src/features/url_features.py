@@ -136,3 +136,8 @@ def mask_url(url: str) -> str:
 
 def mask_urls_in_text(text: str) -> str:
     return _URL_IN_TEXT.sub(lambda m: mask_url(m.group(0)), text or "")
+
+
+def mask_emails_in_text(text: str) -> str:
+    """Victim mailbox addresses quoted from lure texts: the mailbox name is hidden, the domain is kept."""
+    return _EMAIL.sub(lambda m: "***@" + m.group(0).split("@", 1)[1], text or "")

@@ -8,7 +8,8 @@ Command-line interface (ТЗ п. 4.8.1.1).
     python phishctl.py cluster [--min-size 2]
     python phishctl.py export-package [--out exports/package]
     python phishctl.py apply <package.json> <file|dir>...
-    python phishctl.py metrics [--limit N] [--sources keis2,html,png] [--out reports/metrics.json]
+    python phishctl.py split [--dev-share 0.3] [--seen-from reports/seen_objects.txt]   # dev / held-out test
+    python phishctl.py metrics [--limit N] [--sources keis2,html,png] [--part dev|test] [--out reports/metrics.json]
     python phishctl.py build-benign-corpus
 """
 import argparse
@@ -275,12 +276,36 @@ def cmd_apply(args):
 
 def cmd_metrics(args):
     from evaluation import evaluate, save_report
+    split = None
+    if args.part:
+        from ingest.split import load_split
+        if not os.path.exists(args.split_file):
+            raise SystemExit(f"split manifest {args.split_file} not found: run `phishctl.py split` first")
+        split = load_split(args.split_file)
     report = evaluate(args.dataset, args.limit, tuple(args.sources.split(",")),
-                      progress=_log if args.verbose else None)
+                      progress=_log if args.verbose else None, split=split, part=args.part)
     save_report(report, args.out)
     print(json.dumps({"counts": report["counts"], "metrics": report["metrics"], "acceptance": report["acceptance"]},
                      ensure_ascii=False, indent=2))
     _log(f"report written to {args.out}")
+
+
+def cmd_split(args):
+    """Leakage-free dev / held-out test split of the customer corpus (groups: brand, DOM template, cluster)."""
+    from ingest.split import build_split, save_split
+    seen = []
+    if args.seen_from:
+        for path in args.seen_from:
+            with open(path, "r", encoding="utf-8") as f:
+                if path.endswith(".txt"):  # one object path per line (absolute or relative to the dataset)
+                    seen += [os.path.relpath(os.path.join(args.dataset, l.strip()), args.dataset) for l in f if l.strip()]
+                else:
+                    seen += [os.path.relpath(os.path.join(REPO_ROOT, o["object"]), args.dataset)
+                             for o in json.load(f).get("objects", []) if o.get("group") == "phishing"]
+    split = build_split(args.dataset, args.dev_share, seen)
+    save_split(split, args.out)
+    print(json.dumps({k: split[k] for k in ("version", "dev_share", "forced_dev_objects", "stats")}, ensure_ascii=False, indent=2))
+    _log(f"split manifest written to {args.out}")
 
 
 def cmd_robustness(args):
@@ -356,8 +381,17 @@ def main(argv=None):
     p.add_argument("--limit", type=int, help="objects per source")
     p.add_argument("--sources", default="keis2,html,png")
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "metrics.json"))
+    p.add_argument("--part", choices=("dev", "test"), help="only this part of the split manifest")
+    p.add_argument("--split-file", default=os.path.join(REPO_ROOT, "reports", "split.json"))
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_metrics)
+
+    p = sub.add_parser("split", help="leakage-free dev / held-out test split of the customer corpus")
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.add_argument("--dev-share", type=float, default=0.3)
+    p.add_argument("--seen-from", nargs="*", help="metrics reports whose objects were inspected (forced into dev)")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "split.json"))
+    p.set_defaults(func=cmd_split)
 
     p = sub.add_parser("robustness", help="recall under domain/URL change, design change and delayed loading")
     p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))

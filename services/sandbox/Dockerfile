@@ -7,9 +7,10 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install system dependencies (zbar for QR, libxml)
+# Install system dependencies (zbar for QR, Tesseract OCR for text on image lures)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libzbar0 \
+    tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus tesseract-ocr-chi-sim \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 

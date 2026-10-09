@@ -16,8 +16,10 @@ TRUSTED_REDIRECTORS = re.compile(
     r'(?i)^https?://(?:[a-z0-9-]+\.)*(?:login\.microsoftonline\.com/.*authorize\?|vk\.com/away\.php\?to=|'
     r'clck\.ru/|trk\.mail\.ru/c/|ok\.me/|tinyurl\.com/|search\.app/|bit\.ly/|t\.co/|goo\.gl/|is\.gd/|'
     r'cutt\.ly/|rebrand\.ly/|t\.ly/|google\.[a-z.]+/(?:url|amp)\?|l\.facebook\.com/l\.php|'
-    r'www\.google\.[a-z.]+/url\?)'
+    r'www\.google\.[a-z.]+/url\?|googleads\.g\.doubleclick\.net/pcs/click|ad\.doubleclick\.net/ddm/clk)'
 )
+
+IPFS_LINK = re.compile(r'(?i)^https?://(?:[^/]+/ipfs/|[a-z0-9]{40,}\.ipfs\.[a-z.]+/|[^/]*(?:ipfs\.io|dweb\.link|w3s\.link|cloudflare-ipfs\.com|nftstorage\.link|fleek\.co)/)')
 
 EXECUTABLE_PAYLOADS = re.compile(
     r'(?i)\.(?:exe|msi|bat|cmd|ps1|vbs|hta|scr|iso|img|jar|lnk|apk)(?:[?#].*)?$'
@@ -111,6 +113,19 @@ class URLAgent:
         suffix = free_hosting_suffix(final_host) if final_host else None
         if suffix:
             state.add_reason("URL_FREE_HOSTING", f"{final_host} размещён на {suffix}", {"type": "url", "value": state.final_url, "label": "Страница на бесплатном хостинге"})
+
+        # IPFS gateways: content addressed by hash, out of reach of hosting takedowns.
+        ipfs = next((u for u in all_urls if IPFS_LINK.search(u)), None)
+        if ipfs:
+            state.add_reason("URL_IPFS_LINK", f"Ссылка на IPFS: {ipfs[:120]}", {"type": "url", "value": ipfs, "label": "Ссылка на шлюз IPFS"})
+        # No landing page (offline attachment): the call-to-action link itself is judged for free hosting.
+        if not suffix and not final_host and not ipfs:
+            for u in state.discovered_urls_from_attachments:
+                s_ = free_hosting_suffix(hostname(u))
+                if s_ and not self.registry.find_brand_for_domain(u):
+                    state.add_reason("URL_FREE_HOSTING", f"Ссылка из вложения ведёт на {hostname(u)} ({s_})",
+                                     {"type": "url", "value": u, "label": "Ссылка на бесплатный хостинг"})
+                    break
 
         net["final_domain"] = registrable_domain(final_host) if final_host else None
         state.network_evidence.update(net)

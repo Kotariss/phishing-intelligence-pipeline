@@ -1360,6 +1360,7 @@
     "display_name": "JCBCard",
     "category": "general",
     "aliases": [
+      "JCB",
       "JCBCard",
       "JCBCard (JCBカード)",
       "JCBカード"
@@ -1458,6 +1459,7 @@
     "aliases": [
       "Japan Pension Service",
       "Japan Pension Service (日本年金機構)",
+      "日本年金",
       "日本年金機構"
     ],
     "official_domains": [
@@ -1481,6 +1483,7 @@
     "aliases": [
       "Japan Post",
       "Japan Post (日本郵政)",
+      "日本郵便",
       "日本郵政",
       "郵便局"
     ],
@@ -1505,6 +1508,7 @@
     "aliases": [
       "Japan Post",
       "Japan Post (日本郵政株式会社)",
+      "日本郵便",
       "日本郵政株式会社",
       "郵便局"
     ],
@@ -1952,6 +1956,7 @@
     "display_name": "Mauritius Commercial Bank",
     "category": "general",
     "aliases": [
+      "MCB",
       "Mauritius Commercial Bank"
     ],
     "official_domains": [
@@ -2221,8 +2226,10 @@
     "display_name": "Monex Securities",
     "category": "general",
     "aliases": [
+      "Monex",
       "Monex Securities",
       "Monex Securities (マネックス証券)",
+      "マネックス",
       "マネックス証券"
     ],
     "official_domains": [
@@ -2527,9 +2534,11 @@
     "display_name": "Orico Bank",
     "category": "general",
     "aliases": [
+      "Orico",
       "Orico Bank",
       "Orico Bank (eオリコ)",
-      "eオリコ"
+      "eオリコ",
+      "オリコ"
     ],
     "official_domains": [
       "orico.co.jp"
@@ -2662,7 +2671,8 @@
     "aliases": [
       "PayPay Bank",
       "PayPay Bank (PayPay 銀行)",
-      "PayPay 銀行"
+      "PayPay 銀行",
+      "PayPay銀行"
     ],
     "official_domains": [
       "paypay-bank.co.jp",
