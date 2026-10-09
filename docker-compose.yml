@@ -98,6 +98,7 @@ services:
       - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-60}
       - SCORE_CLEAN_THRESHOLD=${SCORE_CLEAN_THRESHOLD:-0.30}
       - SCORE_MALICIOUS_THRESHOLD=${SCORE_MALICIOUS_THRESHOLD:-0.70}
+      - DATASET_DIR=/app/file_for_case
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -119,8 +120,8 @@ services:
 
   ui:
     build:
-      context: ./services/ui
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/ui/Dockerfile
     image: phishing-intelligence-pipeline-ui:latest
     container_name: ui
     environment:
@@ -131,6 +132,8 @@ services:
     volumes:
       - ./file_for_case:/app/file_for_case:ro
       - ./exports:/app/exports:ro
+      - ./reports:/app/reports:ro
+      - ./logs:/app/logs:ro
     networks:
       - backend_net
     depends_on:

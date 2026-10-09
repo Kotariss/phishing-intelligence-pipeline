@@ -136,6 +136,47 @@ async def scan_endpoint(
     return final_state.public_dump()
 
 
+@app.post("/api/v1/scan/snapshot")
+async def scan_snapshot(
+    html: UploadFile = File(...),
+    url: str = Form(""),
+    screenshot: Optional[UploadFile] = File(None)
+):
+    """Saved web page: HTML (+ optional screenshot) with the URL it was captured from. Analysed offline."""
+    import base64
+    content = await html.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="HTML exceeds 25 MB limit")
+    url = url.strip()
+    if url and not url.lower().startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="url must be http(s)")
+    link = {"url": url, "final_url": url, "html": content.decode("utf-8", errors="ignore"), "redirect_chain": []}
+    if screenshot is not None:
+        link["screenshot_base64"] = base64.b64encode(await screenshot.read(MAX_UPLOAD_BYTES)).decode("ascii")
+    state = PhishingState(incident_id=f"inc_{uuid.uuid4().hex[:10]}", source_type="url" if url else "html",
+                          raw_target=url or (html.filename or "page.html"), offline_mode=True, precollected_links=[link])
+    if not url:  # an HTML file without origin is analysed as an attachment
+        state = PhishingState(incident_id=state.incident_id, source_type="html", raw_target=html.filename or "page.html",
+                              raw_bytes=content, offline_mode=True)
+    final_state = await run_in_threadpool(run_pipeline, state)
+    return final_state.public_dump()
+
+
+@app.post("/api/v1/scan/sample")
+async def scan_dataset_sample(path: str = Form(...)):
+    """A sample directory of the customer dataset (EML + Link_N artefacts), relative to DATASET_DIR."""
+    try:
+        from .ingest.dataset import build_state_from_sample_dir, is_sample_dir
+    except (ImportError, ValueError):
+        from ingest.dataset import build_state_from_sample_dir, is_sample_dir
+    root = os.path.realpath(settings.DATASET_DIR)
+    target = os.path.realpath(os.path.join(root, path))
+    if not target.startswith(root + os.sep) or not is_sample_dir(target):
+        raise HTTPException(status_code=400, detail="path must be a sample directory inside DATASET_DIR")
+    final_state = await run_in_threadpool(run_pipeline, build_state_from_sample_dir(target))
+    return final_state.public_dump()
+
+
 @app.get("/api/v1/incidents")
 def get_incidents(
     limit: int = Query(50, ge=1, le=200),

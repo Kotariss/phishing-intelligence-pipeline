@@ -86,48 +86,60 @@ def reason_catalogue() -> dict:
 
 
 # ------------------------------------------------------------------------- demo cases
-def _first_existing(*paths):
-    for p in paths:
-        if os.path.exists(p):
-            return p
-    return None
-
-
-def demo_state(choice: str):
+def demo_spec(choice: str):
     """Demo cases run OFFLINE on pre-collected artefacts (no visits to live phishing infrastructure)."""
-    from orchestrator.state import PhishingState
-    from ingest.dataset import build_state_from_sample_dir
-    iid = f"demo_{uuid.uuid4().hex[:8]}"
     if choice.startswith("1"):
-        d = _first_existing(os.path.join(DATASET, "keis2", "Adobe", "bfc7879dc6f69c94cc86b74f3158ee30033bd12f"))
-        return build_state_from_sample_dir(d, iid) if d else None
+        return {"type": "sample", "path": "keis2/Adobe/bfc7879dc6f69c94cc86b74f3158ee30033bd12f"}
     if choice.startswith("2"):
-        d = _first_existing(os.path.join(DATASET, "keis2", "Сбер", "2a5b3ccfd50b3a4c7223fd5eec48e7a00a116c86"),
-                            os.path.join(DATASET, "keis2", "Сбер", "0517e90f5805fff01c086cbc6ace8010e0a643e6"))
-        return build_state_from_sample_dir(d, iid) if d else None
+        return {"type": "sample", "path": "keis2/Сбер/2a5b3ccfd50b3a4c7223fd5eec48e7a00a116c86"}
     if choice.startswith("3"):
         from helpers_demo import TELEGRAM_KIT
-        return PhishingState(incident_id=iid, source_type="html", raw_target="Счет_на_оплату.pdf.html",
-                             raw_bytes=TELEGRAM_KIT.encode("utf-8"), offline_mode=True)
+        return {"type": "file", "name": "Счет_на_оплату.pdf.html", "data": TELEGRAM_KIT.encode("utf-8")}
     if choice.startswith("4"):
-        p = _first_existing(os.path.join(DATASET, "grouped_png_phishing2026", "cluster_10",
-                                         "570516f8ef2a63f2eb3e5e3c172cf5479ae1300d_PO.2025072100002.PDF.png"))
-        if not p:
+        p = os.path.join(DATASET, "grouped_png_phishing2026", "cluster_10",
+                         "570516f8ef2a63f2eb3e5e3c172cf5479ae1300d_PO.2025072100002.PDF.png")
+        if not os.path.exists(p):
             return None
         with open(p, "rb") as f:
-            return PhishingState(incident_id=iid, source_type="png", raw_target=p, raw_bytes=f.read(), offline_mode=True)
+            return {"type": "file", "name": os.path.basename(p), "data": f.read()}
     if choice.startswith("5"):
         import benign_samples
         s = next(x for x in benign_samples.HTML_PAGES if x["id"] == "benign-sber-login")
-        return PhishingState(incident_id=iid, source_type="url", raw_target=s["url"], offline_mode=True,
-                             precollected_links=[{"url": s["url"], "final_url": s["url"], "html": s["html"], "redirect_chain": []}])
+        return {"type": "snapshot", "url": s["url"], "html": s["html"]}
     if choice.startswith("6"):
-        p = _first_existing(os.path.join(DATASET, "hardcore_demo", "hardcore_visual_sber_phish.html"))
-        if not p:
+        p = os.path.join(DATASET, "hardcore_demo", "hardcore_visual_sber_phish.html")
+        if not os.path.exists(p):
             return None
         with open(p, "rb") as f:
-            return PhishingState(incident_id=iid, source_type="html", raw_target=p, raw_bytes=f.read(), offline_mode=True)
+            return {"type": "file", "name": os.path.basename(p), "data": f.read()}
     return None
+
+
+def run_demo(spec: dict) -> dict:
+    """Through the worker API when it is running (Docker), otherwise in-process."""
+    if _worker_alive():
+        if spec["type"] == "sample":
+            r = requests.post(f"{WORKER_API}/api/v1/scan/sample", data={"path": spec["path"]}, timeout=300)
+        elif spec["type"] == "snapshot":
+            r = requests.post(f"{WORKER_API}/api/v1/scan/snapshot", data={"url": spec["url"]},
+                              files={"html": ("page.html", spec["html"].encode("utf-8"))}, timeout=300)
+        else:
+            r = requests.post(f"{WORKER_API}/api/v1/scan", files={"file": (spec["name"], spec["data"])}, timeout=300)
+        return r.json() if r.status_code == 200 else {"error": r.text[:500]}
+    from orchestrator.state import PhishingState
+    from ingest.dataset import build_state_from_sample_dir
+    iid = f"demo_{uuid.uuid4().hex[:8]}"
+    if spec["type"] == "sample":
+        path = os.path.join(DATASET, spec["path"])
+        if not os.path.isdir(path):
+            return {"error": f"нет каталога {path}"}
+        return run_local(build_state_from_sample_dir(path, iid))
+    if spec["type"] == "snapshot":
+        return run_local(PhishingState(incident_id=iid, source_type="url", raw_target=spec["url"], offline_mode=True,
+                                       precollected_links=[{"url": spec["url"], "final_url": spec["url"], "html": spec["html"],
+                                                            "redirect_chain": []}]))
+    ext = spec["name"].lower().rsplit(".", 1)[-1]
+    return run_local(PhishingState(incident_id=iid, source_type=ext, raw_target=spec["name"], raw_bytes=spec["data"], offline_mode=True))
 
 
 DEMO_CASES = [
@@ -289,15 +301,14 @@ if page == "🔍 Анализ объекта":
         choice = st.selectbox("Кейс:", DEMO_CASES)
         st.caption("Кейсы анализируются офлайн по собранным артефактам (цепочки редиректов, HTML, скриншоты) — без обращения к живой фишинговой инфраструктуре.")
         if st.button("⚡ Запустить", type="primary", key="demo"):
-            if not _local_available():
-                st.error("Демо-кейсы требуют локальных исходников воркера.")
+            spec = demo_spec(choice)
+            if spec is None:
+                st.warning("Файлы кейса отсутствуют (каталог file_for_case не подключён).")
+            elif not _worker_alive() and not _local_available():
+                st.error("Нет ни Worker API, ни локальных исходников воркера.")
             else:
-                state = demo_state(choice)
-                if state is None:
-                    st.warning("Файлы кейса отсутствуют (каталог file_for_case не подключён).")
-                else:
-                    with st.spinner("Работает мультиагентный конвейер..."):
-                        result = run_local(state)
+                with st.spinner("Работает мультиагентный конвейер..."):
+                    result = run_demo(spec)
     with tab_file:
         uploaded = st.file_uploader("Файл для разбора в песочнице", type=None)
         if st.button("🔍 Проанализировать", type="primary", key="file") and uploaded:

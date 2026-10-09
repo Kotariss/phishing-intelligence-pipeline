@@ -20,6 +20,8 @@ STRONG_PAGE_SOURCES = ("title", "vlm", "lookalike_domain")
 LURE_TYPES = ("banking_login", "b2b_invoice", "delivery_awb", "security_alert", "penalty_notice",
               "account_login", "payment", "prize", "document_share", "other")
 
+VISUAL_DOCUMENT_LURES = {"b2b_invoice", "delivery_awb", "payment", "document_share", "penalty_notice", "security_alert", "account_login", "banking_login"}
+
 _VLM_CACHE: Dict[str, Dict[str, Any]] = {}
 
 
@@ -108,6 +110,9 @@ class VisionAgent:
             vlm_result, vlm_call_info = self._ask_vlm(state.screenshot_base64)
             if vlm_result:
                 lure_type = str(vlm_result.get("lure") or "").strip().lower() or None
+                # An image attachment that renders a document / payment / delivery lure ("click to view invoice").
+                if state.screenshot_source == "image_file" and lure_type in VISUAL_DOCUMENT_LURES:
+                    state.add_reason("VISUAL_DOCUMENT_LURE", f"VLM: изображение-вложение изображает приманку типа «{lure_type}»")
                 name = str(vlm_result.get("brand") or "").strip().strip('"\'')
                 try:
                     conf = float(vlm_result.get("confidence", 0.7))

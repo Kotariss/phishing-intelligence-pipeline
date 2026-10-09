@@ -51,6 +51,7 @@ REASON_CODES: Dict[str, ReasonCode] = {
     "EMAIL_DISPLAYNAME_OBFUSCATED": ReasonCode(0.30, "email", "medium", "Имя отправителя замаскировано невидимыми символами или разрядкой букв"),
     "EMAIL_SUBJECT_BRAND_OFF_DOMAIN": ReasonCode(0.20, "email", "low", "Тема письма упоминает бренд, отправитель не принадлежит бренду"),
     "RC_CLOAKING_TO_OFFICIAL": ReasonCode(0.30, "network", "medium", "Ссылка со стороннего домена перенаправляет на официальный сайт бренда (клоакинг)"),
+    "VISUAL_DOCUMENT_LURE": ReasonCode(0.35, "content", "medium", "VLM: изображение-вложение изображает приманку (счёт, накладная, платёж, вход)"),
     "CONTENT_LLM_LURE": ReasonCode(0.45, "content", "medium", "LLM классифицировала текст как фишинговую/мошенническую приманку"),
     # --- Attachments ----------------------------------------------------------------------------
     "ATTACH_OFFLINE_FORM": ReasonCode(0.75, "attachment", "critical", "HTML-вложение с формой ввода пароля: локальная страница сбора учётных данных всегда передаёт их на сторонний ресурс (составной признак)"),

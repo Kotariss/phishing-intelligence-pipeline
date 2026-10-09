@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     EXPORTS_DIR: str = Field(
         default_factory=lambda: os.path.join(os.getcwd(), "exports")
     )
+    DATASET_DIR: str = Field(
+        default_factory=lambda: os.path.join(_REPO_ROOT, "file_for_case") if os.path.isdir(os.path.join(_REPO_ROOT, "file_for_case"))
+        else os.path.join(os.getcwd(), "file_for_case")
+    )
     LOGS_DIR: str = Field(
         default_factory=lambda: os.path.join(os.getcwd(), "logs")
     )
