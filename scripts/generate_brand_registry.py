@@ -525,6 +525,7 @@ EXTRA_ALIASES = {
     "apple_appstore": ["App Store"],
     "japan_post": ["郵便局"],
     "line": ["LINEヤフー"],
+    "hmrc": ["GOV.UK", "DVLA", "HM Revenue"],
 }
 
 

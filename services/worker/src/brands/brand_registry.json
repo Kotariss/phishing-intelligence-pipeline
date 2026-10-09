@@ -1176,6 +1176,9 @@
     "display_name": "HMRC",
     "category": "general",
     "aliases": [
+      "DVLA",
+      "GOV.UK",
+      "HM Revenue",
       "HMRC"
     ],
     "official_domains": [

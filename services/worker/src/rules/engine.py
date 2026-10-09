@@ -171,7 +171,8 @@ def build_record(url: str = "", page: Optional[Dict[str, Any]] = None, attachmen
         "telegram_bot_ids": _telegram_ids(tg),
         "discord_webhook_ids": sorted({w.rstrip("/").split("/")[-1] if w.count("/") > 3 else w for w in dc}),
         "attachment_names": [n for n in names if n],
-        "attachment_html_password": any(i.get("has_password_field") for i in html_items),
+        "attachment_html_password": any(i.get("has_password_field") or any(f.get("has_card") for f in i.get("forms") or [])
+                                        for i in html_items),
         "attachment_html_redirect": any(i.get("meta_refresh") or i.get("js_redirects") for i in html_items),
         "sender_name": att.get("from_name") or "",
         "sender_domain": att.get("from_domain") or "",

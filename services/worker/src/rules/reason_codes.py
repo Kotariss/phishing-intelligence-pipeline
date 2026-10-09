@@ -54,7 +54,7 @@ REASON_CODES: Dict[str, ReasonCode] = {
     "VISUAL_DOCUMENT_LURE": ReasonCode(0.35, "content", "medium", "VLM: изображение-вложение изображает приманку (счёт, накладная, платёж, вход)"),
     "CONTENT_LLM_LURE": ReasonCode(0.45, "content", "medium", "LLM классифицировала текст как фишинговую/мошенническую приманку"),
     # --- Attachments ----------------------------------------------------------------------------
-    "ATTACH_OFFLINE_FORM": ReasonCode(0.75, "attachment", "critical", "HTML-вложение с формой ввода пароля: локальная страница сбора учётных данных всегда передаёт их на сторонний ресурс (составной признак)"),
+    "ATTACH_OFFLINE_FORM": ReasonCode(0.75, "attachment", "critical", "HTML-вложение с формой ввода пароля или данных карты: локальная страница сбора данных всегда передаёт их на сторонний ресурс (составной признак)"),
     "ATTACH_HTML_REDIRECTOR": ReasonCode(0.60, "attachment", "high", "HTML-вложение перенаправляет на внешний сайт (meta/JS)"),
     "ATTACH_QR_CODE_FOUND": ReasonCode(0.30, "attachment", "medium", "QR-код со ссылкой во вложении (quishing)"),
     "ATTACH_ACTIVE_MACRO_MARKER": ReasonCode(0.50, "attachment", "high", "Office-документ с VBA-макросами"),

@@ -68,8 +68,10 @@ class QuishingAgent:
             if item.get("is_executable"):
                 state.add_reason("ATTACH_EXECUTABLE", f"{name}: исполняемый файл" + (" в архиве" if kind == "archive" else ""))
             if kind == "html":
-                if item.get("has_password_field"):
-                    state.add_reason("ATTACH_OFFLINE_FORM", f"{name}: HTML-вложение с полем пароля")
+                card_form = any(f.get("has_card") for f in item.get("forms") or [])
+                if item.get("has_password_field") or card_form:
+                    what = "поле пароля" if item.get("has_password_field") else "поля банковской карты"
+                    state.add_reason("ATTACH_OFFLINE_FORM", f"{name}: HTML-вложение запрашивает {what}")
                 redirect = item.get("meta_refresh") or next(iter(item.get("js_redirects") or []), "")
                 if redirect and redirect.lower().startswith("http"):
                     state.add_reason("ATTACH_HTML_REDIRECTOR", f"{name}: перенаправляет на {hostname(redirect)}")
