@@ -102,6 +102,7 @@ python phishctl.py --help
 |---|---|
 | `import-corpus <dir>` | индекс корпуса: тип, размер, SHA-256, дубликаты, происхождение → `reports/corpus_index.json` |
 | `analyze <файл \| каталог образца \| URL> [--json out.json] [--online]` | анализ одного объекта |
+| `analyze page.html --url <URL> [--screenshot shot.png]` | анализ сохранённой страницы со снимком экрана |
 | `analyze-dir <dir> [--out reports/results.jsonl] [--limit N]` | пакетный анализ; продолжает с места остановки, битые объекты не прерывают прогон |
 | `kb-stats` | статистика базы знаний, частота техник, бренды |
 | `cluster [--min-size 2]` | фишинговые кампании |
@@ -119,6 +120,8 @@ python phishctl.py --help
 |---|---|---|
 | `GET` | `/health` | состояние сервиса и режим LLM |
 | `POST` | `/api/v1/scan` | анализ объекта: `multipart/form-data` с полем `file` или `url` (http/https); ответ — результат анализа в JSON |
+| `POST` | `/api/v1/scan/snapshot` | сохранённая страница: `html` (файл), `url`, опционально `screenshot` |
+| `POST` | `/api/v1/scan/sample` | образец датасета: `path` относительно `DATASET_DIR` (EML + собранные ссылки) |
 | `GET` | `/api/v1/incidents?limit=&offset=&verdict=&brand=` | список инцидентов базы знаний |
 | `GET` | `/api/v1/incidents/{id}` | результат анализа с уликами и отпечатками |
 | `GET` | `/api/v1/campaigns?min_size=2` | кампании (инциденты с общим kit / инфраструктурой) |

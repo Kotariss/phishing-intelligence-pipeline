@@ -37,6 +37,19 @@ def _log(msg: str) -> None:
 
 
 # ----------------------------------------------------------------------------- helpers
+def _snapshot_state(html_path: str, url: str, screenshot: str = None):
+    """A saved web page (HTML + optional screenshot) captured from `url` — analysed offline."""
+    import base64
+    from orchestrator.state import PhishingState
+    with open(html_path, "rb") as f:
+        link = {"url": url, "final_url": url, "html": f.read().decode("utf-8", errors="ignore"), "redirect_chain": []}
+    if screenshot:
+        with open(screenshot, "rb") as f:
+            link["screenshot_base64"] = base64.b64encode(f.read()).decode("ascii")
+    return PhishingState(incident_id=f"inc_{uuid.uuid4().hex[:10]}", source_type="url", raw_target=url,
+                         offline_mode=True, precollected_links=[link])
+
+
 def _state_for_target(target: str, offline: bool):
     from orchestrator.state import PhishingState
     from ingest.dataset import build_state_from_sample_dir, is_sample_dir
@@ -123,7 +136,10 @@ def cmd_import_corpus(args):
 def cmd_analyze(args):
     from orchestrator.graph import run_pipeline
     t0 = time.time()
-    state = run_pipeline(_state_for_target(args.target, offline=not args.online))
+    if args.url:
+        state = run_pipeline(_snapshot_state(args.target, args.url, args.screenshot))
+    else:
+        state = run_pipeline(_state_for_target(args.target, offline=not args.online))
     brief = _brief(state)
     brief["seconds"] = round(time.time() - t0, 2)
     print(json.dumps(brief, ensure_ascii=False, indent=2))
@@ -263,6 +279,8 @@ def main(argv=None):
     p.add_argument("target")
     p.add_argument("--json", help="write the full JSON result")
     p.add_argument("--online", action="store_true", help="allow live URL fetching through the sandbox")
+    p.add_argument("--url", help="treat TARGET as a saved page (HTML) captured from this URL")
+    p.add_argument("--screenshot", help="screenshot of the saved page (with --url)")
     p.set_defaults(func=cmd_analyze)
 
     p = sub.add_parser("analyze-dir", help="batch-analyse a directory (resumable)")
