@@ -112,7 +112,8 @@ class TriageAgent:
         registry = get_brand_registry()
         ranked = sorted(
             state.precollected_links,
-            key=lambda l: (not registry.find_brand_for_domain(l.get("final_url") or l.get("url") or ""),
+            key=lambda l: (not NOISE_LINK.search(l.get("url") or ""),
+                           not registry.find_brand_for_domain(l.get("final_url") or l.get("url") or ""),
                            bool(l.get("html")) and len(l.get("html", "")) > 200,
                            bool(l.get("screenshot_base64")),
                            not l.get("collection_error"),

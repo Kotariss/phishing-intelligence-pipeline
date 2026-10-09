@@ -1,0 +1,299 @@
+"""
+Command-line interface (ТЗ п. 4.8.1.1).
+
+    python phishctl.py import-corpus file_for_case
+    python phishctl.py analyze <file | sample_dir | URL> [--json out.json]
+    python phishctl.py analyze-dir <dir> [--out reports/results.jsonl] [--limit N]     # resumable
+    python phishctl.py kb-stats
+    python phishctl.py cluster [--min-size 2]
+    python phishctl.py export-package [--out exports/package]
+    python phishctl.py apply <package.json> <file|dir>...
+    python phishctl.py metrics [--limit N] [--sources keis2,html,png] [--out reports/metrics.json]
+    python phishctl.py build-benign-corpus
+"""
+import argparse
+import collections
+import datetime
+import hashlib
+import json
+import os
+import sys
+import time
+import uuid
+
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(SRC_DIR, "..", "..", ".."))
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+
+def _log(msg: str) -> None:
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+# ----------------------------------------------------------------------------- helpers
+def _state_for_target(target: str, offline: bool):
+    from orchestrator.state import PhishingState
+    from ingest.dataset import build_state_from_sample_dir, is_sample_dir
+    incident_id = f"inc_{uuid.uuid4().hex[:10]}"
+    if target.lower().startswith(("http://", "https://")):
+        return PhishingState(incident_id=incident_id, source_type="url", raw_target=target, offline_mode=offline)
+    if os.path.isdir(target) and is_sample_dir(target):
+        return build_state_from_sample_dir(target, incident_id)
+    with open(target, "rb") as f:
+        data = f.read()
+    ext = target.lower().rsplit(".", 1)[-1] if "." in os.path.basename(target) else "bin"
+    return PhishingState(incident_id=incident_id, source_type=ext, raw_target=target, raw_bytes=data, offline_mode=offline)
+
+
+def _brief(state) -> dict:
+    return {
+        "incident_id": state.incident_id,
+        "object": state.raw_target,
+        "verdict": state.verdict,
+        "risk_score": state.risk_score,
+        "brand": state.brand_evidence.detected_brand_name,
+        "final_url": state.final_url,
+        "reason_codes": state.reason_codes,
+        "reason_details": state.reason_details,
+        "campaign_id": state.campaign_id,
+        "signature": (state.generated_l_signature or {}).get("rule_id"),
+        "signature_status": state.signature_status,
+    }
+
+
+def _iter_objects(root: str):
+    """Objects of a directory: dataset sample dirs (EML + Link_N) or individual files."""
+    from ingest.dataset import is_sample_dir
+    if is_sample_dir(root):
+        yield root
+        return
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        for d in list(dirnames):
+            full = os.path.join(dirpath, d)
+            if is_sample_dir(full):
+                yield full
+                dirnames.remove(d)
+        for name in sorted(filenames):
+            if name.lower().endswith((".json", ".txt", ".list", ".zip", ".pdf")) and "Link_" in dirpath:
+                continue
+            yield os.path.join(dirpath, name)
+
+
+# ---------------------------------------------------------------------------- commands
+def cmd_import_corpus(args):
+    """Indexes the corpus: type, size, sha256, duplicates, provenance (ТЗ п. 4.1.1.3–4.1.1.4)."""
+    sys.path.insert(0, os.path.join(REPO_ROOT, "services", "sandbox", "src"))
+    from attachment_parser import sniff_file_kind
+    index, by_hash, errors = [], collections.defaultdict(list), []
+    imported_at = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    for dirpath, _, filenames in os.walk(args.root):
+        for name in sorted(filenames):
+            path = os.path.join(dirpath, name)
+            try:
+                with open(path, "rb") as f:
+                    data = f.read()
+            except OSError as e:
+                errors.append({"path": path, "error": str(e)})
+                continue
+            sha = hashlib.sha256(data).hexdigest()
+            entry = {"path": os.path.relpath(path, args.root), "sha256": sha, "size": len(data),
+                     "kind": sniff_file_kind(name, data), "source": os.path.relpath(dirpath, args.root).split(os.sep)[0],
+                     "imported_at": imported_at}
+            entry["duplicate_of"] = by_hash[sha][0] if by_hash[sha] else None
+            by_hash[sha].append(entry["path"])
+            index.append(entry)
+    kinds = collections.Counter(e["kind"] for e in index)
+    summary = {"root": os.path.abspath(args.root), "imported_at": imported_at, "files": len(index),
+               "unique": len(by_hash), "duplicates": len(index) - len(by_hash), "unreadable": len(errors),
+               "by_kind": dict(kinds)}
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump({"summary": summary, "errors": errors, "objects": index}, f, ensure_ascii=False, indent=1)
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    _log(f"index written to {args.out}")
+
+
+def cmd_analyze(args):
+    from orchestrator.graph import run_pipeline
+    t0 = time.time()
+    state = run_pipeline(_state_for_target(args.target, offline=not args.online))
+    brief = _brief(state)
+    brief["seconds"] = round(time.time() - t0, 2)
+    print(json.dumps(brief, ensure_ascii=False, indent=2))
+    print("\n" + (state.explanation or ""))
+    if args.json:
+        with open(args.json, "w", encoding="utf-8") as f:
+            json.dump(state.public_dump(), f, ensure_ascii=False, indent=2)
+        _log(f"full result written to {args.json}")
+
+
+def cmd_analyze_dir(args):
+    """Batch analysis; resumable (skips objects already present in --out), never aborts on bad input."""
+    from orchestrator.graph import run_pipeline
+    done = set()
+    if os.path.exists(args.out):
+        with open(args.out, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    done.add(json.loads(line)["object"])
+                except (ValueError, KeyError):
+                    continue
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    counts = collections.Counter()
+    processed = 0
+    with open(args.out, "a", encoding="utf-8") as out:
+        for obj in _iter_objects(args.root):
+            if args.limit and processed >= args.limit:
+                break
+            if obj in done:
+                counts["skipped_resume"] += 1
+                continue
+            processed += 1
+            t0 = time.time()
+            try:
+                state = run_pipeline(_state_for_target(obj, offline=not args.online))
+                row = _brief(state)
+                row["status"] = "ok"
+                counts[state.verdict] += 1
+            except Exception as e:  # ТЗ 4.2.2: a broken object must not stop the batch
+                row = {"object": obj, "status": "error", "error": f"{type(e).__name__}: {str(e)[:300]}"}
+                counts["error"] += 1
+            row["object"] = obj
+            row["seconds"] = round(time.time() - t0, 2)
+            out.write(json.dumps(row, ensure_ascii=False) + "\n")
+            out.flush()
+            _log(f"{row.get('verdict', row['status']):10s} {obj}")
+    print(json.dumps(dict(counts), ensure_ascii=False, indent=2))
+
+
+def cmd_kb_stats(args):
+    from db.repository import IncidentRepository
+    from db.database import SessionLocal
+    from db.models import IncidentModel
+    stats = IncidentRepository().count_stats()
+    db = SessionLocal()
+    try:
+        incidents = db.query(IncidentModel).all()
+        stats["top_brands"] = collections.Counter(i.target_brand for i in incidents if i.target_brand).most_common(15)
+        stats["technique_frequency"] = collections.Counter(c for i in incidents for c in (i.reason_codes or [])).most_common(30)
+        stats["campaigns"] = len({i.campaign_id for i in incidents if i.campaign_id})
+    finally:
+        db.close()
+    print(json.dumps(stats, ensure_ascii=False, indent=2))
+
+
+def cmd_cluster(args):
+    from db.repository import IncidentRepository
+    campaigns = IncidentRepository().list_campaigns(min_size=args.min_size, limit=args.limit)
+    print(json.dumps(campaigns, ensure_ascii=False, indent=2))
+
+
+def cmd_export_package(args):
+    from rules.package import build_package, save_package
+    info = save_package(build_package(), args.out)
+    print(json.dumps(info, ensure_ascii=False, indent=2))
+
+
+def cmd_apply(args):
+    from rules.package import load_package
+    from rules.light_engine import apply_to_file
+    package = load_package(args.package)
+    from ingest.dataset import load_sample_dir
+    targets = []
+    for t in args.targets:
+        for obj in (_iter_objects(t) if os.path.isdir(t) else [t]):
+            # a dataset sample directory is represented by its e-mail
+            targets.append(load_sample_dir(obj)["eml_path"] if os.path.isdir(obj) else obj)
+    verdicts = collections.Counter()
+    for path in targets:
+        try:
+            res = apply_to_file(package, path)
+        except Exception as e:
+            res = {"object": path, "verdict": "ERROR", "error": str(e)}
+        verdicts[res["verdict"]] += 1
+        print(json.dumps(res, ensure_ascii=False))
+    print(json.dumps(dict(verdicts), ensure_ascii=False))
+
+
+def cmd_metrics(args):
+    from evaluation import evaluate, save_report
+    report = evaluate(args.dataset, args.limit, tuple(args.sources.split(",")),
+                      progress=_log if args.verbose else None)
+    save_report(report, args.out)
+    print(json.dumps({"counts": report["counts"], "metrics": report["metrics"], "acceptance": report["acceptance"]},
+                     ensure_ascii=False, indent=2))
+    _log(f"report written to {args.out}")
+
+
+def cmd_build_benign_corpus(args):
+    sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
+    import build_benign_corpus
+    build_benign_corpus.main()
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="phishctl", description="DW-2 Phishing Intelligence Pipeline")
+    parser.add_argument("--llm", choices=["off", "local", "cloud"], help="override LLM_MODE")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("import-corpus", help="index a corpus directory (types, hashes, duplicates)")
+    p.add_argument("root")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "corpus_index.json"))
+    p.set_defaults(func=cmd_import_corpus)
+
+    p = sub.add_parser("analyze", help="analyse one object (file, dataset sample dir or URL)")
+    p.add_argument("target")
+    p.add_argument("--json", help="write the full JSON result")
+    p.add_argument("--online", action="store_true", help="allow live URL fetching through the sandbox")
+    p.set_defaults(func=cmd_analyze)
+
+    p = sub.add_parser("analyze-dir", help="batch-analyse a directory (resumable)")
+    p.add_argument("root")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "results.jsonl"))
+    p.add_argument("--limit", type=int)
+    p.add_argument("--online", action="store_true")
+    p.set_defaults(func=cmd_analyze_dir)
+
+    p = sub.add_parser("kb-stats", help="knowledge-base statistics and technique frequency")
+    p.set_defaults(func=cmd_kb_stats)
+
+    p = sub.add_parser("cluster", help="phishing campaigns (incidents sharing kit / infrastructure)")
+    p.add_argument("--min-size", type=int, default=2)
+    p.add_argument("--limit", type=int, default=50)
+    p.set_defaults(func=cmd_cluster)
+
+    p = sub.add_parser("export-package", help="export a versioned artefact package (JSON + YARA)")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "exports", "package"))
+    p.set_defaults(func=cmd_export_package)
+
+    p = sub.add_parser("apply", help="apply a package with the light rule module")
+    p.add_argument("package")
+    p.add_argument("targets", nargs="+")
+    p.set_defaults(func=cmd_apply)
+
+    p = sub.add_parser("metrics", help="compute the acceptance metrics and save a JSON report")
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.add_argument("--limit", type=int, help="objects per source")
+    p.add_argument("--sources", default="keis2,html,png")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "metrics.json"))
+    p.add_argument("--verbose", action="store_true")
+    p.set_defaults(func=cmd_metrics)
+
+    p = sub.add_parser("build-benign-corpus", help="rebuild the known-legitimate feature corpus")
+    p.set_defaults(func=cmd_build_benign_corpus)
+
+    args = parser.parse_args(argv)
+    if args.llm:
+        os.environ["LLM_MODE"] = args.llm
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

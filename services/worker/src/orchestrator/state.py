@@ -98,7 +98,12 @@ class PhishingState(BaseModel):
         if code not in self.reason_codes:
             self.reason_codes.append(code)
             self.reason_codes.sort()
-        self.reason_details.setdefault(code, detail)
+        # tokens / e-mails in URLs are masked in every report (ТЗ п. 4.5.2.3)
+        try:
+            from ..features.url_features import mask_urls_in_text
+        except (ImportError, ValueError):
+            from features.url_features import mask_urls_in_text
+        self.reason_details.setdefault(code, mask_urls_in_text(detail))
 
     def drop_reason(self, code: str) -> None:
         if code in self.reason_codes:

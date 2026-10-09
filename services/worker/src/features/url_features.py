@@ -2,7 +2,7 @@ import ipaddress
 import re
 import unicodedata
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 FREE_HOSTING_SUFFIXES = (
     "pages.dev", "workers.dev", "r2.dev", "web.app", "firebaseapp.com", "github.io", "glitch.me",
@@ -14,6 +14,13 @@ FREE_HOSTING_SUFFIXES = (
     "run.app", "azurewebsites.net", "web.core.windows.net", "firebasestorage.googleapis.com",
     "translate.goog", "notion.site", "canva.site", "wordpress.com", "carrd.co", "jimdosite.com",
 )
+
+# Shared infrastructure: never usable as a domain-level IOC (would block everything that uses it).
+SHORTENER_DOMAINS = {
+    "bit.ly", "t.co", "ok.me", "clck.ru", "tinyurl.com", "goo.gl", "is.gd", "cutt.ly", "rebrand.ly", "t.ly",
+    "ow.ly", "buff.ly", "lnkd.in", "vk.cc", "vk.com", "trk.mail.ru", "mail.ru", "google.com", "search.app",
+    "microsoftonline.com", "facebook.com", "linktr.ee", "qrco.de", "s.id", "shorturl.at", "rb.gy",
+}
 
 MULTI_PART_SUFFIXES = {
     "co.uk", "org.uk", "ac.uk", "gov.uk", "com.au", "net.au", "co.jp", "ne.jp", "or.jp", "go.jp",
@@ -52,6 +59,12 @@ def free_hosting_suffix(host: str) -> Optional[str]:
         if host == suffix or host.endswith("." + suffix):
             return suffix
     return None
+
+
+def is_shared_infrastructure(host: str) -> bool:
+    host = (host or "").lower()
+    site = registrable_domain(host)
+    return site in SHORTENER_DOMAINS or host in SHORTENER_DOMAINS or free_hosting_suffix(host) is not None
 
 
 def _script_of(ch: str) -> str:
@@ -102,3 +115,23 @@ def generalize_path(path: str) -> Optional[str]:
     if informative == 0 or (len(segments) == 1 and informative == 1 and not re.search(r'\.(php|aspx?|jsp|cgi)$', segments[0], re.I)):
         return None
     return "^/" + "/".join(out)
+
+
+_EMAIL = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+_URL_IN_TEXT = re.compile(r'https?://[^\s<>"\')\]]+')
+
+
+def mask_url(url: str) -> str:
+    """Masks tokens / personal data in URLs for reports and packages (ТЗ п. 4.5.2.3)."""
+    try:
+        p = urlparse(url)
+    except ValueError:
+        return "<unparseable>"
+    query = "&".join(f"{kv.split('=', 1)[0]}=***" if "=" in kv else "***" for kv in p.query.split("&") if kv) if p.query else ""
+    path = _EMAIL.sub("***@***", p.path)
+    path = re.sub(r'(?<=/)[A-Za-z0-9_-]{24,}(?=/|$)', "***", path)
+    return urlunparse((p.scheme, p.netloc, path, "", query, ""))
+
+
+def mask_urls_in_text(text: str) -> str:
+    return _URL_IN_TEXT.sub(lambda m: mask_url(m.group(0)), text or "")

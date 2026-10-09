@@ -9,7 +9,11 @@ from email.utils import getaddresses
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
-from bs4 import BeautifulSoup
+import warnings
+
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 try:
     from .qr_scanner import scan_qr_codes
