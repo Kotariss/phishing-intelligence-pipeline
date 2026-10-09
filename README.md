@@ -1,231 +1,172 @@
-# Phishing Intelligence Pipeline
+# Phishing Intelligence Pipeline (DW-2)
 
-> **Проект:** Phishing Intelligence Pipeline  
-> **Тема:** Обобщение глубокого анализа фишинговых веб-страниц и вложений в компактные признаки для локальной антиспам-фильтрации  
-> **Статус:** Полная производственная реализация (Production Ready)  
-> **Стандарт надежности:** Гарантия **Zero FPR** (0.00% ложных срабатываний на легитимной деловой почте)
+Прототип системы глубокого анализа фишинговых веб-страниц и вложений и обобщения его результатов
+в компактные признаки для локальной антиспам-фильтрации.
 
----
-
-## 📋 О проекте
-
-**Phishing Intelligence Pipeline** — комплексная автоматизированная система глубокого анализа угроз и дистилляции правил для локального антиспам-модуля.
-
-В отличие от традиционных списков блокировки (blacklist), которые устаревают в течение часов, система извлекает **инварианты фишинговых атак** (имитация защищаемых брендов, формы сбора паролей, эксфильтрация в Telegram/Discord, вредоносные редиректы, Quishing) и преобразует их в **сверхбыстрые декларативные L-сигнатуры (JSON)** и **YARA-правила** для клиентского движка.
-
----
-
-## 🏛️ Архитектура системы
-
-Система построена по принципу строгого зонирования безопасности:
-
-```mermaid
-flowchart TB
-    User[Аналитик / Оператор] <-->|HTTP :8501| UI[Streamlit UI :8501]
-    
-    subgraph TrustedZone["Доверенная зона (Trusted)"]
-        UI <-->|REST API| Worker[Worker API & LangGraph Orchestrator :8000]
-        Worker <-->|SQL / JSON| DB[(PostgreSQL 16 / SQLite)]
-        Worker <-->|OpenAI API / Vision| LLM[LLM Backend: NSU Cloud API / Ollama]
-    end
-    
-    subgraph IsolatedZone["Изолированная песочница (Untrusted Sandbox)"]
-        Worker -->|HTTP POST /extract| Sandbox[Sandbox Service :8001]
-        Sandbox -.->|Ограниченный Egress / Anti-SSRF| Web[Внешний подозрительный URL]
-    end
+```
+образцы (EML, URL, HTML + скриншоты, PDF, Office, изображения с QR, каталоги датасета)
+  → изолированная песочница: офлайн-разбор, рендер, QR, деобфускация JS
+  → мультиагентный конвейер LangGraph (тяжеловесные экстракторы, опционально LLM/VLM)
+  → база знаний: объекты, признаки, отпечатки, бренды, кампании, коды причин
+  → пакет компактных артефактов: сигнатуры известного фишинга, обобщённые правила, YARA, признаки брендов
+  → лёгкий модуль применения правил (переносимость в антиспам-движок)
 ```
 
-### Сервисы и компоненты:
-1. **`sandbox` (Изолированная песочница, порт 8001):**
-   - Headless Chromium (Playwright) без привилегий (`cap_drop: ALL`, `read_only: true`, `tmpfs`).
-   - Модуль **Anti-SSRF** (`services/sandbox/src/security.py`) с DNS pre-resolution и блокировкой RFC1918, 127.0.0.1, 169.254.169.254.
-   - Оффлайн-парсеры вложений: EML (MIME decode), HTML/Forms, PDF (PyMuPDF), DOCX/XLSX (Office OpenXML), QR-коды.
-2. **`worker` (Мультиагентный оркестратор LangGraph, порт 8000):**
-   - Граф состояний `StateGraph(PhishingState)`.
-   - 6 специализированных агентов: `TriageAgent`, `URLAgent`, `DOMAgent`, `VisionAgent`, `QuishingAgent`, `SynthesizerAgent`.
-   - **Реестр 175 таргет-брендов** (`services/worker/src/brands/brand_registry.json`) с официальными доменными регулярными выражениями.
-   - Мультимодальный Vision VLM (`Qwen3.8-27B`) и LLM (`DeepSeek-V4-Flash-0731`) через NSU Cloud API с поддержкой Ollama.
-   - **Трехуровневый Zero FPR Guard:** безусловный Allowlist брендов, пороговая градация (`<0.30` Clean, `0.30-0.70` Review, `>=0.70` Block), регрессионный прогон по эталонному датасету.
-   - Компилятор компактных L-сигнатур (`lar-rule-v1.json`) и YARA-генератор.
-3. **`ui` (Интерактивный дашборд Streamlit, порт 8501):**
-   - Страница 1: Интерактивный сканер URL, drag-and-drop файлов и предустановленные кейсы из датасета DW-2 (Сбер, Госуслуги, Quishing, Чистое письмо).
-   - Страница 2: База знаний инцидентов, реестр L-сигнатур, скачивание правил и пакетная выгрузка единым ZIP-архивом.
-4. **`db` (Хранилище данных):**
-   - PostgreSQL 16 (в Docker) / SQLite (для мгновенного локального запуска).
+Результат не сводится к списку заблокированных URL: правила описывают **технику** (имитация бренда + форма
+сбора данных, канал эксфильтрации, загрузка нагрузки, HTML-вложение, подмена отправителя) и переносятся
+на смену доменов и URL. Каждое правило до включения в пакет проверяется на наборе заведомо легитимных объектов.
 
----
+## Архитектура
 
-## 🚀 Быстрый старт
+| Сервис | Порт | Назначение |
+|---|---|---|
+| `sandbox` | 8001 (внутренняя сеть) | разбор и рендер опасных объектов: EML/MIME (рекурсивно), HTML/DOM/JS, PDF, Office OpenXML, архивы, QR; Anti-SSRF на каждом переходе; контейнер без выхода в интернет, read-only, без привилегий |
+| `worker` | 8000 | REST API, агенты LangGraph, база знаний, Zero FPR Guard, генерация правил и пакета |
+| `db` | — | PostgreSQL 16 (в Docker) или SQLite (локально) |
+| `ui` | 8501 | интерфейс аналитика (Streamlit) — дополнительно к CLI и API |
 
-### Вариант 1: Запуск через Docker Compose (Рекомендуемый для продакшна)
+Агенты: `triage` (песочница / собранные артефакты) → `url` (редиректы, домены-двойники, омографы, IP, бесплатный хостинг,
+нагрузки) → `dom` (формы и адреса отправки, пароли/карты, эксфильтрация, обфускация, антианализ, остов DOM) →
+`vision` (бренд: отправитель, заголовок, VLM, домен-двойник; проверка «бренд — домен») → `quishing` (вложения, QR,
+макросы, PDF, архивы, заголовки письма) → `content` (LLM-анализ текста приманки) → `aggregator` (второй проход по ссылке
+из письма/QR) → `synthesizer` (риск, составные признаки, Level-1 allowlist, правила, отпечатки, кампания, пояснение) → `persist`.
+
+Подробнее: [docs/KNOWLEDGE_BASE_AND_FORMATS.md](docs/KNOWLEDGE_BASE_AND_FORMATS.md),
+[docs/REASON_CODES.md](docs/REASON_CODES.md), [docs/LLM_AND_PROMPTS.md](docs/LLM_AND_PROMPTS.md), [docs/METRICS.md](docs/METRICS.md).
+
+## Вердикт
+
+Риск = noisy-OR по независимым уликам `1 − Π(1 − wᵢ)` (веса — в [каталоге кодов причин](docs/REASON_CODES.md)):
+`< 0.30` — признаков фишинга не обнаружено, `0.30–0.70` — подозрительно, `≥ 0.70` — фишинг.
+Одиночный некритичный признак не даёт вердикт «фишинг». Если финальная страница находится на официальном
+домене бренда, признаки самой страницы нейтрализуются, а улики письма и вложений сохраняются (переход со стороннего
+домена на официальный фиксируется как клоакинг).
+
+## Быстрый старт (локально)
+
+Требуется Python 3.10+.
 
 ```bash
-# 1. Запуск всех 4 сервисов
+pip install -r services/worker/requirements.txt -r services/sandbox/requirements.txt -r services/ui/requirements.txt
+```
+
+```bash
+cp .env.example .env
+```
+
+Каталог данных Заказчика `file_for_case/` (исключён из git) кладётся в корень репозитория.
+Он содержит вредоносные файлы: добавьте его в исключения антивируса и не открывайте HTML в браузере.
+
+```bash
+python phishctl.py analyze "file_for_case/keis2/Adobe/bfc7879dc6f69c94cc86b74f3158ee30033bd12f"
+```
+
+```bash
+python -m streamlit run services/ui/app.py
+```
+
+Локально без контейнера песочницы разбор выполняется в процессе (`SANDBOX_INPROCESS_FALLBACK=true` в `.env`);
+в Docker это запрещено.
+
+## Запуск в Docker
+
+```bash
 docker compose up --build -d
-
-# 2. Проверка статуса контейнеров
-docker compose ps
 ```
-После запуска веб-интерфейс доступен по адресу: **http://localhost:8501**.
 
----
-
-### Вариант 2: Локальный запуск (Python 3.11+)
-
-Конвейер поддерживает гибридный локальный режим:
+API: `http://localhost:8000` (Swagger: `/docs`), интерфейс: `http://localhost:8501`.
+Песочница подключена только к внутренней сети. Активное раскрытие URL (расширенная версия) включается профилем:
 
 ```bash
-# 1. Инициализация базы данных и загрузка 175 брендов
-python scripts/init_db.py
-
-# 2. Запуск Streamlit веб-интерфейса
-streamlit run services/ui/app.py --server.port=8501
+docker compose --profile live-fetch up -d
 ```
 
-Интерфейс откроется в браузере на **http://localhost:8501**.
+## LLM / VLM (опционально)
 
----
+| `LLM_MODE` | Подключение |
+|---|---|
+| `local` | Ollama / LM Studio / vLLM: `LLM_LOCAL_BASE_URL` (например `http://localhost:11434/v1`) |
+| `cloud` | удалённый OpenAI-совместимый сервер: `LLM_CLOUD_BASE_URL` + `LLM_CLOUD_API_KEY` |
+| `off` | только детерминированные экстракторы |
 
-## 🧪 Тестирование и валидация
+Модели: `LLM_TEXT_MODEL`, `LLM_VISION_MODEL`. Промпты — в `services/worker/src/prompts/`.
+Подробно: [docs/LLM_AND_PROMPTS.md](docs/LLM_AND_PROMPTS.md).
 
-В проект включен полный набор автоматических тестов (`pytest`) и CLI бенчмарк-раннер для проверки датасета `file_for_case`.
+## Интерфейс командной строки
 
-### 1. Запуск модульных и интеграционных тестов
 ```bash
-pytest tests/ -v
+python phishctl.py --help
 ```
-Все 22 теста проверяют:
-- Блокировку SSRF и приватных IP (127.0.0.1, 10.0.0.0/8, 192.168.0.0/16);
-- Загрузку и сопоставление 175 брендов;
-- Парсинг EML, HTML, PDF;
-- Прохождение Zero FPR Guard без ложных срабатываний;
-- Соответствие формата L-сигнатур стандарту JSON Schema.
 
-### 2. Запуск пакетного бенчмарка
+| Команда | Назначение |
+|---|---|
+| `import-corpus <dir>` | индекс корпуса: тип, размер, SHA-256, дубликаты, происхождение → `reports/corpus_index.json` |
+| `analyze <файл \| каталог образца \| URL> [--json out.json] [--online]` | анализ одного объекта |
+| `analyze-dir <dir> [--out reports/results.jsonl] [--limit N]` | пакетный анализ; продолжает с места остановки, битые объекты не прерывают прогон |
+| `kb-stats` | статистика базы знаний, частота техник, бренды |
+| `cluster [--min-size 2]` | фишинговые кампании |
+| `export-package [--out exports/package]` | версионированный пакет артефактов (JSON + YARA) |
+| `apply <package.json> <файлы/каталоги>` | применение пакета лёгким модулем (без тяжёлых экстракторов) |
+| `metrics [--limit N] [--sources keis2,html,png]` | метрики приёмки → `reports/metrics.json` |
+| `build-benign-corpus` | пересборка признаков легитимного набора для Zero FPR Guard |
+
+Глобальный флаг `--llm off|local|cloud` переопределяет режим LLM для команды.
+
+## REST API
+
+| Метод | Путь | Описание |
+|---|---|---|
+| `GET` | `/health` | состояние сервиса и режим LLM |
+| `POST` | `/api/v1/scan` | анализ объекта: `multipart/form-data` с полем `file` или `url` (http/https); ответ — результат анализа в JSON |
+| `GET` | `/api/v1/incidents?limit=&offset=&verdict=&brand=` | список инцидентов базы знаний |
+| `GET` | `/api/v1/incidents/{id}` | результат анализа с уликами и отпечатками |
+| `GET` | `/api/v1/campaigns?min_size=2` | кампании (инциденты с общим kit / инфраструктурой) |
+| `GET` | `/api/v1/signatures` | реестр правил со статусами |
+| `GET` | `/api/v1/stats` | статистика базы знаний |
+| `POST` | `/api/v1/package` | сформировать новую версию пакета артефактов и вернуть его |
+| `GET` | `/api/v1/signatures/export-zip` | ZIP с проверенными L-сигнатурами и YARA |
+| `GET` | `/api/v1/llm_audit?limit=20` | журнал обращений к LLM / VLM |
+
+Пример:
+
 ```bash
-python scripts/run_benchmark.py --limit 5 --verbose
-```
-Скрипт прогоняет образцы из `file_for_case/keis2`, `html_phishing2026`, `grouped_png_phishing2026` и рассчитывает метрики:
-- **TPR (Recall):** > 95%
-- **FPR (Zero FPR Standard):** 0.00%
-- Количество сгенерированных L-сигнатур и YARA правил.
-
----
-
-## 📄 Формат генерируемых L-сигнатур (JSON)
-
-Сгенерированные правила сохраняются в директорию `exports/l_signatures/` и соответствуют стандарту Doctor Web:
-
-```json
-{
-  "$schema": "https://drweb.com/schemas/lar-rule-v1.json",
-  "rule_id": "LAR-2026-СБЕР-12EA",
-  "name": "Сбер Credential Harvesting Detection Rule",
-  "target_brand": "Сбер",
-  "version": 1,
-  "scope": {
-    "check_urls": true,
-    "check_dom": true,
-    "check_attachments": false
-  },
-  "predicates": {
-    "operator": "AND",
-    "conditions": [
-      {
-        "type": "brand_mismatch",
-        "brand": "Сбер",
-        "allowed_domain_patterns": [
-          "^([a-z0-9-]+\\.)*sberbank\\.ru$",
-          "^([a-z0-9-]+\\.)*sber\\.ru$"
-        ]
-      },
-      {
-        "type": "dom_form_structure",
-        "has_password_input": true,
-        "action_is_external": true,
-        "submit_button_contains_target": true
-      }
-    ]
-  },
-  "verdict": {
-    "action": "BLOCK",
-    "risk_score": 1.0,
-    "confidence": "HIGH"
-  },
-  "reason_codes": [
-    "BRAND_IMPERSONATION_CONFIRMED",
-    "RC_BRAND_SPOOF_DISPLAYNAME"
-  ],
-  "validation_metrics": {
-    "zero_fpr_verified": true,
-    "benign_baseline_tests_passed": 120,
-    "false_positives_count": 0
-  }
-}
+curl -F "file=@sample.eml" http://localhost:8000/api/v1/scan
 ```
 
----
+## Тесты и метрики
 
-## 📂 Структура репозитория
-
-```text
-phishing-intelligence-pipeline/
-├── .env                              # Активная конфигурация
-├── .env.example                      # Шаблон переменных окружения
-├── docker-compose.yml                # Спецификация 4 сервисов
-├── README.md                         # Документация проекта
-├── docs/                             # Исходная спецификация и научные материалы
-│   ├── 00_INDEX.md
-│   ├── 01_SYSTEM_ARCHITECTURE.md
-│   ├── 02_SANDBOX_AND_SECURITY.md
-│   ├── 03_MULTIAGENT_ORCHESTRATION.md
-│   ├── 04_L_SIGNATURES_AND_ZERO_FPR.md
-│   ├── 05_STREAMLIT_UI_SPEC.md
-│   ├── 06_IMPLEMENTATION_ROADMAP.md
-│   └── threat_research/
-├── file_for_case/                    # Датасет фишинговых образцов
-│   ├── keis2/                        # 175 брендов (EML, URL, screenshots)
-│   ├── html_phishing2026/            # 7 642 HTML-вложений
-│   └── grouped_png_phishing2026/     # 2 854 визуальных приманок
-├── exports/                          # Экспортированные боевые сигнатуры
-│   ├── l_signatures/                 # Скомпилированные JSON правила
-│   └── yara/                         # Сгенерированные YARA правила
-├── scripts/
-│   ├── init_db.py                    # Инициализация БД и реестра 175 брендов
-│   ├── generate_brand_registry.py    # Парсер и генератор реестра брендов
-│   └── run_benchmark.py              # CLI инструмент пакетного бенчмарка
-├── services/
-│   ├── sandbox/                      # Изолированная песочница
-│   │   ├── Dockerfile
-│   │   ├── requirements.txt
-│   │   └── src/ (security.py, browser.py, attachment_parser.py, qr_scanner.py, main.py)
-│   ├── worker/                       # Мультиагентный оркестратор LangGraph
-│   │   ├── Dockerfile
-│   │   ├── requirements.txt
-│   │   └── src/ (orchestrator/, agents/, rules/, brands/, llm/, db/, main.py)
-│   └── ui/                           # Streamlit UI дашборд
-│       ├── Dockerfile
-│       ├── requirements.txt
-│       └── app.py
-└── tests/                            # Набор автоматических тестов
-    ├── test_sandbox_security.py
-    ├── test_brand_registry.py
-    ├── test_attachment_parser.py
-    ├── test_zero_fpr.py
-    ├── test_rule_compiler.py
-    └── test_langgraph_pipeline.py
+```bash
+python -m pytest tests -q
 ```
 
----
+Тесты покрывают экстракторы, разбор вложений, безопасность (SSRF, в т.ч. через редиректы), реестр брендов,
+генерацию и применение правил, YARA, политику вердиктов, легитимный набор, CLI, API и метрики.
+Тесты работают офлайн; тесты на файлах датасета пропускаются, если `file_for_case/` отсутствует.
 
-## 🎯 Соответствие требованиям ТЗ Doctor Web
+```bash
+python phishctl.py --llm off metrics --limit 300
+```
 
-| Требование ТЗ | Реализация в DW-2 | Результат |
-| :--- | :--- | :---: |
-| **Изоляция и безопасность хоста** | Headless sandbox, non-root user, `cap_drop: ALL`, Anti-SSRF фильтр адресов | 100% защита ПК |
-| **Мультиагентный анализ** | LangGraph граф: Triage, URL, DOM, Vision VLM, Quishing, Synthesizer | Детерминированный конвейер |
-| **Расширение базы брендов** | 175 брендов (Сбер, Т-Банк, ВТБ, Госуслуги, Мос.ру, DHL, Microsoft и др.) | Полное покрытие `keis2` |
-| **Компактные артефакты** | L-сигнатуры (JSON) по стандарту `lar-rule-v1` + YARA правила | Скорость < 2 мс на клиенте |
-| **Гарантия Zero FPR** | 3-уровневый фильтр (Allowlist + скоринг + тест на чистом датасете) | **FPR = 0.00%** |
-| **Объяснимость решений** | Таксономия Reason Codes (`RC_BRAND_*`, `RC_ATTACH_*`, `RC_DROP_*`) | Полный аудит SOC |
-| **Презентационный интерфейс** | Streamlit UI на `localhost:8501` с демо-кейсами и выгрузкой ZIP-пакета | Готово к сдаче |
+Методика и последние результаты: [docs/METRICS.md](docs/METRICS.md).
+
+## Структура репозитория
+
+```
+phishctl.py                      CLI
+services/sandbox/src/            песочница: attachment_parser, browser, security (Anti-SSRF), qr_scanner, dispatch
+services/worker/src/
+  agents/                        агенты LangGraph
+  orchestrator/                  граф и состояние расследования
+  rules/                         коды причин, компилятор правил, движок, Zero FPR Guard, YARA, пакет, лёгкий модуль
+  brands/                        реестр 175 брендов и сопоставление
+  features/                      признаки URL, отпечатки
+  ingest/                        загрузка датасета Заказчика (EML + собранные ссылки)
+  prompts/                       промпты LLM / VLM
+  evaluation.py, cli.py, main.py
+services/ui/app.py               интерфейс аналитика
+scripts/                         генерация реестра брендов, легитимного корпуса, документации кодов, бенчмарк
+tests/                           тесты и легитимный набор (tests/fixtures/benign_samples.py)
+docs/                            документация
+```
+
+Данные Заказчика, `.env`, база данных, `exports/`, `reports/` и `logs/` в репозиторий не входят.

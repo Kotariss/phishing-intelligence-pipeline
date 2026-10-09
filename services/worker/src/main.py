@@ -1,6 +1,7 @@
 import os
 import sys
 import io
+import json
 import uuid
 import zipfile
 from contextlib import asynccontextmanager
@@ -99,6 +100,7 @@ def health():
     return {
         "status": "healthy",
         "service": "worker",
+        "llm_mode": settings.llm_mode,
         "llm_enabled": settings.llm_configured,
         "llm_model": settings.LLM_TEXT_MODEL,
         "vlm_model": settings.LLM_VISION_MODEL
@@ -199,6 +201,19 @@ def export_rules_zip():
         media_type="application/zip",
         headers={"Content-Disposition": "attachment; filename=phishing_signatures.zip"}
     )
+
+
+@app.post("/api/v1/package")
+def export_package():
+    """Builds and saves a new version of the artefact package; returns it as JSON."""
+    try:
+        from .rules.package import build_package, save_package
+    except (ImportError, ValueError):
+        from rules.package import build_package, save_package
+    info = save_package(build_package(), os.path.join(settings.EXPORTS_DIR, "package"))
+    with open(info["json"], "r", encoding="utf-8") as f:
+        package = json.load(f)
+    return {"version": info["version"], "sha256": info["sha256"], "package": package}
 
 
 @app.get("/api/v1/llm_audit")

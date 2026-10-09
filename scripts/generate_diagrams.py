@@ -132,7 +132,7 @@ def create_fig1_architecture():
     ax.add_patch(llm_box)
     ax.text(10.0, 1.8, "VLM & LLM Бэкенд", ha='center', va='center',
             fontsize=9, fontweight='bold', color=NAVY)
-    ax.text(10.0, 1.4, "Qwen-2.5-VL / DeepSeek\n(НГУ Cloud / Ollama)",
+    ax.text(10.0, 1.4, "VLM / LLM\n(облачный API / локальный сервер)",
             ha='center', va='center', fontsize=7.5, color=GREY)
 
     # User & UI at top/side
