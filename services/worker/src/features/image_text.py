@@ -27,7 +27,15 @@ DOC_OBJECT = re.compile(
     r"dokument|datei|rechnung|fichier|facture|archivo|factura|bestand|soubor|faktura", re.I)
 PROTECTED = re.compile(
     r"protected\s+(?:file|document)|to\s+view\s+(?:this|the)\s+(?:file|document)|authenticat\w*\s+required|"
+    r"(?:password|credentials?)\s+to\s+(?:download|view|open|access)|sign\s?in\s?to\s+view|"
+    r"to\s+access\s+(?:the\s+|your\s+)?documents?|(?:file|document)\s+protection|secured?\s+(?:\w+\s+)?file|"
     r"login\s+to\s+continue|confirm\s+(?:your\s+)?(?:e-?mail|identity)\s+to|登录以查看|защищ[её]н\w*\s+(?:файл|документ)|要查看|请验证", re.I)
+
+# Generic "document" / "file" alone ("Open Documents > Payslips" in a how-to) does not make a document gate:
+# it needs a concrete document type above or a determiner pointing at one specific file.
+GENERIC_DOC = {"document", "file"}
+SPECIFIC_DOC = re.compile(
+    r"(?:this|the|your|attached|shared|secure|protected|encrypted)\s+(?:\w+\s+)?(?:document|file|spreadsheet)", re.I)
 
 
 def _snippets(text: str, patterns: List[re.Pattern], width: int = 45, limit: int = 3) -> List[str]:
@@ -48,7 +56,9 @@ def image_lure_signals(text: str) -> Dict[str, object]:
     if len(text) < 6:
         return {"credential_prompt": False, "document_gate": False, "snippets": []}
     password = bool(PASSWORD.search(text))
-    document = bool(PROTECTED.search(text)) or (bool(DOC_ACTION.search(text)) and bool(DOC_OBJECT.search(text)))
+    objects = {m.group(0).lower() for m in DOC_OBJECT.finditer(text)}
+    concrete = bool(objects - GENERIC_DOC) or bool(SPECIFIC_DOC.search(text))
+    document = bool(PROTECTED.search(text)) or (bool(DOC_ACTION.search(text)) and concrete)
     # sign-in wording counts when the image also shows an e-mail field or gates a document behind it
     credential = password or (bool(SIGN_IN.search(text)) and (bool(EMAIL_FIELD.search(text)) or document))
     snippets = _snippets(text, [PROTECTED, PASSWORD, SIGN_IN, DOC_OBJECT]) if (credential or document) else []
