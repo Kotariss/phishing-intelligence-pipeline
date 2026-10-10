@@ -165,19 +165,21 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
 
     # Portability: active rules generated in this run, applied by the light engine to every record.
     rules = [r["rule"] for r in phish_ok if r.get("rule") and r.get("rule_status") == "ACTIVE_VERIFIED"]
-    light_hits = [r for r in phish_ok if any(rule_matches(rule, r["record"]) for rule in rules)]
-    benign_rule_hits = [{"object": r["object"], "rules": [rule["rule_id"] for rule in rules if rule_matches(rule, r["record"])]}
-                        for r in benign_ok if any(rule_matches(rule, r["record"]) for rule in rules)]
+    # Each rule is matched against each record exactly once; everything below is derived from these sets.
+    phish_matches = [{i for i, rule in enumerate(rules) if rule_matches(rule, r["record"])} for r in phish_ok]
+    benign_matches = [{i for i, rule in enumerate(rules) if rule_matches(rule, r["record"])} for r in benign_ok]
+    light_hits = [r for r, m in zip(phish_ok, phish_matches) if m]
+    benign_rule_hits = [{"object": r["object"], "rules": [rules[i]["rule_id"] for i in sorted(m)]}
+                        for r, m in zip(benign_ok, benign_matches) if m]
     heavy_detected = {r["object"] for r in detected}
     light_agree = [r for r in light_hits if r["object"] in heavy_detected]
 
     contribution = []
-    for rule in rules:
-        own = {r["object"] for r in phish_ok if rule_matches(rule, r["record"])}
-        others = {r["object"] for r in phish_ok for other in rules if other is not rule and rule_matches(other, r["record"])}
+    for i, rule in enumerate(rules):
         contribution.append({"rule_id": rule["rule_id"], "kind": rule.get("kind"), "target_brand": rule.get("target_brand"),
-                             "phishing_hits": len(own), "unique_hits": len(own - others),
-                             "benign_hits": sum(1 for r in benign_ok if rule_matches(rule, r["record"]))})
+                             "phishing_hits": sum(1 for m in phish_matches if i in m),
+                             "unique_hits": sum(1 for m in phish_matches if m == {i}),
+                             "benign_hits": sum(1 for m in benign_matches if i in m)})
     contribution.sort(key=lambda x: (-x["phishing_hits"], -x["unique_hits"]))
 
     code_freq = collections.Counter(c for r in phish_ok for c in r["codes"])
