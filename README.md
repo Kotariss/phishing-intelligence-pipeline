@@ -120,7 +120,8 @@ python phishctl.py --help
 | `cluster [--min-size 2]` | фишинговые кампании |
 | `export-package [--out exports/package]` | версионированный пакет артефактов (JSON + YARA) |
 | `apply <package.json> <файлы/каталоги>` | применение пакета лёгким модулем (без тяжёлых экстракторов) |
-| `metrics [--limit N] [--sources keis2,html,png]` | метрики приёмки → `reports/metrics.json` |
+| `split [--dev-share 0.3] [--seen-from FILE]` | разбиение корпуса на настройку / отложенную часть без утечек → `reports/split.json` |
+| `metrics [--limit N] [--sources keis2,html,png] [--part dev\|test]` | метрики приёмки → `reports/metrics.json` |
 | `eval-labeled <dir>` | оценка на размеченном наборе EML (`manifest.csv`): предсказания для `compare_labels.py` (строгий / мягкий вариант) и сводка |
 | `robustness [--limit N]` | устойчивость: recall после замены домена/URL, смены оформления и отложенной загрузки → `reports/robustness.json` |
 | `build-benign-corpus` | пересборка признаков легитимного набора для Zero FPR Guard |
@@ -161,7 +162,7 @@ python -m pytest tests -q
 Тесты работают офлайн; тесты на файлах датасета пропускаются, если `file_for_case/` отсутствует.
 
 ```bash
-python phishctl.py --llm off metrics --limit 300
+python phishctl.py --llm off metrics --part test   # итоговая оценка на отложенной части
 ```
 
 Методика и последние результаты: [docs/METRICS.md](docs/METRICS.md).
