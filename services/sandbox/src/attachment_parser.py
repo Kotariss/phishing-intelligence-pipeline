@@ -6,7 +6,7 @@ from email import policy
 from email.header import decode_header
 from email.parser import BytesParser
 from email.utils import getaddresses
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin, urlparse
 
 import warnings
@@ -17,11 +17,14 @@ warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 try:
     from .qr_scanner import scan_qr_codes
+    from .ocr import ocr_image
 except ImportError:
     try:
         from qr_scanner import scan_qr_codes
+        from ocr import ocr_image
     except ImportError:
         from src.qr_scanner import scan_qr_codes
+        from src.ocr import ocr_image
 
 
 # Try importing fitz (PyMuPDF)
@@ -59,7 +62,11 @@ IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp")
 ARCHIVE_EXTENSIONS = (".zip",)
 EXECUTABLE_EXTENSIONS = (".exe", ".scr", ".msi", ".bat", ".cmd", ".js", ".jse", ".vbs", ".vbe",
                          ".hta", ".ps1", ".lnk", ".iso", ".img", ".jar", ".wsf", ".cab")
+MACRO_EXTENSIONS = (".docm", ".xlsm", ".pptm", ".doc", ".xls", ".ppt")
 MAX_NESTED_ATTACHMENTS = 20
+# OCR of pictures inside an e-mail: the largest ones only (logos and tracking pixels carry no lure text)
+OCR_MIN_IMAGE_BYTES = 15_000
+OCR_MAX_IMAGES_PER_EMAIL = 2
 
 
 def _host(url: str) -> str:
@@ -115,6 +122,12 @@ def normalize_url(url: str) -> str:
     return u
 
 
+def _strip_js_comments(js: str) -> str:
+    """Drops /* … */ blocks and // line comments; '//' after ':' (https://) or inside a word is kept."""
+    js = re.sub(r'/\*.*?\*/', ' ', js, flags=re.S)
+    return re.sub(r'(?m)(^|[\s;{}])//[^\n]*', r'\1', js)
+
+
 def _is_http(url: str) -> bool:
     return url.lower().startswith(("http://", "https://"))
 
@@ -130,20 +143,45 @@ def _safe_decode(payload: bytes, charset: Optional[str]) -> str:
     return payload.decode("utf-8", errors="ignore")
 
 
+IMAGE_MAGIC = (b"\x89PNG", b"\xff\xd8\xff", b"GIF8", b"BM")
+HTML_MARKUP = re.compile(rb'<(?:!doctype\s+html|html|head|body|form|script|meta|iframe|svg)\b', re.I)
+MHT_EXTENSIONS = (".mht", ".mhtml")
+
+
 def _attachment_kind(filename: str, content_type: str, payload: bytes) -> str:
+    """Content signature first, then name / declared type: attackers rename an HTML form to 'invoice.pdf'
+    and send it as application/octet-stream so that a name-based parser skips it."""
     name = (filename or "").lower()
     ctype = (content_type or "").lower()
-    if name.endswith(HTML_EXTENSIONS) or ctype in ("text/html", "image/svg+xml"):
+    head = payload[:4096]
+    if head.startswith(b"%PDF"):
+        return "pdf"
+    if head.startswith(IMAGE_MAGIC) or (head[:4] == b"RIFF" and head[8:12] == b"WEBP"):
+        return "image"
+    if head.startswith(b"PK\x03\x04"):
+        return "office" if b"[Content_Types].xml" in payload[:65536] or name.endswith(OFFICE_EXTENSIONS) else "archive"
+    if name.endswith(MHT_EXTENSIONS) or ctype == "multipart/related":
+        return "mht"
+    if name.endswith(HTML_EXTENSIONS) or ctype in ("text/html", "image/svg+xml") or HTML_MARKUP.search(head):
         return "html"
-    if name.endswith(".pdf") or ctype == "application/pdf" or payload[:4] == b"%PDF":
+    if name.endswith(".pdf") or ctype == "application/pdf":
         return "pdf"
     if name.endswith(OFFICE_EXTENSIONS):
         return "office"
     if name.endswith(IMAGE_EXTENSIONS) or ctype.startswith("image/"):
         return "image"
-    if name.endswith(ARCHIVE_EXTENSIONS) or payload[:4] == b"PK\x03\x04":
+    if name.endswith(ARCHIVE_EXTENSIONS):
         return "archive"
     return "other"
+
+
+def _mht_html(payload: bytes) -> str:
+    """The HTML part of a saved web archive (.mht / .mhtml is a MIME message)."""
+    msg = BytesParser(policy=policy.compat32).parsebytes(payload)
+    for part in msg.walk():
+        if part.get_content_type() == "text/html":
+            return _safe_decode(part.get_payload(decode=True) or b"", part.get_content_charset())
+    return ""
 
 
 B64_LITERAL = re.compile(r'["\'`]([A-Za-z0-9+/\s]{80,}={0,2})["\'`]')
@@ -377,9 +415,23 @@ class AttachmentParser:
         for raw_url in URL_IN_TEXT.findall(body_text):
             links.add(normalize_url(raw_url))
 
+        # HTML-only e-mail: readable text for the content analysis, without stylesheets and scripts
+        preview_text = body_text
+        if body_html and not body_text.strip():
+            text_soup = BeautifulSoup(body_html, "html.parser")
+            for tag in text_soup(["script", "style", "noscript", "head"]):
+                tag.decompose()
+            preview_text = " ".join(text_soup.get_text(" ").split())
+
         # Recursive analysis of attachments (HTML / PDF / Office / images / archives)
         analysis = [AttachmentParser.analyze_attachment(a["filename"], a["content_type"], a["bytes"], inline=a["inline"])
                     for a in attachments[:MAX_NESTED_ATTACHMENTS]]
+        pictures = sorted((i for i, item in enumerate(analysis)
+                           if item["kind"] == "image" and item["size"] >= OCR_MIN_IMAGE_BYTES), key=lambda i: -analysis[i]["size"])
+        for i in pictures[:OCR_MAX_IMAGES_PER_EMAIL]:
+            text = ocr_image(attachments[i]["bytes"])
+            if text:
+                analysis[i]["ocr_text"] = text[:1500]
 
         qr_codes, forms = [], []
         for item in analysis:
@@ -415,7 +467,7 @@ class AttachmentParser:
             "links": sorted(links),
             "link_text_mismatch": link_text_mismatch[:20],
             "body_html": body_html,
-            "body_text_preview": body_text[:1500],
+            "body_text_preview": preview_text[:1500],
             "attachments_count": len(attachments),
             "attachments_meta": [{"filename": a["filename"], "content_type": a["content_type"],
                                   "size": len(a["bytes"]), "inline": a["inline"],
@@ -436,6 +488,9 @@ class AttachmentParser:
         """Analyses one attachment and returns a JSON-safe summary (no raw bytes)."""
         kind = _attachment_kind(filename, content_type, payload)
         name_low = (filename or "").lower()
+        html_source = None
+        if kind == "mht":
+            html_source, kind = _mht_html(payload), "html"
         summary: Dict[str, Any] = {
             "filename": filename,
             "content_type": content_type,
@@ -443,15 +498,15 @@ class AttachmentParser:
             "inline": inline,
             "size": len(payload),
             "sha256": hashlib.sha256(payload).hexdigest(),
-            "is_executable": name_low.endswith(EXECUTABLE_EXTENSIONS),
+            "is_executable": name_low.endswith(EXECUTABLE_EXTENSIONS) or payload[:2] == b"MZ",
             "links": [],
             "qr_codes": [],
         }
         try:
             if kind == "html":
-                parsed = AttachmentParser.parse_html(_safe_decode(payload, None))
+                parsed = AttachmentParser.parse_html(html_source if html_source is not None else _safe_decode(payload, None))
                 parsed.pop("embedded_image_base64", None)
-                parsed.pop("visible_text", None)
+                parsed["text_preview"] = (parsed.pop("visible_text", None) or "")[:1000]
                 summary.update({k: v for k, v in parsed.items() if k != "type"})
             elif kind == "pdf":
                 summary.update({k: v for k, v in AttachmentParser.parse_pdf(payload).items() if k != "type"})
@@ -632,7 +687,8 @@ class AttachmentParser:
                     break
 
         inline_js = "\n".join(s.get_text() for s in soup.find_all("script") if not s.get("src"))
-        js_redirects = sorted({_absolute(u, base_url) for u in JS_REDIRECT.findall(inline_js) if not u.startswith("#")})[:10]
+        active_js = _strip_js_comments(inline_js)
+        js_redirects = sorted({_absolute(u, base_url) for u in JS_REDIRECT.findall(active_js) if not u.startswith("#")})[:10]
         js_endpoints = sorted({_absolute(u, base_url) for u in JS_NETWORK_SINK.findall(inline_js)})[:20]
         js_external_endpoints = [u for u in js_endpoints if _is_http(u) and (not base_site or _registrable(_host(u)) != base_site)]
 
@@ -685,7 +741,7 @@ class AttachmentParser:
         if refresh_tag is not None:
             evidence["meta_refresh"] = compact_html(refresh_tag)
         if js_redirects:
-            evidence["js_redirect"] = window(inline_js, JS_REDIRECT, 60, 160)
+            evidence["js_redirect"] = window(active_js, JS_REDIRECT, 60, 160)
         if js_external_endpoints:
             evidence["js_endpoint"] = window(inline_js, JS_NETWORK_SINK, 60, 200)
         if obfuscation_markers:
@@ -750,11 +806,16 @@ class AttachmentParser:
         has_js = False
         has_launch = False
         has_forms = False
+        embedded: List[str] = []
         error = None
 
         if fitz is not None:
             try:
                 doc = fitz.open(stream=file_bytes, filetype="pdf")
+                try:
+                    embedded = [str(n) for n in doc.embfile_names()][:50]
+                except Exception:
+                    pass
                 for page_idx in range(min(len(doc), 30)):
                     page = doc[page_idx]
                     text_content += page.get_text() + "\n"
@@ -787,6 +848,8 @@ class AttachmentParser:
                         has_launch = True
                     if "/AcroForm" in obj:
                         has_forms = True
+                    if "/EmbeddedFile" in obj and not embedded:
+                        embedded = ["(embedded file)"]
                 doc.close()
             except Exception as e:
                 error = f"PDF parse error: {e}"
@@ -795,6 +858,8 @@ class AttachmentParser:
                 links.add(m.decode("utf-8", errors="ignore"))
             has_js = b"/JavaScript" in file_bytes or b"/JS" in file_bytes
             has_launch = b"/Launch" in file_bytes
+            if b"/EmbeddedFile" in file_bytes:
+                embedded = ["(embedded file)"]
 
         for m in URL_IN_TEXT.findall(text_content):
             links.add(m.rstrip(".,;"))
@@ -806,6 +871,10 @@ class AttachmentParser:
             "has_javascript": has_js,
             "has_launch_action": has_launch,
             "has_acroform": has_forms,
+            "embedded_files": embedded,
+            # A file hidden inside the PDF that runs or renders when opened (ТЗ 4.1.4.4 «встроенные файлы»)
+            "has_embedded_payload": any(n.lower().endswith(EXECUTABLE_EXTENSIONS + HTML_EXTENSIONS + MACRO_EXTENSIONS)
+                                        for n in embedded),
             "text_preview": text_content[:1000]
         }
         if error:

@@ -1,5 +1,4 @@
 """L-signature distillation, the light rule engine (portability) and YARA generation."""
-import copy
 
 import pytest
 
@@ -47,7 +46,7 @@ def test_guard_rejects_overbroad_rules():
     passed, fp_count, details = guard.evaluate_rule_on_baseline(overbroad)
     assert not passed and fp_count >= 3  # every legitimate login page has a password field
     verdict = guard.verify_rule(overbroad, {"forms": [{"has_password": True}]}, risk_score=0.95)
-    assert verdict["approved"] is False and "Zero FPR violation" in verdict["note"]
+    assert verdict["approved"] is False and "нарушение нулевых ложных" in verdict["note"]
 
 
 def test_guard_requires_self_match():
@@ -62,10 +61,12 @@ def test_unknown_predicates_never_match():
 
 
 def test_level1_brand_allowlist():
-    guard = ZeroFPRGuard()
-    assert guard.check_level1_brand_allowlist("Сбер", "https://online.sberbank.ru/auth") is True
-    assert guard.check_level1_brand_allowlist("Госуслуги", "https://esia.gosuslugi.ru/login") is True
-    assert guard.check_level1_brand_allowlist("Сбер", "https://sber-hack.org") is False
+    registry = ZeroFPRGuard().registry
+    def allowed(brand: str, url: str) -> bool:
+        return registry.is_domain_allowed(registry.find_brand(brand)["brand_id"], url)
+    assert allowed("Сбер", "https://online.sberbank.ru/auth") is True
+    assert allowed("Госуслуги", "https://esia.gosuslugi.ru/login") is True
+    assert allowed("Сбер", "https://sber-hack.org") is False
 
 
 def test_yara_rule_is_specific_and_compiles():

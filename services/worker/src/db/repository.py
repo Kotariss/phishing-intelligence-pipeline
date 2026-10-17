@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from .models import IncidentModel, LSignatureModel, BrandAllowlistModel
-from .database import SessionLocal, init_db
+from .models import IncidentModel, LSignatureModel
+from .database import SessionLocal
 
 class IncidentRepository:
     def __init__(self, db: Optional[Session] = None):
@@ -85,10 +85,13 @@ class IncidentRepository:
             if self._db is None:
                 db.close()
 
-    def list_signatures(self, limit: int = 100) -> List[LSignatureModel]:
+    def list_signatures(self, limit: int = 100, incident_id: Optional[str] = None) -> List[LSignatureModel]:
         db = self._get_session()
         try:
-            return db.query(LSignatureModel).order_by(LSignatureModel.created_at.desc()).limit(limit).all()
+            query = db.query(LSignatureModel)
+            if incident_id:
+                query = query.filter(LSignatureModel.incident_id == incident_id)
+            return query.order_by(LSignatureModel.created_at.desc()).limit(limit).all()
         finally:
             if self._db is None:
                 db.close()

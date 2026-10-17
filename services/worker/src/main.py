@@ -102,8 +102,8 @@ def health():
         "service": "worker",
         "llm_mode": settings.llm_mode,
         "llm_enabled": settings.llm_configured,
-        "llm_model": settings.LLM_TEXT_MODEL,
-        "vlm_model": settings.LLM_VISION_MODEL
+        "llm_model": settings.text_model,
+        "vlm_model": settings.vision_model
     }
 
 
@@ -179,7 +179,7 @@ async def scan_dataset_sample(path: str = Form(...)):
 
 @app.get("/api/v1/incidents")
 def get_incidents(
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     verdict: Optional[str] = None,
     brand: Optional[str] = None
@@ -202,7 +202,7 @@ def get_campaigns(min_size: int = Query(2, ge=1, le=100), limit: int = Query(50,
 
 
 @app.get("/api/v1/signatures")
-def get_signatures(limit: int = Query(50, ge=1, le=500)):
+def get_signatures(limit: int = Query(50, ge=1, le=1000), incident_id: Optional[str] = None):
     return [
         {
             "id": s.id,
@@ -215,7 +215,7 @@ def get_signatures(limit: int = Query(50, ge=1, le=500)):
             "yara_rule": s.yara_rule,
             "created_at": s.created_at.isoformat() if s.created_at else None
         }
-        for s in repo.list_signatures(limit=limit)
+        for s in repo.list_signatures(limit=limit, incident_id=incident_id)
     ]
 
 

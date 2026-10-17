@@ -49,7 +49,8 @@ def campaign_key(fp: Dict[str, Any]) -> Optional[str]:
     elif fp.get("credential_post_domain"):
         basis = "post:" + fp["credential_post_domain"]
     elif fp.get("attachment_sha256"):
-        basis = "att:" + fp["attachment_sha256"]
+        att = fp["attachment_sha256"]  # list of all attachments (a single string in older records)
+        basis = "att:" + (att if isinstance(att, str) else att[0])
     else:
         return None
     return "CMP-" + hashlib.sha1(basis.encode("utf-8")).hexdigest()[:10].upper()

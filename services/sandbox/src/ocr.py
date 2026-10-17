@@ -42,10 +42,6 @@ def _langs() -> Optional[str]:
     return "+".join(langs) if langs else None
 
 
-def ocr_available() -> bool:
-    return _langs() is not None
-
-
 def _prepare(image_bytes: bytes) -> Optional[Image.Image]:
     img = Image.open(io.BytesIO(image_bytes))
     if img.width * img.height > MAX_PIXELS:

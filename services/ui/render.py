@@ -205,7 +205,7 @@ def render_object(result: Dict[str, Any]):
                 st.dataframe([{"Файл": i.get("filename"), "Тип": i.get("kind"), "Размер": i.get("size"),
                                "Ссылок": len(i.get("links") or []), "QR": len(i.get("qr_codes") or []),
                                "Пароль/карта": "да" if i.get("has_password_field") or any(f.get("has_card") for f in i.get("forms") or []) else ""}
-                              for i in items], hide_index=True, use_container_width=True)
+                              for i in items], hide_index=True, width="stretch")
         elif att.get("type") in ("html", "pdf", "office", "image", "archive"):
             st.markdown(f"**Файл:** `{result.get('raw_target')}` (тип: {att.get('type')})")
         chain = [h.get("url") for h in result.get("redirect_chain") or [] if h.get("url")]
@@ -221,14 +221,14 @@ def render_object(result: Dict[str, Any]):
                            "Отправка на": f.get("action_host") or f.get("action") or "(та же страница)",
                            "Пароль": "да" if f.get("has_password") else "", "Карта": "да" if f.get("has_card") else "",
                            "Сторонний домен": "да" if f.get("is_external_target") else ""} for f in forms],
-                         hide_index=True, use_container_width=True)
+                         hide_index=True, width="stretch")
     with right:
         box = (result.get("brand_evidence") or {}).get("logo_box")
         img = screenshot_with_box(result.get("screenshot_base64"), box)
         if img:
             src = {"browser": "снимок песочницы", "dataset": "снимок из датасета", "attachment_render": "рендер вложения",
                    "image_file": "изображение-вложение", "embedded_image": "изображение из HTML"}.get(result.get("screenshot_source"), "")
-            st.image(img, caption=src + (" · красная рамка — логотип по VLM" if box else ""), use_container_width=True)
+            st.image(img, caption=src + (" · красная рамка — логотип по VLM" if box else ""), width="stretch")
 
 
 def render_brand(result: Dict[str, Any]):
@@ -263,11 +263,11 @@ def render_artifacts(result: Dict[str, Any]):
     if fp:
         names = {"dom_structural_hash": "Остов DOM", "screenshot_dhash": "Перцептивный хеш скриншота",
                  "telegram_bot_ids": "Telegram-бот", "discord_webhooks": "Discord-вебхук", "credential_post_domain": "Домен приёма данных",
-                 "attachment_sha256": "SHA-256 вложения", "final_domain": "Домен страницы", "favicon": "Favicon",
+                 "attachment_sha256": "SHA-256 вложений", "final_domain": "Домен страницы", "favicon": "Favicon",
                  "sender_domain": "Домен отправителя", "dom_tags_count": "Тегов в DOM"}
         st.markdown("**Отпечатки**" + (f" · кампания `{result['campaign_id']}`" if result.get("campaign_id") else ""))
         st.dataframe([{"Отпечаток": names.get(k, k), "Значение": ", ".join(map(str, v)) if isinstance(v, list) else str(v)}
-                      for k, v in fp.items()], hide_index=True, use_container_width=True)
+                      for k, v in fp.items()], hide_index=True, width="stretch")
 
 
 def render_traces(result: Dict[str, Any]):
@@ -277,7 +277,7 @@ def render_traces(result: Dict[str, Any]):
     st.dataframe([{"Агент": t.get("agent_name"), "Итог": {"TRIGGERED": "нашёл признаки", "WARNING": "внимание",
                                                             "SKIPPED": "пропущен", "CLEAN": "чисто"}.get(t.get("status"), "выполнен"),
                    "Решение": t.get("decision"), "мс": round(t.get("duration_ms") or 0)} for t in traces],
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
     llm = [t for t in traces if t.get("llm_audit")]
     for t in llm:
         a = t["llm_audit"]

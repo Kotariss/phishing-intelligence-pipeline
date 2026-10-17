@@ -82,3 +82,46 @@ def test_requests_engine_never_fabricates_screenshots(monkeypatch):
     result = BrowserController()._extract_with_requests("http://8.8.8.8/", 5, "ua")
     assert result["screenshot_base64"] == ""
     assert result["http_status"] == 200
+
+
+def test_playwright_redirect_to_forbidden_address_is_not_followed(monkeypatch):
+    """Playwright calls the route handler only for the first URL of a 302 chain: every hop must still be checked."""
+    pytest.importorskip("playwright")
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import browser as browser_mod
+
+    hits = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            hits.append(self.path)
+            if self.path in ("/start", "/middle"):
+                self.send_response(302)
+                self.send_header("Location", "/middle" if self.path == "/start" else f"{forbidden}/internal/secret")
+                self.end_headers()
+            else:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html")
+                self.end_headers()
+                self.wfile.write(b"<title>internal</title>")
+
+        def log_message(self, *a):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    # 127.0.0.1 plays a public site; 'localhost' (same server) plays the forbidden target (metadata service, worker API).
+    forbidden = f"http://localhost:{server.server_port}"
+    monkeypatch.setattr(browser_mod, "validate_url_safety",
+                        lambda url, enabled=True: ("//localhost" not in url, "forbidden host" if "//localhost" in url else "ok"))
+    try:
+        result = BrowserController()._extract_with_playwright(base + "/start", 10, "ua")
+    except Exception as e:  # browser binaries missing in this environment
+        pytest.skip(f"playwright unavailable: {e}")
+    finally:
+        server.shutdown()
+    assert hits == ["/start", "/middle"]
+    assert result["blocked_requests"] == [f"{forbidden}/internal/secret"]
+    assert [h["url"] for h in result["redirect_chain"]] == [base + "/start"]

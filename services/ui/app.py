@@ -3,6 +3,7 @@ import json
 import os
 import sys
 
+import requests
 import streamlit as st
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -10,6 +11,7 @@ import backend  # noqa: E402
 import render  # noqa: E402
 
 st.set_page_config(page_title="Phishing Intelligence Pipeline", page_icon="🛡️", layout="wide")
+MODE_NAMES = {"api": "Worker API", "local": "локальный", "none": "Worker API недоступен"}
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -124,7 +126,7 @@ def page_knowledge_base():
               "Вердикт": render.VERDICT.get(i["verdict"], (i["verdict"],))[0], "Риск": round(i.get("risk_score") or 0, 2),
               "Бренд": i.get("target_brand") or "", "Находок": len(i.get("reason_codes") or []),
               "Кампания": i.get("campaign_id") or "", "Объект": str(i.get("raw_target", ""))[-80:]} for i in rows]
-    event = st.dataframe(table, hide_index=True, use_container_width=True, on_select="rerun", selection_mode="single-row")
+    event = st.dataframe(table, hide_index=True, width="stretch", on_select="rerun", selection_mode="single-row")
     selected = event.selection.rows if event and event.selection else []
     if selected:
         inc = backend.kb_incident(table[selected[0]]["ID"])
@@ -193,7 +195,7 @@ def page_package():
         st.dataframe([{"Правило": r["rule_id"], "Вид": r["kind"], "Бренд": r["target_brand"],
                        "Выявляет объектов": r["detected_objects"], "Только этим правилом": r["unique_objects"],
                        "Срабатываний на чистых": r["clean_objects_matched"]} for r in contrib["rules"]],
-                     hide_index=True, use_container_width=True)
+                     hide_index=True, width="stretch")
     st.subheader("Правила")
     for rule in pkg.get("rules", []):
         with st.container(border=True):
@@ -205,25 +207,73 @@ def page_package():
                            ("attachment_sha256", "SHA-256 вложений"), ("dom_structural_hashes", "Остовы DOM")):
             if known.get(key):
                 st.markdown(f"**{title}**")
-                st.dataframe(known[key], hide_index=True, use_container_width=True)
+                st.dataframe(known[key], hide_index=True, width="stretch")
 
 
 # ==============================================================================================
 def _acceptance_table(rows):
     st.dataframe([{"Критерий": r[0], "Цель": r[1], "Результат": r[2], "": "✅" if r[3] else "❌"} for r in rows],
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
+
+
+# Which saved reports the page shows is data, not code: reports/index.json names them with a label and a note
+# (model, code version), see docs/METRICS.md. Without the index the default file names of the CLI are used.
+DEFAULT_REPORTS = {
+    "labeled": [{"path": "labeled_eval_off/summary.json", "label": "Без LLM"},
+                {"path": "labeled_eval_llm/summary.json", "label": "С LLM"}],
+    "corpus": [{"path": "metrics.json", "label": "Корпус Заказчика"}],
+    "robustness": [{"path": "robustness.json", "label": "Устойчивость к обходу"}],
+}
+ACCEPTANCE_NAMES = {
+    "processing_completeness": "Полнота обработки",
+    "recall_template_split": "Recall «фишинг + подозрительно» (по DOM-шаблонам)",
+    "benign_false_phishing": "«Фишинг» на легитимных",
+    "benign_suspicious_share": "«Подозрительно» на легитимных",
+}
+
+
+def _reports(kind):
+    index = backend.load_report("index.json") or DEFAULT_REPORTS
+    out = []
+    for entry in index.get(kind, []):
+        report = backend.load_report(entry["path"])
+        if report:
+            out.append((entry, report))
+    return out
+
+
+def _report_heading(entry, extra=""):
+    st.markdown(f"**{entry['label']}**" + (f" — {extra}" if extra else ""))
+    if entry.get("note"):
+        st.caption(entry["note"])
 
 
 def page_metrics():
     st.title("Метрики качества")
     st.caption("Отчёты формируются командами `phishctl.py metrics`, `eval-labeled`, `robustness` (см. docs/METRICS.md).")
 
-    labeled = [(name, backend.load_report(f"{name}/summary.json")) for name in ("labeled_eval_llm", "labeled_eval_off")]
-    labeled = [(n, r) for n, r in labeled if r]
+    corpus = _reports("corpus")
+    if corpus:
+        st.subheader("Корпус Заказчика")
+        for entry, r in corpus:
+            part = {"test": "отложенная часть", "dev": "часть для настройки"}.get((r.get("split") or {}).get("part"), "")
+            _report_heading(entry, f"{r['counts']['phishing']} фишинговых и {r['counts']['benign']} легитимных объектов"
+                                   + (f", {part}" if part else "") + f" · {r['generated_at'][:10]}")
+            _acceptance_table([(ACCEPTANCE_NAMES.get(k, k), v["target"], v["actual"], v["passed"])
+                               for k, v in r["acceptance"].items()])
+        entry, r = corpus[0]
+        with st.expander(f"Разрез по источникам ({entry['label']})"):
+            st.dataframe([{"Источник": k, "Объектов": v["objects"], **v["verdicts"], "с/объект": v["mean_seconds"]}
+                          for k, v in r["per_category"].items()], hide_index=True, width="stretch")
+        if r.get("rule_contribution"):
+            with st.expander(f"Вклад правил ({entry['label']})"):
+                st.dataframe(r["rule_contribution"][:50], hide_index=True, width="stretch")
+
+    labeled = _reports("labeled")
     if labeled:
         st.subheader("Размеченный тестовый набор EML")
-        for name, r in labeled:
-            st.markdown("**" + ("С LLM" if name.endswith("llm") else "Без LLM") + f"** — {r['objects']} писем")
+        for entry, r in labeled:
+            _report_heading(entry, f"{r['objects']} писем")
             _acceptance_table([
                 ("Recall «фишинг + подозрительно»", "≥ 0.90", r["recall_phishing_plus_suspicious"],
                  (r["recall_phishing_plus_suspicious"] or 0) >= 0.9),
@@ -233,26 +283,16 @@ def page_metrics():
                 ("Ошибки обработки", "0", r["errors"], r["errors"] == 0),
             ])
 
-    corpus = backend.load_report("metrics.json")
-    if corpus:
-        st.subheader("Корпус Заказчика")
-        st.caption(f"{corpus['counts']['phishing']} фишинговых и {corpus['counts']['benign']} легитимных объектов · "
-                   f"{corpus['generated_at']}")
-        _acceptance_table([(k, v["target"], v["actual"], v["passed"]) for k, v in corpus["acceptance"].items()])
-        st.dataframe([{"Источник": k, "Объектов": v["objects"], **v["verdicts"], "с/объект": v["mean_seconds"]}
-                      for k, v in corpus["per_category"].items()], hide_index=True, use_container_width=True)
-        if corpus.get("rule_contribution"):
-            with st.expander("Вклад правил (по прогону метрик)"):
-                st.dataframe(corpus["rule_contribution"][:50], hide_index=True, use_container_width=True)
-
-    robust = backend.load_report("robustness.json")
+    robust = _reports("robustness")
     if robust:
         st.subheader("Устойчивость к обходу")
         names = {"domain_url_change": "Замена домена и URL", "design_change": "Изменение оформления",
                  "delayed_loading": "Отложенная загрузка"}
-        st.dataframe([{"Сценарий": names.get(k, k), "Объектов": v["objects"], "Recall": v["recall"],
-                       "Падение recall": v["recall_drop"]} for k, v in robust["scenarios"].items()],
-                     hide_index=True, use_container_width=True)
+        for entry, r in robust:
+            _report_heading(entry, (r.get("generated_at") or "")[:10])
+            st.dataframe([{"Сценарий": names.get(k, k), "Объектов": v["objects"], "Recall": v["recall"],
+                           "Падение recall": v["recall_drop"]} for k, v in r["scenarios"].items()],
+                         hide_index=True, width="stretch")
     if not (labeled or corpus or robust):
         st.info("Отчёты ещё не сформированы.")
 
@@ -265,8 +305,14 @@ nav = st.navigation([
     st.Page(page_package, title="Пакет правил", icon="📦"),
     st.Page(page_metrics, title="Метрики", icon="📈"),
 ])
+mode = backend.mode()
 with st.sidebar:
     h = backend.health()
-    st.caption(f"Режим: {'Worker API' if backend.api_alive() else 'локальный'} · LLM: {h.get('llm_mode', '—')}"
+    st.caption(f"Режим: {MODE_NAMES[mode]} · LLM: {h.get('llm_mode', '—')}"
                + (f" ({h.get('llm_model')})" if h.get("llm_enabled") else ""))
-nav.run()
+try:
+    nav.run()
+except (ImportError, requests.RequestException) as e:
+    # The UI container has no pipeline code of its own: without the worker it can only show saved reports.
+    st.error(f"Нет связи с Worker API ({backend.WORKER_API}): {type(e).__name__}. "
+             "Проверьте, что запущен сервис worker (`docker compose ps`).")

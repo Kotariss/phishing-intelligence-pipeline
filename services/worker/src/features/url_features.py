@@ -95,6 +95,42 @@ def homograph_label(host: str) -> Optional[str]:
     return None
 
 
+# Letters drawn the same as Latin ones (subset of the Unicode confusables table, UTS #39).
+_CONFUSABLE_TO_LATIN = str.maketrans({
+    # Cyrillic
+    "а": "a", "в": "b", "е": "e", "ё": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "к": "k",
+    "і": "i", "ї": "i", "ј": "j", "ѕ": "s", "ӏ": "l", "ԁ": "d", "ԛ": "q", "ԝ": "w", "һ": "h", "ѵ": "v",
+    "ь": "b", "п": "n", "ɡ": "g",
+    # Greek
+    "α": "a", "ο": "o", "ρ": "p", "ν": "v", "ι": "i", "κ": "k", "υ": "u", "ε": "e", "τ": "t", "χ": "x",
+})
+_ASCII_LOOKALIKES = (("rn", "m"), ("vv", "w"), ("0", "o"), ("1", "l"))
+
+
+def confusable_skeleton(host: str) -> Optional[str]:
+    """Latin 'skeleton' of a host whose letters only look Latin: whole-Cyrillic 'аррӏе.com' -> 'apple.com',
+    mixed 'sbеrbank.ru' -> 'sberbank.ru', ASCII substitutions 'g00gle.com' / 'rnicrosoft.com'.
+    Returns None when nothing was substituted or the label is not fully made of look-alike letters."""
+    labels = (host or "").lower().split(".")
+    out, changed = [], False
+    for label in labels:
+        decoded = label
+        if label.startswith("xn--"):
+            try:
+                decoded = label.encode("ascii").decode("idna")
+            except (UnicodeError, ValueError):
+                return None
+        skeleton = decoded.translate(_CONFUSABLE_TO_LATIN)
+        if not skeleton.isascii():
+            return None  # a genuine national-script label (e.g. 'госуслуги'), not a disguise
+        if decoded.isascii():
+            for a, b in _ASCII_LOOKALIKES:
+                skeleton = skeleton.replace(a, b)
+        changed = changed or skeleton != label
+        out.append(skeleton)
+    return ".".join(out) if changed else None
+
+
 def generalize_path(path: str) -> Optional[str]:
     """Turns a concrete URL path into a host-independent regex template:
     /secure/login/8f3a9c0d2b1e4f5a/index.php -> ^/secure/login/[A-Za-z0-9_-]{16,}/index\\.php
@@ -137,3 +173,20 @@ def mask_url(url: str) -> str:
 def mask_urls_in_text(text: str) -> str:
     return _URL_IN_TEXT.sub(lambda m: mask_url(m.group(0)), text or "")
 
+
+
+_BARE_HOST_URL = re.compile(r'^(?:www\.)?(?:[a-z0-9-]+\.)+([a-z]{2,24})(?:[/:?#]\S*)?$', re.IGNORECASE)
+_FILE_SUFFIXES = {"pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "gif", "txt", "zip", "html", "htm", "exe"}
+
+
+def qr_payload_url(text: str) -> Optional[str]:
+    """URL encoded in a QR code. Phones open 'www.site.ru' and 'site.ru/login' without a scheme, so these
+    count too; defanged 'hxxp://' and 'site[.]ru' are restored. Returns None for non-URL payloads."""
+    t = (text or "").strip().replace("[.]", ".")
+    t = re.sub(r'^hxxp', 'http', t, flags=re.IGNORECASE)
+    if t.lower().startswith(("http://", "https://")):
+        return t
+    m = _BARE_HOST_URL.match(t)
+    if m and m.group(1).lower() not in _FILE_SUFFIXES:
+        return "http://" + t
+    return None

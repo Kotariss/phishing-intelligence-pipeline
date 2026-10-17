@@ -101,8 +101,9 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
     hashes, urls, domains, dom_hashes = {}, {}, collections.Counter(), collections.Counter()
     for inc in incidents:
         fp = inc.fingerprints or {}
-        if fp.get("attachment_sha256"):
-            hashes[fp["attachment_sha256"]] = inc.id
+        att = fp.get("attachment_sha256") or []
+        for h in [att] if isinstance(att, str) else att:
+            hashes[h] = inc.id
         if inc.final_url and inc.final_url.startswith("http"):
             host = (urlparse(inc.final_url).hostname or "").lower()
             if host and not registry.find_brand_for_domain(host):

@@ -37,15 +37,6 @@ class ZeroFPRGuard:
         self.registry = brand_registry or get_brand_registry()
         self.corpus = corpus if corpus is not None else BENIGN_BASELINE_CORPUS
 
-    def check_level1_brand_allowlist(self, brand_name: str, target_url: str) -> bool:
-        """True if the destination domain is legitimate for the specified brand."""
-        if not brand_name or not target_url:
-            return False
-        found = self.registry.find_brand(brand_name)
-        if not found:
-            return False
-        return self.registry.is_domain_allowed(found["brand_id"], target_url)
-
     def evaluate_rule_on_baseline(self, rule_json: Dict[str, Any]) -> Tuple[bool, int, List[str]]:
         """Level 3: evaluates the L-signature on every benign record with the reference engine."""
         fps = [f"{rec.get('id', '?')} ({rec.get('url') or rec.get('sender_domain') or rec.get('description', '')})"
@@ -59,13 +50,13 @@ class ZeroFPRGuard:
         passed, fp_count, fp_details = self.evaluate_rule_on_baseline(rule_json)
         approved = self_match and passed and risk_score >= malicious_threshold
         if not self_match:
-            note = "Level 3: rule does not match its own source sample (not distillable)."
+            note = "Уровень 3: правило не срабатывает на собственном исходном объекте (не обобщается)."
         elif not passed:
-            note = f"Level 3: Zero FPR violation — rule fires on {fp_count} benign samples."
+            note = f"Уровень 3: нарушение нулевых ложных срабатываний — правило срабатывает на {fp_count} легитимных образцах."
         elif risk_score < malicious_threshold:
-            note = "Level 2: incident below BLOCK threshold — rule kept as draft for review."
+            note = "Уровень 2: риск ниже порога «фишинг» — правило оставлено черновиком для проверки аналитиком."
         else:
-            note = f"All Zero FPR levels passed: 0 false positives on {len(self.corpus)} benign samples, self-match OK."
+            note = f"Все уровни проверки пройдены: 0 ложных срабатываний на {len(self.corpus)} легитимных образцах, исходный объект распознаётся."
         return {
             "approved": approved,
             "note": note,

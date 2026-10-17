@@ -46,3 +46,31 @@ def test_sign_in_howto_is_never_malicious(monkeypatch):
     state = run_file("howto.png", IMAGES[0]["png"])
     assert state.verdict != "MALICIOUS"
     assert "IMAGE_FAKE_DOCUMENT_VIEWER" not in state.reason_codes
+
+
+def _eml_with_picture(png: bytes) -> bytes:
+    return (b"From: Docs <docs@files-share.example>\nTo: a@b.ru\nSubject: Document\nMIME-Version: 1.0\n"
+            b'Content-Type: multipart/mixed; boundary="B"\n\n--B\nContent-Type: text/plain\n\nSee attached.\n'
+            b'--B\nContent-Type: image/png; name="scan.png"\nContent-Disposition: attachment; filename="scan.png"\n'
+            b"Content-Transfer-Encoding: base64\n\n" + base64.encodebytes(png) + b"\n--B--\n")
+
+
+def test_picture_inside_email_is_read_by_ocr(monkeypatch):
+    """ТЗ 4.1.1.2: a picture attached to an e-mail goes to OCR like a standalone image file."""
+    import os
+    import attachment_parser
+    monkeypatch.setattr(attachment_parser, "ocr_image", lambda content: FAKE_VIEWER)
+    png = b"\x89PNG\r\n\x1a\n" + os.urandom(attachment_parser.OCR_MIN_IMAGE_BYTES)
+    parsed = attachment_parser.AttachmentParser.parse_eml(_eml_with_picture(png))
+    assert parsed["attachments_analysis"][0]["ocr_text"].startswith("Microsoft Excel")
+    state = run_file("letter.eml", _eml_with_picture(png))
+    assert "IMAGE_CREDENTIAL_PROMPT" in state.reason_codes
+    assert "scan.png" in state.reason_evidence["IMAGE_CREDENTIAL_PROMPT"]["label"]
+
+
+def test_small_inline_pictures_are_not_ocred(monkeypatch):
+    import attachment_parser
+    calls = []
+    monkeypatch.setattr(attachment_parser, "ocr_image", lambda content: calls.append(1) or "x")
+    attachment_parser.AttachmentParser.parse_eml(_eml_with_picture(b"\x89PNG\r\n\x1a\n" + b"0" * 500))
+    assert calls == []

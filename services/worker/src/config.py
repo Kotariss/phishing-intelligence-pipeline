@@ -28,17 +28,27 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./pipeline.db"
 
     # LLM / VLM (optional heavy extractors). Any OpenAI-compatible chat-completions endpoint.
-    #   LLM_MODE=local -> local server without key: Ollama (http://localhost:11434/v1),
-    #                     LM Studio (http://localhost:1234/v1), vLLM, llama.cpp server, ...
-    #   LLM_MODE=cloud -> remote endpoint authorised with an API key
+    #   LLM_MODE=local -> local server without key, no external network: the `llm` Ollama container of
+    #                     docker-compose (http://llm:11434/v1), or Ollama / LM Studio / vLLM on the host
+    #   LLM_MODE=cloud -> remote endpoint authorised with an API key (open / own data only: ТЗ 4.5.2.2)
     #   LLM_MODE=off   -> pipeline works with deterministic extractors only
+    # Each mode has its own models: a cloud model name does not exist on the local server and vice versa.
     LLM_MODE: str = "local"
     LLM_LOCAL_BASE_URL: str = "http://localhost:11434/v1"
     LLM_LOCAL_API_KEY: str = ""
+    LLM_LOCAL_TEXT_MODEL: str = "qwen3-vl:2b-instruct"
+    LLM_LOCAL_VISION_MODEL: str = "qwen3-vl:2b-instruct"
     LLM_CLOUD_BASE_URL: str = ""
     LLM_CLOUD_API_KEY: str = ""
-    LLM_TEXT_MODEL: str = "qwen2.5:7b"
-    LLM_VISION_MODEL: str = "qwen2.5vl:7b"
+    LLM_CLOUD_TEXT_MODEL: str = ""
+    LLM_CLOUD_VISION_MODEL: str = ""
+    # Sent as `reasoning_effort` when set (e.g. "none"). Not set by default: the cloud model answers the
+    # lure question correctly only with its reasoning (3-4 s per call); the local `-instruct` models do not
+    # reason at all. A local "thinking" model would need "none": on CPU its hidden reasoning takes minutes.
+    LLM_REASONING_EFFORT: str = ""
+    # Output budget per call. Reasoning tokens of a thinking model count against it: the short JSON
+    # answers need ~100 tokens, the cloud model's reasoning occasionally 1-2 thousand.
+    LLM_MAX_TOKENS: int = 4000
     LLM_TEMPERATURE: float = 0.1
     LLM_TIMEOUT_SECONDS: int = 60
 
@@ -80,12 +90,23 @@ class Settings(BaseSettings):
         return self.LLM_CLOUD_API_KEY if self.llm_mode == "cloud" else self.LLM_LOCAL_API_KEY
 
     @property
+    def text_model(self) -> str:
+        return self.LLM_CLOUD_TEXT_MODEL if self.llm_mode == "cloud" else self.LLM_LOCAL_TEXT_MODEL
+
+    @property
+    def vision_model(self) -> str:
+        """Image model of the active mode; a multimodal text model serves both when none is set."""
+        if self.llm_mode == "cloud":
+            return self.LLM_CLOUD_VISION_MODEL or self.LLM_CLOUD_TEXT_MODEL
+        return self.LLM_LOCAL_VISION_MODEL or self.LLM_LOCAL_TEXT_MODEL
+
+    @property
     def llm_configured(self) -> bool:
         if self.llm_mode == "off":
             return False
         if self.llm_mode == "cloud":
-            return bool(self.LLM_CLOUD_BASE_URL and self.LLM_CLOUD_API_KEY)
-        return bool(self.LLM_LOCAL_BASE_URL)
+            return bool(self.LLM_CLOUD_BASE_URL and self.LLM_CLOUD_API_KEY and self.LLM_CLOUD_TEXT_MODEL)
+        return bool(self.LLM_LOCAL_BASE_URL and self.LLM_LOCAL_TEXT_MODEL)
 
 
 _settings: Settings = None

@@ -36,8 +36,9 @@ PAGE_CODES = {
     "COMBO_BRAND_CREDENTIAL_FORM", "RC_EPHEMERAL_HOST_DEAD",
 }
 
-# Backwards-compatible view of the weights (the catalogue lives in rules/reason_codes.py).
-REASON_CODE_WEIGHTS = {code: info.weight for code, info in rc.REASON_CODES.items()}
+# Analyst-facing explanation is in Russian (ТЗ 4.5.1); internal verdict values stay as stored.
+VERDICT_RU = {"MALICIOUS": "фишинг", "SUSPICIOUS": "подозрительно", "CLEAN": "чисто"}
+SEVERITY_RU = {"critical": "критично", "high": "высокая", "medium": "средняя", "low": "низкая", "info": "справочно"}
 
 
 class SynthesizerAgent:
@@ -82,7 +83,7 @@ class SynthesizerAgent:
         if not owner:
             return ""
 
-        neutralised = [c for c in state.reason_codes if c in PAGE_CODES]
+        neutralised = [c for c in state.reason_codes if c in PAGE_CODES and c not in rc.NON_CLAMPABLE]
         for code in neutralised:
             state.drop_reason(code)
         state.network_evidence["neutralised_by_allowlist"] = neutralised
@@ -95,7 +96,7 @@ class SynthesizerAgent:
         if foreign_start and state.redirect_chain and not sender_official:
             state.add_reason("RC_CLOAKING_TO_OFFICIAL", f"{start_host} → {host} ({owner['display_name']})",
                              {"type": "chain", "value": [state.scan_url or ""] + [h.url for h in state.redirect_chain] + [url], "label": "Перенаправление на официальный сайт"})
-        return f"Level 1: {host} — официальный домен {owner['display_name']}; признаки страницы нейтрализованы ({len(neutralised)})"
+        return f"Уровень 1: {host} — официальный домен {owner['display_name']}; признаки страницы нейтрализованы ({len(neutralised)})"
 
     def _fingerprints(self, state: PhishingState) -> None:
         rec = record_from_state(state)
@@ -110,7 +111,8 @@ class SynthesizerAgent:
             "discord_webhooks": rec["discord_webhook_ids"],
             "credential_post_domain": next((registrable_domain(f.action_host) for f in state.dom_forms
                                             if f.is_external_target and f.action_host), None),
-            "attachment_sha256": next((m.get("sha256") for m in att.get("attachments_meta") or [] if not m.get("inline")), None),
+            "attachment_sha256": list(dict.fromkeys(m["sha256"] for m in att.get("attachments_meta") or []
+                                                    if m.get("sha256") and not m.get("inline"))),
             "sender_domain": att.get("from_domain") or None,
         }
         state.fingerprints = {k: v for k, v in fp.items() if v not in (None, [], "")}
@@ -151,22 +153,29 @@ class SynthesizerAgent:
                 state.generated_l_signature = rule
                 state.generated_yara_rule = self.yara_gen.generate(state, rule_id=rule["rule_id"])
         state.zero_fpr_passed = validation["approved"] if validation else True
-        state.zero_fpr_note = clamp_note or (validation["note"] if validation else
-                                             "Level 2: инцидент ниже порога — правило не требуется.")
+        if validation:
+            no_rule_note = validation["note"]
+        elif state.verdict == "CLEAN":
+            no_rule_note = "Уровень 2: вердикт «чисто» — правило не требуется."
+        else:
+            no_rule_note = "Правило не построено: нет обобщаемого набора признаков."
+        state.zero_fpr_note = clamp_note or no_rule_note
 
         # Explanation (deterministic reason codes first: explainability must not depend on the LLM)
-        lines = [f"- {code} ({rc.get(code).severity}, w={rc.get(code).weight:.2f}): {state.reason_details.get(code) or rc.get(code).description}"
+        lines = [f"- {code} ({SEVERITY_RU.get(rc.get(code).severity, rc.get(code).severity)}, вес {rc.get(code).weight:.2f}): "
+                 f"{state.reason_details.get(code) or rc.get(code).description}"
                  for code in sorted(state.reason_codes, key=lambda c: -rc.get(c).weight)]
-        deterministic = (f"Вердикт: {state.verdict} (risk {state.risk_score:.2f}, noisy-OR по {len(state.reason_codes)} индикаторам). "
-                         f"Бренд: {state.brand_evidence.detected_brand_name or '—'}. Zero FPR: {state.zero_fpr_note}"
+        deterministic = (f"Вердикт: {VERDICT_RU.get(state.verdict, state.verdict)} (риск {state.risk_score:.2f}, "
+                         f"объединение {len(state.reason_codes)} независимых признаков). "
+                         f"Бренд: {state.brand_evidence.detected_brand_name or '—'}. Проверка на легитимных данных: {state.zero_fpr_note}"
                          + ("\nОбоснование:\n" + "\n".join(lines) if lines else ""))
         llm_call_info = None
         state.explanation = deterministic
-        if self.llm.enabled and state.verdict != "CLEAN":
+        if state.verdict != "CLEAN" and self.llm.available_for(state.network_evidence):
             prompt = prompts.render("analyst_summary", target=state.raw_target, final_url=state.final_url or "—",
                                     brand=state.brand_evidence.detected_brand_name or "—", verdict=state.verdict,
                                     risk=f"{state.risk_score:.2f}", indicators="\n".join(lines[:12]))
-            text = self.llm.ask_llm(prompt, system_prompt=prompts.render("analyst_summary_system"), max_tokens=1200)
+            text = self.llm.ask_llm(prompt, system_prompt=prompts.render("analyst_summary_system"), prompt_name="analyst_summary")
             llm_call_info = self.llm.get_last_call()
             if not self.llm.is_fallback(text):
                 state.explanation = f"{text.strip()}\n\n{deterministic}"
@@ -174,7 +183,7 @@ class SynthesizerAgent:
         elapsed_ms = round((time.time() - t0) * 1000, 1)
         state.agent_traces.append(AgentStepTrace(
             agent_id="synthesizer",
-            agent_name=f"Synthesizer & Zero FPR Guard Agent ({self.settings.LLM_TEXT_MODEL})",
+            agent_name=f"Synthesizer & Zero FPR Guard Agent ({self.settings.text_model})",
             icon="🧠",
             phase="Phase 7: Verdict Synthesis & L-Signature Distillation",
             status="TRIGGERED" if state.verdict == "MALICIOUS" else ("WARNING" if state.verdict == "SUSPICIOUS" else "CLEAN"),
@@ -182,7 +191,7 @@ class SynthesizerAgent:
             reasoning=f"Комбинирование {len(state.reason_codes)} независимых индикаторов (noisy-OR: 1-Π(1-wᵢ)) → {raw_score:.2f}. "
                       f"Составные признаки, Level-1 allowlist, дистилляция L-сигнатуры/YARA, регрессия правила на эталонной выборке ({len(self.zero_guard.corpus)} легитимных образцов).",
             decision=f"ИТОГОВЫЙ ВЕРДИКТ: {state.verdict} (Risk: {state.risk_score:.2f}, уверенность: {state.confidence}). {state.zero_fpr_note}",
-            tools_called=(["LLM(" + self.settings.LLM_TEXT_MODEL + ")"] if llm_call_info else []) + ["NoisyOrScorer", "LSignatureCompiler", "YARAGenerator", "ZeroFPRGuard"],
+            tools_called=(["LLM(" + self.settings.text_model + ")"] if llm_call_info else []) + ["NoisyOrScorer", "LSignatureCompiler", "YARAGenerator", "ZeroFPRGuard"],
             findings=[
                 {"label": "Итоговый вердикт", "value": state.verdict},
                 {"label": "Risk Score", "value": f"{state.risk_score:.2f} / 1.00"},

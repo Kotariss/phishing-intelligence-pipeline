@@ -14,6 +14,7 @@ try:
     from ..db.repository import IncidentRepository
     from ..db.database import init_db
     from ..rules.exporter import export_artifacts
+    from ..llm.client import set_current_object
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from agents.triage_agent import TriageAgent
@@ -26,6 +27,7 @@ except (ImportError, ValueError):
     from db.repository import IncidentRepository
     from db.database import init_db
     from rules.exporter import export_artifacts
+    from llm.client import set_current_object
 
 
 init_db()
@@ -218,7 +220,11 @@ def get_pipeline():
 
 
 def run_pipeline(initial_state: PhishingState) -> PhishingState:
-    result = get_pipeline().invoke(initial_state)
+    set_current_object(initial_state.incident_id)
+    try:
+        result = get_pipeline().invoke(initial_state)
+    finally:
+        set_current_object(None)
     if isinstance(result, dict):
         return PhishingState(**result)
     return result

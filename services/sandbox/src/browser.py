@@ -97,18 +97,45 @@ class BrowserController:
         http_status = 0
         error = None
         checked_hosts: Dict[str, bool] = {}
+        pending_redirect: Dict[str, Any] = {}
+
+        def is_safe(target: str) -> bool:
+            host_key = target.split("/")[2] if "//" in target else target
+            if host_key not in checked_hosts:
+                checked_hosts[host_key] = validate_url_safety(target, self.anti_ssrf_enabled)[0]
+            return checked_hosts[host_key]
 
         def guard(route, request):
             target = request.url
             if target.startswith(("data:", "blob:", "about:")):
                 return route.continue_()
-            host_key = target.split("/")[2] if "//" in target else target
-            if host_key not in checked_hosts:
-                checked_hosts[host_key] = validate_url_safety(target, self.anti_ssrf_enabled)[0]
-            if not checked_hosts[host_key]:
+            if not is_safe(target):
                 blocked.append(target[:200])
                 return route.abort("blockedbyclient")
-            return route.continue_()
+            # The browser never follows an HTTP redirect itself: Playwright calls this handler only for the first
+            # URL of a chain, so later hops would bypass the check. Each hop is fetched here without redirects
+            # and validated; the main document moves to the next hop by a new navigation (correct page URL),
+            # sub-resources get the final response of their chain.
+            main_document = request.is_navigation_request() and request.frame == page.main_frame
+            hop = target
+            for _ in range(self.max_redirects + 1):
+                try:
+                    response = route.fetch(url=hop, max_redirects=0)
+                except PlaywrightError:
+                    return route.abort("failed")
+                location = response.headers.get("location")
+                if not (300 <= response.status < 400 and location):
+                    return route.fulfill(response=response)
+                next_hop = urljoin(hop, location)
+                if not is_safe(next_hop):
+                    blocked.append(next_hop[:200])
+                    return route.abort("blockedbyclient")
+                if main_document:
+                    pending_redirect.update(hop={"url": hop, "status": response.status, "type": "http_redirect"},
+                                            next=next_hop)
+                    return route.fulfill(status=200, content_type="text/html", body="")
+                hop = next_hop
+            return route.abort("failed")  # too many redirects
 
         with sync_playwright() as p:
             browser = p.chromium.launch(
@@ -125,11 +152,23 @@ class BrowserController:
             page.on("framenavigated", lambda frame: main_frame_navs.append(frame.url) if frame == page.main_frame else None)
 
             try:
-                resp = page.goto(url, timeout=timeout_seconds * 1000, wait_until="domcontentloaded")
-                try:
-                    page.wait_for_load_state("networkidle", timeout=3000)
-                except PlaywrightError:
-                    pass
+                def open_page(target: str):
+                    response = page.goto(target, timeout=timeout_seconds * 1000, wait_until="domcontentloaded")
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=3000)
+                    except PlaywrightError:
+                        pass
+                    return response
+
+                resp = open_page(url)
+                for _ in range(self.max_redirects):
+                    if not pending_redirect:
+                        break
+                    redirect_chain.append(pending_redirect.pop("hop"))
+                    resp = open_page(pending_redirect.pop("next"))
+                else:
+                    if pending_redirect:
+                        error = f"Too many redirects (>{self.max_redirects})"
                 final_url = page.url
                 http_status = resp.status if resp else 0
                 if resp is not None:

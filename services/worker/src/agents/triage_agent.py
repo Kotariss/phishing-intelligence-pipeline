@@ -7,13 +7,13 @@ try:
     from ..orchestrator.state import PhishingState, RedirectHop, FormEvidence, AgentStepTrace
     from ..config import get_settings
     from ..sandbox_bridge import SandboxClient
-    from ..features.url_features import hostname, registrable_domain
+    from ..features.url_features import hostname, registrable_domain, qr_payload_url
     from ..brands.matcher import get_brand_registry
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, RedirectHop, FormEvidence, AgentStepTrace
     from config import get_settings
     from sandbox_bridge import SandboxClient
-    from features.url_features import hostname, registrable_domain
+    from features.url_features import hostname, registrable_domain, qr_payload_url
     from brands.matcher import get_brand_registry
 
 
@@ -54,8 +54,8 @@ def _compact(features: Dict[str, Any]) -> Dict[str, Any]:
 def choose_primary_url(links: List[str], qr_codes: List[str], sender_domain: str = "") -> Optional[str]:
     """Picks the most probable lure destination among the links of an e-mail / document."""
     for q in qr_codes or []:
-        if q.lower().startswith(("http://", "https://")):
-            return q
+        if qr_payload_url(q):
+            return qr_payload_url(q)
     sender_site = registrable_domain(sender_domain) if sender_domain else ""
     registry = get_brand_registry()
     candidates = [u for u in links or [] if not NOISE_LINK.search(u)]
@@ -200,7 +200,7 @@ class TriageAgent:
                 state.attachment_evidence = _compact(extracted)
 
                 discovered = list(extracted.get("links", []) or [])
-                for q in extracted.get("qr_codes", []) or []:
+                for q in filter(None, map(qr_payload_url, extracted.get("qr_codes", []) or [])):
                     if q not in discovered:
                         discovered.append(q)
                 state.discovered_urls_from_attachments = discovered

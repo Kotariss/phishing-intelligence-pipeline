@@ -60,10 +60,3 @@ def scan_qr_codes(image_bytes: bytes) -> List[str]:
 
     return sorted(set(found))
 
-
-def scan_qr_from_file_path(image_path: str) -> List[str]:
-    try:
-        with open(image_path, "rb") as f:
-            return scan_qr_codes(f.read())
-    except OSError:
-        return []

@@ -70,14 +70,8 @@
 | `RC_LURE_DOUBLE_EXTENSION` | 0.60 | high (не нейтрализуется) | Двойное расширение файла (.pdf.png и т.п.) |
 | `ATTACH_ACTIVE_MACRO_MARKER` | 0.50 | high (не нейтрализуется) | Office-документ с VBA-макросами |
 | `ATTACH_FAKE_HUMAN_CHECK` | 0.45 | high | Вложенный файл изображает проверку «вы не робот» / CAPTCHA: настоящие проверки выдаёт сайт, а не файл во вложении |
-| `ATTACH_PDF_ACTIVE_CONTENT` | 0.40 | medium | PDF содержит JavaScript / Launch-действие |
+| `ATTACH_PDF_ACTIVE_CONTENT` | 0.40 | medium | PDF содержит JavaScript, Launch-действие или встроенный исполняемый / HTML-файл |
 | `ATTACH_QR_CODE_FOUND` | 0.30 | medium | QR-код со ссылкой во вложении (quishing) |
-
-## Индикаторы кампаний
-
-| Код | Вес | Важность | Описание |
-|---|---|---|---|
-| `RC_CAMPAIGN_INVARIANT_MATCH` | 0.50 | high | Совпадение с известным индикатором кампании (имя файла) |
 
 ## Анализ текста приманки (LLM)
 

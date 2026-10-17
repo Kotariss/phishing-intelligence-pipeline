@@ -5,11 +5,11 @@ from typing import List
 try:
     from ..orchestrator.state import PhishingState, AgentStepTrace
     from ..brands.matcher import get_brand_registry
-    from ..features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label, mask_url
+    from ..features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label, mask_url, confusable_skeleton
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from brands.matcher import get_brand_registry
-    from features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label, mask_url
+    from features.url_features import hostname, registrable_domain, is_ip_host, free_hosting_suffix, homograph_label, mask_url, confusable_skeleton
 
 
 TRUSTED_REDIRECTORS = re.compile(
@@ -99,6 +99,26 @@ class URLAgent:
             if decoded:
                 state.add_reason("BRAND_HOMOGRAPH_DOMAIN", f"IDN-омограф: {h} ({decoded})", {"type": "url", "value": f"{h} → {decoded}", "label": "Punycode → отображение"})
                 net["is_punycode"] = True
+            # Letters that only look Latin ('аррӏе.com' entirely in Cyrillic, 'g00gle.com'): compare the skeleton.
+            skeleton = confusable_skeleton(h)
+            imitated = None
+            if skeleton and not self.registry.find_brand_for_domain(h):
+                imitated = self.registry.find_brand_for_domain(skeleton)
+                if not imitated and h in lure_hosts:
+                    hit = self.registry.find_lookalike_brand(skeleton)
+                    imitated = hit[0] if hit else None
+            if imitated:
+                idn = h.startswith("xn--") or ".xn--" in h
+                if idn and "BRAND_HOMOGRAPH_DOMAIN" not in state.reason_codes:
+                    state.add_reason("BRAND_HOMOGRAPH_DOMAIN", f"IDN-омограф: {h} читается как {skeleton} ({imitated['display_name']})",
+                                     {"type": "url", "value": f"{h} → {skeleton}", "label": "Punycode → отображение"})
+                    net["is_punycode"] = True
+                elif not idn and h in lure_hosts:
+                    state.add_reason("BRAND_LOOKALIKE_DOMAIN", f"Домен {h} читается как {skeleton} ({imitated['display_name']}): подмена похожих символов",
+                                     {"type": "url", "value": f"{h} → {skeleton}", "label": f"Домен-двойник {imitated['display_name']}"})
+                if h in lure_hosts:
+                    net.setdefault("lookalike_brand", imitated["display_name"])
+                    net.setdefault("lookalike_host", h)
             # Look-alike domains are judged only on the lure path (primary link, landing page, redirect
             # chain): newsletters legitimately link to third-party sites named after products.
             look = self.registry.find_lookalike_brand(h) if h in lure_hosts else None

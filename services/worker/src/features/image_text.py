@@ -5,7 +5,8 @@ Brand-independent lure signals in the text recognised on an image (OCR), ТЗ п
 * credential prompt — the image asks for a password (or for an e-mail together with a sign-in action);
 * document gate     — the image offers access to a document / file / invoice (fake document viewer).
 
-Patterns are multilingual (en, ru, zh and common European languages of the corpus) and deterministic.
+Patterns are multilingual (en, ru, zh and common European languages) and deterministic. Vocabulary of specific
+campaigns of the corpus (waybill numbers, 'AWB', 'bill of lading', 'P.O') is deliberately not listed (honest metrics).
 """
 import re
 from typing import Dict, List
@@ -22,7 +23,7 @@ DOC_ACTION = re.compile(
     r"anzeigen|öffnen|afficher|ouvrir|ver\b|visualizar|bekijken|zobrazit", re.I)
 DOC_OBJECT = re.compile(
     r"document|file|invoice|attachment|\bpdf\b|xlsx?|excel|\bdocx?\b|spreadsheet|statement|remittance|contract|"
-    r"purchase\s+order|\bP\.?O\b|bill\s+of\s+lading|\bAWB\b|shipment|parcel|onedrive|sharepoint|docusign|"
+    r"purchase\s+order|shipment|parcel|onedrive|sharepoint|docusign|"
     r"документ|файл|сч[её]т|накладн|договор|文件|表格|文档|附件|订单|发票|合同|"
     r"dokument|datei|rechnung|fichier|facture|archivo|factura|bestand|soubor|faktura", re.I)
 PROTECTED = re.compile(

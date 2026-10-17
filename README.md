@@ -83,13 +83,20 @@ docker compose --profile live-fetch up -d
 
 ## LLM / VLM (опционально)
 
-| `LLM_MODE` | Подключение |
-|---|---|
-| `local` | Ollama / LM Studio / vLLM: `LLM_LOCAL_BASE_URL` (например `http://localhost:11434/v1`) |
-| `cloud` | удалённый OpenAI-совместимый сервер: `LLM_CLOUD_BASE_URL` + `LLM_CLOUD_API_KEY` |
-| `off` | только детерминированные экстракторы |
+| `LLM_MODE` | Подключение | Модели |
+|---|---|---|
+| `local` | в Docker — контейнер `llm` (Ollama) во внутренней сети без выхода в интернет; вне Docker — Ollama / LM Studio / vLLM по `LLM_LOCAL_BASE_URL` | `LLM_LOCAL_TEXT_MODEL`, `LLM_LOCAL_VISION_MODEL` (по умолчанию `qwen3-vl:2b-instruct`) |
+| `cloud` | удалённый OpenAI-совместимый сервер: `LLM_CLOUD_BASE_URL` + `LLM_CLOUD_API_KEY` — только открытые / собственные данные (ТЗ 4.5.2.2) | `LLM_CLOUD_TEXT_MODEL`, `LLM_CLOUD_VISION_MODEL` |
+| `off` | только детерминированные экстракторы | — |
 
-Модели: `LLM_TEXT_MODEL`, `LLM_VISION_MODEL`. Промпты — в `services/worker/src/prompts/`.
+Локальные модели один раз скачивает контейнер `llm-init` в том `llm_models` (единственный шаг, которому нужен
+интернет); при уже скачанных моделях система работает полностью офлайн. Режим переключается без пересборки:
+
+```bash
+LLM_MODE=local docker compose up -d worker
+```
+
+Промпты — в `services/worker/src/prompts/`.
 Подробно: [docs/LLM_AND_PROMPTS.md](docs/LLM_AND_PROMPTS.md).
 
 ## Интерфейс аналитика (Streamlit)

@@ -1,10 +1,8 @@
 import os
-import sys
-import docx
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import parse_xml, OxmlElement
 from docx.oxml.ns import nsdecls, qn
 
@@ -979,7 +977,7 @@ for btn in soup.find_all(['button', 'input']):
     # Save to both file locations
     doc.save(OUTPUT_DOCX_1)
     doc.save(OUTPUT_DOCX_2)
-    print(f"Document successfully created and saved to:")
+    print("Document successfully created and saved to:")
     print(f"1. {OUTPUT_DOCX_1}")
     print(f"2. {OUTPUT_DOCX_2}")
 

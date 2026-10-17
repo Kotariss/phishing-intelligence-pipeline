@@ -1,5 +1,6 @@
 """Prompt templates are versioned files in services/worker/src/prompts (ТЗ п. 4.1.3.5).
 Placeholders use string.Template syntax ($name) so that JSON braces need no escaping."""
+import hashlib
 import os
 from functools import lru_cache
 from string import Template
@@ -15,3 +16,9 @@ def _template(name: str) -> Template:
 
 def render(name: str, **values) -> str:
     return _template(name).safe_substitute(**{k: str(v) for k, v in values.items()})
+
+
+@lru_cache(maxsize=None)
+def version(name: str) -> str:
+    """Short fingerprint of a prompt file: logs and results record which prompt text produced an answer."""
+    return hashlib.sha256(_template(name).template.encode("utf-8")).hexdigest()[:8]

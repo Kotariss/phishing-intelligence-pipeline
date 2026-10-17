@@ -4,7 +4,6 @@ Initializes the database schema and loads the 175-brand registry into the databa
 
 import os
 import sys
-import json
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(ROOT_DIR, "services", "worker", "src"))

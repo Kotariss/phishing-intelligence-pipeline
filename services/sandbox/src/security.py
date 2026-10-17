@@ -27,10 +27,6 @@ class SecurityError(Exception):
     pass
 
 
-class SSRFError(SecurityError):
-    pass
-
-
 def is_ip_forbidden(ip: IPAddress) -> bool:
     """True for every address that is not publicly routable (RFC1918, loopback, link-local,
     CGNAT 100.64/10, reserved, multicast, unspecified, IPv4-mapped/compatible IPv6 to those)."""

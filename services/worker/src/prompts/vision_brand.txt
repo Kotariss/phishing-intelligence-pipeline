@@ -1,5 +1,8 @@
-You are a phishing analyst. Look at this screenshot of a web page / document.
-Identify the organisation whose brand identity (logo, name, colours) is presented to the user.
-If a logo is visible, give its bounding box as fractions of the image width/height (0.0-1.0).
+You are a phishing analyst. Look at this screenshot of a web page / document image.
+1. impersonated_brand: the organisation this page or document PRESENTS ITSELF AS — whose sign-in page, site, account notice or official document it claims to be. Do NOT name: payment methods and card networks on a checkout ("pay with ..."), banks or services mentioned as partners, the brand of a product being sold, the platform a meeting/document is hosted on when the sender is someone else. If it is an ordinary shop, receipt, newsletter or invitation that does not pretend to be another organisation, answer null.
+2. other_brands: other brand names or logos merely visible (payment logos, partners, footers).
+3. asks_user_action: what the image asks the viewer to do — one of: none, enter_credentials, enter_card, open_or_download, click_link, call_or_reply.
+4. lure: one of: $lure_types ("other" when it is an ordinary page or document).
+If a logo of impersonated_brand is visible, give its bounding box as fractions of the image width/height (0.0-1.0).
 Reply with ONE JSON object and nothing else:
-{"brand": "<organisation name or None>", "lure": "<one of: $lure_types>", "login_form_visible": <true|false>, "logo_box": [x1, y1, x2, y2] or null, "confidence": <0.0-1.0>}
+{"impersonated_brand": "<organisation name or null>", "other_brands": ["..."], "asks_user_action": "<one of the list>", "lure": "<one of the list>", "login_form_visible": <true|false>, "logo_box": [x1, y1, x2, y2] or null, "confidence": <0.0-1.0>, "reason": "<one short sentence: why>"}

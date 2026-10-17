@@ -9,11 +9,13 @@ try:
     from ..llm.client import get_llm_client
     from ..llm import prompts
     from ..features.text_lure import text_lure_signals
+    from ..features.url_features import hostname, registrable_domain
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from llm.client import get_llm_client
     from llm import prompts
     from features.text_lure import text_lure_signals
+    from features.url_features import hostname, registrable_domain
 
 
 _CACHE: Dict[str, Dict[str, Any]] = {}
@@ -48,9 +50,14 @@ class ContentAgent:
             parts.append(f"Тема: {att['subject']}")
         if att.get("from_name") or att.get("from_address"):
             parts.append(f"Отправитель: {att.get('from_name', '')} <{att.get('from_address', '')}>")
+        if att.get("type") == "eml" and att.get("links"):
+            link_domains = list(dict.fromkeys(registrable_domain(hostname(u)) for u in att["links"] if hostname(u)))
+            if link_domains:
+                parts.append("Домены ссылок: " + ", ".join(link_domains[:10]))
         body = att.get("body_text_preview") or ""
         if not body and state.dom_html and att.get("type") == "eml":
-            body = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', state.dom_html))[:1500]
+            html = re.sub(r'(?is)<(style|script|head)\b.*?</\1\s*>', ' ', state.dom_html)
+            body = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', html))[:1500]
         if body:
             parts.append(f"Текст письма: {body[:1500]}")
         page_text = (state.page_features or {}).get("visible_text")
@@ -58,12 +65,19 @@ class ContentAgent:
             parts.append(f"Текст страницы ({state.final_url or 'вложение'}): {page_text[:1200]}")
         if att.get("ocr_text"):
             parts.append(f"Текст на изображении: {att['ocr_text'][:1200]}")
+        # Text of the e-mail's own attachments: PDF / HTML text and OCR of attached pictures (ТЗ 4.1.1.2)
+        attachment_texts = []
+        for item in att.get("attachments_analysis") or []:
+            for key, label in (("text_preview", "Текст вложения"), ("ocr_text", "Текст на изображении во вложении")):
+                if (item.get(key) or "").strip() and len(attachment_texts) < 3:
+                    attachment_texts.append(item[key][:800])
+                    parts.append(f"{label} {item.get('filename') or ''}: {item[key][:800]}")
         text = "\n".join(parts)
 
         # Deterministic lure signals (no LLM): only the text the attacker sent — the e-mail and attached
         # files — never a landing page, which may be a genuine site ("session expired" on a real login page).
         sent_text = " ".join(filter(None, [att.get("subject"), body,
-                                           page_text if att.get("type") == "html" else None]))
+                                           page_text if att.get("type") == "html" else None] + attachment_texts))
         lure = text_lure_signals(sent_text)
         if lure["account_threat"]:
             state.add_reason("CONTENT_ACCOUNT_THREAT", f"Угроза доступу к почте / учётной записи: «{lure['account_threat'][0][:150]}»",
@@ -77,11 +91,12 @@ class ContentAgent:
                              {"type": "text", "value": f"… {lure['human_check']} …", "label": "Текст вложения"})
 
         status, decision, call_info, result = "SKIPPED", "Нет текста для анализа или LLM отключена.", None, None
-        if text and len(text) > 80 and self.llm.enabled and not state.has_rescanned_url:
+        if text and len(text) > 80 and not state.has_rescanned_url and self.llm.available_for(state.network_evidence):
             key = hashlib.sha1(text.encode("utf-8")).hexdigest()
+            state.network_evidence["llm_lure_input_chars"] = len(text)
             result = _CACHE.get(key)
             if result is None:
-                answer = self.llm.ask_llm(prompts.render("lure_classifier", content=text), max_tokens=1500, temperature=0.0)
+                answer = self.llm.ask_llm(prompts.render("lure_classifier", content=text), temperature=0.0, prompt_name="lure_classifier")
                 call_info = self.llm.get_last_call()
                 result = None if self.llm.is_fallback(answer) else _parse(answer)
                 if result is not None:
@@ -105,7 +120,7 @@ class ContentAgent:
 
         state.agent_traces.append(AgentStepTrace(
             agent_id="content_agent",
-            agent_name=f"Lure Content Agent ({self.llm.settings.LLM_TEXT_MODEL})",
+            agent_name=f"Lure Content Agent ({self.llm.settings.text_model})",
             icon="✉️",
             phase="Phase 5b: Social-Engineering Text Analysis",
             status=status,
@@ -113,7 +128,7 @@ class ContentAgent:
             reasoning="Классификация текста письма и страницы большой языковой моделью: срочность, угрозы, обещания выплат, просьбы сообщить данные. "
                       f"Признак учитывается только при уверенности ≥ {self.MIN_CONFIDENCE} и сам по себе не даёт вердикт BLOCK.",
             decision=decision,
-            tools_called=[f"LLM({self.llm.settings.LLM_TEXT_MODEL})"] if call_info else [],
+            tools_called=[f"LLM({self.llm.settings.text_model})"] if call_info else [],
             findings=[{"label": "Тип приманки", "value": str((result or {}).get("lure_type") or "—")},
                       {"label": "Индикаторы", "value": "; ".join(str(i) for i in ((result or {}).get("indicators") or [])[:4]) or "—"}],
             llm_audit=call_info,

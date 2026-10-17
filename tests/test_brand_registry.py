@@ -42,6 +42,9 @@ def test_cjk_and_obfuscated_display_names(registry):
     assert registry.find_brand_in_text(zw)[0]["brand_id"] == "7_eleven"
     assert normalize_display_text(zw)[1] is True
     assert normalize_display_text("Иван Петров") == ("Иван Петров", False)
+    # variation selectors and tag characters (seen as "Amazon Prime" in a test-set e-mail)
+    hidden = "A\U000E0101m️a\U000E0041zon Prime"
+    assert normalize_display_text(hidden) == ("Amazon Prime", True)
 
 
 def test_lookalike_domains(registry):

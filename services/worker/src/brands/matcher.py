@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import unicodedata
 from typing import List, Dict, Optional, Tuple, Any
 from urllib.parse import urlparse
 
@@ -24,7 +25,17 @@ _HOMOGLYPH_MAP = str.maketrans("АВЕКМНОРСТХаеорсухіјѕΑΒΕ
                                "ABEKMHOPCTXaeopcyxijsABEHIKMNOPTXYZo")
 _HOMOGLYPH_CHARS = re.compile("[" + "АВЕКМНОРСТХаеорсухіјѕΑΒΕΗΙΚΜΝΟΡΤΧΥΖο" + "]")
 _CJK = re.compile(r'[぀-ヿ㐀-鿿가-힯]')
-_ZERO_WIDTH = re.compile(r'[­​-‏⁠-⁤﻿]')
+
+
+def _is_invisible(ch: str) -> bool:
+    """Format characters (zero-width, bidi marks, soft hyphen, tag characters U+E0000–E007F) and
+    variation selectors (U+FE00–FE0F, U+E0100–E01EF) render as nothing but break substring matching."""
+    cp = ord(ch)
+    return unicodedata.category(ch) == "Cf" or 0xFE00 <= cp <= 0xFE0F or 0xE0100 <= cp <= 0xE01EF
+
+
+def _strip_invisible(text: str) -> str:
+    return "".join(ch for ch in text if not _is_invisible(ch))
 
 
 def _unmask_letters(text: str) -> Tuple[str, bool]:
@@ -51,7 +62,7 @@ def normalize_display_text(text: str) -> Tuple[str, bool]:
     Returns (normalized_text, was_obfuscated)."""
     if not text:
         return "", False
-    cleaned = _ZERO_WIDTH.sub("", text).replace(" ", " ")
+    cleaned = _strip_invisible(text).replace(" ", " ")
     obfuscated = cleaned != text.replace(" ", " ")
     cleaned, unmasked = _unmask_letters(cleaned)
     obfuscated = obfuscated or unmasked

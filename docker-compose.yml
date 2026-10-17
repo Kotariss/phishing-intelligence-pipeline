@@ -4,6 +4,10 @@ name: phishing-pipeline
 #   sandbox_net (internal: true) — the sandbox has NO route to the internet (ТЗ 4.5.2.1);
 #                                  it only renders/parses objects it receives from the worker.
 #   backend_net                  — worker, knowledge base, UI.
+#   llm_net     (internal: true) — local LLM server `llm` (Ollama, Qwen models); reachable only by the worker,
+#                                  no route to the internet: LLM_MODE=local sends nothing outside (ТЗ 4.4.2).
+# `llm-init` downloads the models into the `llm_models` volume once (the only step that needs the internet)
+# and exits; with the models already in the volume it works offline.
 # Live URL expansion (extended version) is opt-in: `docker compose --profile live-fetch up`
 # starts `sandbox-online`, attached to an egress network, and the worker can be pointed at it
 # with SANDBOX_HOST=sandbox-online.
@@ -90,15 +94,19 @@ services:
       - SANDBOX_HOST=${SANDBOX_HOST_DOCKER:-sandbox}
       - SANDBOX_PORT=8001
       - SANDBOX_INPROCESS_FALLBACK=false
-      - LLM_MODE=${LLM_MODE:-off}
-      - LLM_LOCAL_BASE_URL=${LLM_LOCAL_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
+      - LLM_MODE=${LLM_MODE:-local}
+      - LLM_LOCAL_BASE_URL=${LLM_LOCAL_BASE_URL_DOCKER:-http://llm:11434/v1}
       - LLM_LOCAL_API_KEY=${LLM_LOCAL_API_KEY:-}
+      - LLM_LOCAL_TEXT_MODEL=${LLM_LOCAL_TEXT_MODEL:-qwen3-vl:2b-instruct}
+      - LLM_LOCAL_VISION_MODEL=${LLM_LOCAL_VISION_MODEL:-qwen3-vl:2b-instruct}
       - LLM_CLOUD_BASE_URL=${LLM_CLOUD_BASE_URL:-}
       - LLM_CLOUD_API_KEY=${LLM_CLOUD_API_KEY:-}
-      - LLM_TEXT_MODEL=${LLM_TEXT_MODEL:-qwen2.5:7b}
-      - LLM_VISION_MODEL=${LLM_VISION_MODEL:-qwen2.5vl:7b}
+      - LLM_CLOUD_TEXT_MODEL=${LLM_CLOUD_TEXT_MODEL:-}
+      - LLM_CLOUD_VISION_MODEL=${LLM_CLOUD_VISION_MODEL:-}
+      - LLM_REASONING_EFFORT=${LLM_REASONING_EFFORT:-}
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
-      - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-60}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-4000}
+      - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-180}
       - SCORE_CLEAN_THRESHOLD=${SCORE_CLEAN_THRESHOLD:-0.30}
       - SCORE_MALICIOUS_THRESHOLD=${SCORE_MALICIOUS_THRESHOLD:-0.70}
       - DATASET_DIR=/app/file_for_case
@@ -113,13 +121,54 @@ services:
     networks:
       - backend_net
       - sandbox_net
+      - llm_net
       - egress_net
     depends_on:
       db:
         condition: service_healthy
       sandbox:
         condition: service_started
+      llm:
+        condition: service_started
     restart: unless-stopped
+
+  llm:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    container_name: llm
+    environment:
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-30m}   # keep the model in memory between objects of a batch
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_VULKAN=1                              # integrated / any Vulkan GPU; falls back to CPU without it
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - llm_models:/root/.ollama
+    networks:
+      - llm_net
+    depends_on:
+      llm-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  llm-init:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    container_name: llm-init
+    environment:
+      - MODELS=${LLM_LOCAL_TEXT_MODEL:-qwen3-vl:2b-instruct} ${LLM_LOCAL_VISION_MODEL:-qwen3-vl:2b-instruct}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve >/dev/null 2>&1 &
+        until ollama list >/dev/null 2>&1; do sleep 1; done
+        for m in $$(echo $$MODELS | tr ' ' '\n' | sort -u); do
+          ollama show "$$m" >/dev/null 2>&1 && echo "model $$m: present" && continue
+          echo "model $$m: downloading" && ollama pull "$$m" || exit 1
+        done
+    volumes:
+      - llm_models:/root/.ollama
+    networks:
+      - egress_net
+    restart: "no"
 
   ui:
     build:
@@ -149,8 +198,12 @@ networks:
   sandbox_net:
     driver: bridge
     internal: true
+  llm_net:
+    driver: bridge
+    internal: true
   egress_net:
     driver: bridge
 
 volumes:
   db_data:
+  llm_models:

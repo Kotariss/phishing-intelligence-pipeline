@@ -283,7 +283,7 @@ def cmd_metrics(args):
             raise SystemExit(f"split manifest {args.split_file} not found: run `phishctl.py split` first")
         split = load_split(args.split_file)
     report = evaluate(args.dataset, args.limit, tuple(args.sources.split(",")),
-                      progress=_log if args.verbose else None, split=split, part=args.part)
+                      progress=_log if args.verbose else None, split=split, part=args.part, workers=args.workers)
     save_report(report, args.out)
     print(json.dumps({"counts": report["counts"], "metrics": report["metrics"], "acceptance": report["acceptance"]},
                      ensure_ascii=False, indent=2))
@@ -310,12 +310,18 @@ def cmd_split(args):
 
 def cmd_robustness(args):
     from evaluation import robustness, save_report
+    from ingest.split import load_split
     report = {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
               "limit_per_source": args.limit,
-              "scenarios": robustness(args.dataset, args.limit, progress=_log if args.verbose else None)}
+              "part": args.part}
+    split = load_split(args.split_file) if args.part else None
+    scenarios = robustness(args.dataset, args.limit, progress=_log if args.verbose else None, split=split, part=args.part)
+    report["excluded"] = scenarios.pop("_excluded")
+    report["scenarios"] = scenarios
     save_report(report, args.out)
     print(json.dumps({k: {kk: v[kk] for kk in ("objects", "still_detected", "recall", "recall_drop")}
                       for k, v in report["scenarios"].items()}, ensure_ascii=False, indent=2))
+    print(json.dumps(report["excluded"], ensure_ascii=False))
     _log(f"report written to {args.out}")
 
 
@@ -326,6 +332,18 @@ def cmd_eval_labeled(args):
     print(json.dumps({k: v for k, v in summary.items() if not k.endswith("_ids") and k != "benign_code_frequency"},
                      ensure_ascii=False, indent=2))
     _log(f"predictions and results written to {args.out}")
+
+
+def cmd_diff_runs(args):
+    """Compares two runs object by object (verdict transitions and the indicators behind them)."""
+    from evaluation import diff_runs, save_report
+    diff = diff_runs(args.run_a, args.run_b, limit=args.limit)
+    if args.out:
+        save_report(diff, args.out)
+    print(json.dumps({k: diff[k] for k in ("objects_a", "objects_b", "common", "transitions", "codes_appeared",
+                                           "codes_disappeared")}, ensure_ascii=False, indent=2))
+    for c in diff["changed_objects"][:args.show]:
+        print(f"{c['before']:>10} -> {c['after']:<10} {c['object'][-70:]}  +{c['codes_added']} -{c['codes_removed']}")
 
 
 def cmd_build_benign_corpus(args):
@@ -383,6 +401,7 @@ def main(argv=None):
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "metrics.json"))
     p.add_argument("--part", choices=("dev", "test"), help="only this part of the split manifest")
     p.add_argument("--split-file", default=os.path.join(REPO_ROOT, "reports", "split.json"))
+    p.add_argument("--workers", type=int, default=1, help="parallel processes (useful with a remote LLM)")
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_metrics)
 
@@ -397,6 +416,8 @@ def main(argv=None):
     p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
     p.add_argument("--limit", type=int, default=30, help="objects per source")
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "robustness.json"))
+    p.add_argument("--part", choices=("dev", "test"), default="test", help="part of the split manifest (default: held-out)")
+    p.add_argument("--split-file", default=os.path.join(REPO_ROOT, "reports", "split.json"))
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_robustness)
 
@@ -406,6 +427,14 @@ def main(argv=None):
     p.add_argument("--limit", type=int)
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_eval_labeled)
+
+    p = sub.add_parser("diff-runs", help="compare two runs (metrics .json or labelled-set output dir) object by object")
+    p.add_argument("run_a")
+    p.add_argument("run_b")
+    p.add_argument("--out", help="write the full comparison as JSON")
+    p.add_argument("--limit", type=int, default=500, help="changed objects kept in the JSON")
+    p.add_argument("--show", type=int, default=40, help="changed objects printed")
+    p.set_defaults(func=cmd_diff_runs)
 
     p = sub.add_parser("build-benign-corpus", help="rebuild the known-legitimate feature corpus")
     p.set_defaults(func=cmd_build_benign_corpus)

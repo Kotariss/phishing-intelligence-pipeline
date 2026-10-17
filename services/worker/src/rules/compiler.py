@@ -7,11 +7,13 @@ from urllib.parse import urlparse
 
 try:
     from ..brands.matcher import get_brand_registry
-    from ..features.url_features import generalize_path, registrable_domain, hostname
+    from ..features.url_features import generalize_path, registrable_domain
+    from ..features.file_names import DOUBLE_EXT_PATTERN
     from .engine import record_from_state
 except (ImportError, ValueError):
     from brands.matcher import get_brand_registry
-    from features.url_features import generalize_path, registrable_domain, hostname
+    from features.url_features import generalize_path, registrable_domain
+    from features.file_names import DOUBLE_EXT_PATTERN
     from rules.engine import record_from_state
 
 
@@ -131,14 +133,9 @@ class LSignatureCompiler:
             any_of += self._fingerprint_conditions(state, rec)
             if not any_of:
                 any_of.append({"type": "attachment_name_pattern", "regex": r"\.(?:s?html?|svg)$"})
-        elif codes & {"RC_LURE_DOUBLE_EXTENSION", "RC_CAMPAIGN_INVARIANT_MATCH"}:
+        elif "RC_LURE_DOUBLE_EXTENSION" in codes:
             kind = "attachment_lure"
-            if "RC_LURE_DOUBLE_EXTENSION" in codes:
-                any_of.append({"type": "attachment_name_pattern",
-                               "regex": r"\.(?:pdf|pfd|xlsx?|xlxs|docx?|txt|rtf|csv)\s*\.(?:png|jpe?g|gif|html?|shtml|svg|exe|scr|js|zip|iso|img)$"})
-            if "RC_CAMPAIGN_INVARIANT_MATCH" in codes:
-                any_of.append({"type": "attachment_name_pattern",
-                               "regex": r"AWB[_\s-]?1461983596|PO[_\s-]?230270|PO[_\s-]?0094321|MT103[_\s-]?paymentform"})
+            any_of.append({"type": "attachment_name_pattern", "regex": DOUBLE_EXT_PATTERN.pattern.replace("(?i)", "")})
         elif "RC_BRAND_SPOOF_DISPLAYNAME" in codes:
             sender_brand = self.registry.find_brand_in_text(rec["sender_name"])
             cond = self._brand_condition(sender_brand[0]["brand_id"], scope="sender") if sender_brand else None

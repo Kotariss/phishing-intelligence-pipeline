@@ -16,7 +16,8 @@ elif DATABASE_URL.startswith("postgresql://"):
 
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+    # timeout: parallel evaluation workers (separate processes) wait for the write lock instead of failing
+    connect_args = {"check_same_thread": False, "timeout": 60}
 
 engine = create_engine(
     DATABASE_URL,

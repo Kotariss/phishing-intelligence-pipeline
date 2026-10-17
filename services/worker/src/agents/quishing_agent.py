@@ -5,21 +5,16 @@ from typing import Any, Dict, List
 
 try:
     from ..orchestrator.state import PhishingState, AgentStepTrace
-    from ..features.url_features import hostname, registrable_domain
+    from ..features.url_features import hostname, qr_payload_url
+    from ..features.file_names import DOUBLE_EXT_PATTERN
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
-    from features.url_features import hostname, registrable_domain
+    from features.url_features import hostname, qr_payload_url
+    from features.file_names import DOUBLE_EXT_PATTERN
 
 
-DOUBLE_EXT_PATTERN = re.compile(
-    r'(?i)\.(?:pdf|pfd|xlsx?|xlxs|docx?|txt|rtf|csv)\s*\.(?:png|jpe?g|gif|html?|shtml|svg|exe|scr|js|zip|iso|img)$'
-)
-
-# Known campaign IOCs (file names reused across the DW-2 sample campaigns). These are
-# indicators of *known* campaigns; generalisation is provided by the other reason codes.
-CAMPAIGN_INVARIANTS = re.compile(
-    r'(?i)(?:AWB[_\s-]?1461983596|PO[_\s-]?230270|PO[_\s-]?0094321|MT103[_\s-]?paymentform|电子发票[_-]22632020518862400758)'
-)
+# Indicators of specific known campaigns (file names, hashes) are not detection logic: they come from the
+# knowledge base as signatures of known phishing and are excluded from recall (ТЗ табл. 3, BACKLOG п. 1, A1).
 
 
 class QuishingAgent:
@@ -45,11 +40,9 @@ class QuishingAgent:
         for name in dict.fromkeys(n for n in names if n):
             if DOUBLE_EXT_PATTERN.search(name):
                 state.add_reason("RC_LURE_DOUBLE_EXTENSION", f"Файл «{name}» маскирует тип двойным расширением", {"type": "file", "value": name, "label": "Имя файла"})
-            if CAMPAIGN_INVARIANTS.search(name):
-                state.add_reason("RC_CAMPAIGN_INVARIANT_MATCH", f"Имя «{name}» совпадает с индикатором известной кампании", {"type": "file", "value": name, "label": "Имя файла"})
 
         qr_urls = sorted({q for i in items for q in (i.get("qr_codes") or [])} | set(att.get("qr_codes") or []))
-        qr_http = [q for q in qr_urls if q.lower().startswith(("http://", "https://"))]
+        qr_http = list(dict.fromkeys(u for u in map(qr_payload_url, qr_urls) if u))
         if qr_http:
             state.add_reason("ATTACH_QR_CODE_FOUND", f"QR-код ведёт на {qr_http[0][:150]}", {"type": "url", "value": qr_http[0], "label": "URL из QR-кода"})
             for q in qr_http:
@@ -63,8 +56,11 @@ class QuishingAgent:
                 state.add_reason("ATTACH_ACTIVE_MACRO_MARKER", f"{name}: VBA-макросы", {"type": "file", "value": name, "label": "Документ с макросами"})
             if item.get("has_remote_template"):
                 state.add_reason("ATTACH_REMOTE_TEMPLATE", f"{name}: удалённый шаблон/OLE", {"type": "file", "value": name, "label": "Документ"})
-            if kind == "pdf" and (item.get("has_javascript") or item.get("has_launch_action")):
-                state.add_reason("ATTACH_PDF_ACTIVE_CONTENT", f"{name}: JavaScript/Launch в PDF", {"type": "file", "value": name, "label": "PDF"})
+            if kind == "pdf" and (item.get("has_javascript") or item.get("has_launch_action") or item.get("has_embedded_payload")):
+                active = [what for what, on in (("JavaScript", item.get("has_javascript")), ("Launch", item.get("has_launch_action")),
+                                                ("встроенный файл " + ", ".join(item.get("embedded_files") or [])[:120],
+                                                 item.get("has_embedded_payload"))) if on]
+                state.add_reason("ATTACH_PDF_ACTIVE_CONTENT", f"{name}: {'; '.join(active)} в PDF", {"type": "file", "value": name, "label": "PDF"})
             if item.get("is_executable"):
                 state.add_reason("ATTACH_EXECUTABLE", f"{name}: исполняемый файл" + (" в архиве" if kind == "archive" else ""),
                                  {"type": "file", "value": ", ".join([name] + [n for n in item.get("archive_entries") or [] if n.lower().endswith((".exe", ".scr", ".js", ".vbs", ".lnk", ".iso", ".msi", ".bat", ".hta"))][:5]), "label": "Исполняемое содержимое"})

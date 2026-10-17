@@ -53,8 +53,8 @@ def health() -> Dict[str, Any]:
     if local_available():
         from config import get_settings
         s = get_settings()
-        return {"llm_mode": s.llm_mode, "llm_enabled": s.llm_configured, "llm_model": s.LLM_TEXT_MODEL,
-                "vlm_model": s.LLM_VISION_MODEL}
+        return {"llm_mode": s.llm_mode, "llm_enabled": s.llm_configured, "llm_model": s.text_model,
+                "vlm_model": s.vision_model}
     return {}
 
 
@@ -171,7 +171,7 @@ def kb_incident(incident_id: str) -> Optional[Dict[str, Any]]:
     """A stored incident converted to the same shape as a fresh analysis result."""
     if api_alive():
         inc = _get(f"/api/v1/incidents/{incident_id}")
-        sigs = [s for s in _get("/api/v1/signatures?limit=500") if s.get("incident_id") == incident_id]
+        sigs = _get(f"/api/v1/signatures?limit=10&incident_id={incident_id}")
     else:
         from db.repository import IncidentRepository
         repo = IncidentRepository()
@@ -184,7 +184,7 @@ def kb_incident(incident_id: str) -> Optional[Dict[str, Any]]:
                "campaign_id": i.campaign_id, "explanation": i.explanation, "fingerprints": i.fingerprints,
                "evidence_data": i.evidence_data}
         sigs = [{"rule_json": s.rule_json, "yara_rule": s.yara_rule, "status": s.status}
-                for s in repo.list_signatures(limit=500) if s.incident_id == incident_id]
+                for s in repo.list_signatures(limit=10, incident_id=incident_id)]
     ev = inc.get("evidence_data") or {}
     sig = sigs[0] if sigs else {}
     return {

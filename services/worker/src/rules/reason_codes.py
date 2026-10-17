@@ -65,10 +65,9 @@ REASON_CODES: Dict[str, ReasonCode] = {
     "ATTACH_QR_CODE_FOUND": ReasonCode(0.30, "attachment", "medium", "QR-код со ссылкой во вложении (quishing)"),
     "ATTACH_ACTIVE_MACRO_MARKER": ReasonCode(0.50, "attachment", "high", "Office-документ с VBA-макросами"),
     "ATTACH_REMOTE_TEMPLATE": ReasonCode(0.60, "attachment", "high", "Office-документ загружает удалённый шаблон/OLE-объект"),
-    "ATTACH_PDF_ACTIVE_CONTENT": ReasonCode(0.40, "attachment", "medium", "PDF содержит JavaScript / Launch-действие"),
+    "ATTACH_PDF_ACTIVE_CONTENT": ReasonCode(0.40, "attachment", "medium", "PDF содержит JavaScript, Launch-действие или встроенный исполняемый / HTML-файл"),
     "ATTACH_EXECUTABLE": ReasonCode(0.60, "attachment", "high", "Исполняемый файл во вложении/архиве"),
     "RC_LURE_DOUBLE_EXTENSION": ReasonCode(0.60, "attachment", "high", "Двойное расширение файла (.pdf.png и т.п.)"),
-    "RC_CAMPAIGN_INVARIANT_MATCH": ReasonCode(0.50, "campaign", "high", "Совпадение с известным индикатором кампании (имя файла)"),
     # --- Composite (evidence synergy) ------------------------------------------------------------
     "COMBO_BRAND_CREDENTIAL_FORM": ReasonCode(0.85, "combo", "critical", "Имитация бренда + форма сбора учётных данных на чужом домене"),
     "COMBO_LOOKALIKE_CREDENTIAL_FORM": ReasonCode(0.80, "combo", "critical", "Домен-двойник бренда + форма сбора учётных данных"),

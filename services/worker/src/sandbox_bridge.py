@@ -56,6 +56,7 @@ class SandboxClient:
     def __init__(self, settings=None):
         self.settings = settings or get_settings()
         self._available: Optional[bool] = None
+        self._offline_renderer = None  # BrowserController for in-process parsing, False when unavailable
 
     @property
     def base_url(self) -> str:
@@ -129,8 +130,15 @@ class SandboxClient:
             _, parse_file_bytes, _ = load_parsers()
         except ImportError as e:
             return {"type": "unknown", "error": f"no parser available: {e}", "links": []}
+        # Same as the sandbox service: HTML is rendered offline (network blocked) so the VLM gets a screenshot.
+        if self._offline_renderer is None:
+            try:
+                from browser import BrowserController  # type: ignore
+                self._offline_renderer = BrowserController(anti_ssrf_enabled=self.settings.ANTI_SSRF_ENABLED)
+            except ImportError:
+                self._offline_renderer = False
         try:
-            return parse_file_bytes(content, filename, base_url=base_url)
+            return parse_file_bytes(content, filename, browser_ctrl=self._offline_renderer or None, base_url=base_url)
         except Exception as e:
             return {"type": "unknown", "error": f"{type(e).__name__}: {e}", "links": []}
 
