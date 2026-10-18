@@ -138,7 +138,8 @@ services:
     environment:
       - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-30m}   # keep the model in memory between objects of a batch
       - OLLAMA_NUM_PARALLEL=1
-      - OLLAMA_VULKAN=1                              # integrated / any Vulkan GPU; falls back to CPU without it
+      - OLLAMA_VULKAN=1                              # any Vulkan GPU; falls back to CPU without it
+      - OLLAMA_IGPU_ENABLE=1                         # Ollama skips integrated GPUs (Intel Arc / AMD APU) unless asked
     devices:
       - /dev/dri:/dev/dri
     volumes:

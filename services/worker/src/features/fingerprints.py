@@ -9,7 +9,7 @@ Compact, engine-portable fingerprints and campaign linking.
 import base64
 import hashlib
 import io
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 MIN_TAGS_FOR_DOM_CAMPAIGN = 15
 
@@ -35,7 +35,28 @@ def dhash64(image_b64: Optional[str]) -> Optional[str]:
 
 
 def hamming(a: str, b: str) -> int:
+    """Bits that differ between two 64-bit perceptual hashes (hex)."""
     return bin(int(a, 16) ^ int(b, 16)).count("1")
+
+
+def visual_clusters(items: List[Tuple[str, str]], max_distance: int = 8) -> List[List[str]]:
+    """Groups objects whose screenshots look alike (dHash distance <= max_distance of 64 bits): the same kit
+    on different domains / with a changed DOM still looks the same (ТЗ 4.1.2.5, 4.1.7.1)."""
+    parent = {i: i for i, _ in items}
+
+    def root(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    for n, (a, ha) in enumerate(items):
+        for b, hb in items[n + 1:]:
+            if hamming(ha, hb) <= max_distance:
+                parent[root(a)] = root(b)
+    groups: Dict[str, List[str]] = {}
+    for i, _ in items:
+        groups.setdefault(root(i), []).append(i)
+    return sorted((g for g in groups.values() if len(g) > 1), key=len, reverse=True)
 
 
 def campaign_key(fp: Dict[str, Any]) -> Optional[str]:

@@ -53,7 +53,8 @@ def health() -> Dict[str, Any]:
     if local_available():
         from config import get_settings
         s = get_settings()
-        return {"llm_mode": s.llm_mode, "llm_enabled": s.llm_configured, "llm_model": s.text_model,
+        return {"llm_mode": s.llm_mode, "llm_ready": not s.llm_config_problem(),
+                "llm_problem": s.llm_config_problem() or None, "llm_model": s.text_model,
                 "vlm_model": s.vision_model}
     return {}
 
@@ -61,9 +62,12 @@ def health() -> Dict[str, Any]:
 # ------------------------------------------------------------------------------ analysis
 def _run_local(state) -> Dict[str, Any]:
     from orchestrator.graph import run_pipeline
-    result = run_pipeline(state)
-    data = result.public_dump()
-    return data
+    from llm.client import LLMUnavailable
+    try:
+        result = run_pipeline(state)
+    except LLMUnavailable as e:  # the model is required: same answer shape as an API error
+        return {"error": f"Модель недоступна: {e}"}
+    return result.public_dump()
 
 
 def _api(path: str, **kwargs) -> Dict[str, Any]:

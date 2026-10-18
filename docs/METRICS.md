@@ -4,10 +4,17 @@
 
 ```bash
 python phishctl.py split --seen-from reports/seen_objects.txt          # разбиение корпуса (один раз)
-python phishctl.py --llm off metrics --part dev --limit 300 --out reports/dev.json
-python phishctl.py --llm off metrics --part test --out reports/test_v1.json  # итоговая оценка
-python phishctl.py --llm off robustness --limit 40 --out reports/robustness.json
+python phishctl.py metrics --part dev --limit 300 --workers 3 --out reports/dev.json
+python phishctl.py metrics --part test --workers 3 --out reports/test.json   # итоговая оценка
+python phishctl.py robustness --limit 40 --out reports/robustness.json        # на отложенной части
+python phishctl.py eval-labeled file_for_case/antiphishing_eml_540_combined --out reports/labeled_eval
+python phishctl.py diff-runs reports/test_prev.json reports/test.json         # что изменилось и почему
 ```
+
+> **Статус 17.10.2026.** Система переведена на обязательную модель (LLM/VLM), словари и режим без модели
+> удалены. Все результаты ниже получены прежними версиями (в основном без модели) и будут заменены прогонами
+> текущей версии. Объекты, на которых модель не ответила после всех попыток, получают статус `skipped_llm`:
+> они снижают полноту обработки, а `recall_counting_skipped_as_missed` считает их промахами.
 
 Анализ выполняется **офлайн** по собранным артефактам датасета (цепочки перенаправлений, HTML, скриншоты) —
 живая фишинговая инфраструктура не посещается. Реализация: `services/worker/src/evaluation.py`.
@@ -70,7 +77,7 @@ python phishctl.py --llm off robustness --limit 40 --out reports/robustness.json
 Набор не использовался при разработке. Метрики посчитаны штатным скриптом набора `compare_labels.py`:
 
 ```bash
-python phishctl.py --llm off eval-labeled file_for_case/antiphishing_eml_540_combined --out reports/labeled_eval_off
+python phishctl.py eval-labeled file_for_case/antiphishing_eml_540_combined --out reports/labeled_eval
 python file_for_case/antiphishing_eml_540_combined/compare_labels.py --predictions reports/labeled_eval_off/predictions_lenient.csv --manifest file_for_case/antiphishing_eml_540_combined/manifest.jsonl --output-dir reports/labeled_eval_off/compare_lenient
 ```
 

@@ -308,8 +308,9 @@ nav = st.navigation([
 mode = backend.mode()
 with st.sidebar:
     h = backend.health()
-    st.caption(f"Режим: {MODE_NAMES[mode]} · LLM: {h.get('llm_mode', '—')}"
-               + (f" ({h.get('llm_model')})" if h.get("llm_enabled") else ""))
+    st.caption(f"Режим: {MODE_NAMES[mode]} · модель: {h.get('llm_mode', '—')} ({h.get('llm_model') or '—'})")
+    if h and not h.get("llm_ready", True):
+        st.warning(f"Модель не настроена: {h.get('llm_problem')}")
 try:
     nav.run()
 except (ImportError, requests.RequestException) as e:

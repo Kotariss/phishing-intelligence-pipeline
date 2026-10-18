@@ -56,7 +56,7 @@ def screenshot_with_box(b64: Optional[str], box: Optional[List[float]]) -> Optio
 
 
 def _explanation_parts(text: Optional[str]):
-    """Splits the stored explanation into the LLM analyst summary (if any) and the deterministic part."""
+    """Splits the stored explanation into the analyst summary of the model and the evidence list."""
     if not text:
         return None, None
     if text.startswith("Вердикт:"):

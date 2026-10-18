@@ -7,14 +7,12 @@ from typing import Any, Dict, Optional, Tuple
 try:
     from ..orchestrator.state import PhishingState, BrandEvidence, AgentStepTrace
     from ..brands.matcher import get_brand_registry, extract_hostname, normalize_display_text
-    from ..features.image_text import image_lure_signals
-    from ..llm.client import get_llm_client
+    from ..llm.client import get_llm_client, LLMUnavailable
     from ..llm import prompts
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, BrandEvidence, AgentStepTrace
     from brands.matcher import get_brand_registry, extract_hostname, normalize_display_text
-    from features.image_text import image_lure_signals
-    from llm.client import get_llm_client
+    from llm.client import get_llm_client, LLMUnavailable
     from llm import prompts
 
 
@@ -30,20 +28,15 @@ NO_BRAND = {"", "none", "null", "unknown", "n/a", "generic"}
 _VLM_CACHE: Dict[str, Dict[str, Any]] = {}
 
 
-def _parse_vlm_json(text: str) -> Dict[str, Any]:
+def _parse_vlm_json(text: str) -> Optional[Dict[str, Any]]:
     m = re.search(r'\{.*\}', text or "", re.DOTALL)
-    if m:
-        try:
-            data = json.loads(m.group(0))
-            if isinstance(data, dict):
-                return data
-        except ValueError:
-            pass
-    # tolerant fallback for "Brand: X / Lure: Y" answers
-    brand = re.search(r'brand"?\s*[:=]\s*"?([^"\n,}]+)', text or "", re.IGNORECASE)
-    lure = re.search(r'lure"?\s*[:=]\s*"?([^"\n,}]+)', text or "", re.IGNORECASE)
-    return {"brand": brand.group(1).strip() if brand else None,
-            "lure": lure.group(1).strip() if lure else None, "confidence": 0.6}
+    if not m:
+        return None
+    try:
+        data = json.loads(m.group(0))
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) else None
 
 
 def _logo_box(vlm_result) -> Optional[list]:
@@ -71,17 +64,18 @@ class VisionAgent:
         self.registry = brand_registry or get_brand_registry()
         self.llm = llm_client or get_llm_client()
 
-    def _ask_vlm(self, image_b64: str) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    def _ask_vlm(self, image_b64: str) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        """Parsed VLM answer; an unparseable answer is asked once more, then the object is skipped."""
         key = hashlib.sha1(image_b64[:200000].encode("ascii", errors="ignore")).hexdigest()
         if key in _VLM_CACHE:
             return _VLM_CACHE[key], {"call_type": "VISION_VLM_CACHED", "model": self.llm.settings.vision_model}
-        answer = self.llm.ask_vlm(prompts.render("vision_brand", lure_types=", ".join(LURE_TYPES)), image_b64, prompt_name="vision_brand")
-        call = self.llm.get_last_call()
-        if self.llm.is_fallback(answer):
-            return None, call
-        parsed = _parse_vlm_json(answer)
-        _VLM_CACHE[key] = parsed
-        return parsed, call
+        for _ in range(2):
+            answer = self.llm.ask_vlm(prompts.render("vision_brand", lure_types=", ".join(LURE_TYPES)), image_b64, prompt_name="vision_brand")
+            parsed = _parse_vlm_json(answer)
+            if parsed is not None:
+                _VLM_CACHE[key] = parsed
+                return parsed, self.llm.get_last_call()
+        raise LLMUnavailable("VLM answer is not JSON after 2 requests")
 
     def run(self, state: PhishingState) -> PhishingState:
         t0 = time.time()
@@ -119,20 +113,6 @@ class VisionAgent:
                                  f"Тема письма упоминает {hit[0]['display_name']}, отправитель {from_domain} не принадлежит бренду",
                                  {"type": "header", "value": f"Subject: {att['subject']}\nFrom: {att.get('from_address', '')}", "label": "Тема и отправитель"})
 
-        # 2. Image lure: text recognised on an image attachment (fake document viewer / sign-in screenshot)
-        ocr_text = (att.get("ocr_text") or "") if state.screenshot_source == "image_file" else ""
-        # Pictures attached to an e-mail count for the image lure only (an inline logo is no brand claim).
-        email_ocr = [(i.get("filename") or "", i["ocr_text"]) for i in att.get("attachments_analysis") or [] if i.get("ocr_text")]
-        image_signals = image_lure_signals(ocr_text or " ".join(t for _, t in email_ocr))
-        if image_signals["credential_prompt"]:
-            ocr_evidence = {"type": "text", "value": "\n".join(f"… {s} …" for s in image_signals["snippets"]),
-                            "label": "Текст на изображении (OCR)" if ocr_text else
-                                     f"Текст на изображении во вложении {email_ocr[0][0]} (OCR)"}
-            state.add_reason("IMAGE_CREDENTIAL_PROMPT", "На изображении — запрос пароля / входа в учётную запись", ocr_evidence)
-            if image_signals["document_gate"]:
-                state.add_reason("IMAGE_FAKE_DOCUMENT_VIEWER",
-                                 "Изображение: «защищённый документ», для просмотра требуется пароль", ocr_evidence)
-
         # 3. Brand presented by the page / attachment
         page_brand, source, confidence = None, None, 0.0
         # The page presents itself as a brand in its title / top headings (not in footers or payment logos).
@@ -143,27 +123,47 @@ class VisionAgent:
             if hit:
                 page_brand, source, confidence = hit[0], "title", 0.85
 
+        # The site icon / logo image loaded from an official domain of a brand while the page is elsewhere:
+        # kits hotlink the brand's own assets (ТЗ 4.1.4.3 «по значку сайта»). Fonts / CDNs / analytics do not count.
+        assets_src = page if page else (att if att.get("type") == "html" else {})
+        asset_hosts = [h for h in [extract_hostname(assets_src.get("favicon") or "")] + list(assets_src.get("logo_image_hosts") or []) if h]
+        brand_assets = []
+        if not page_brand:
+            for host in asset_hosts:
+                owner = self.registry.find_brand_for_domain(host)
+                if owner and not (page_host and self.registry.is_domain_allowed(owner["brand_id"], page_host)):
+                    page_brand, source, confidence = owner, "brand_assets", 0.8
+                    brand_assets.append(host)
+                    break
+
         lure_type = None
-        if not page_brand and state.screenshot_base64 and len(state.screenshot_base64) > 1000 and self.llm.available_for(state.network_evidence):
+        # 2. The VLM looks at the screenshot / image: brand it presents itself as, what it asks the viewer to do
+        if not page_brand and state.screenshot_base64 and len(state.screenshot_base64) > 1000:
             vlm_invoked = True
             vlm_result, vlm_call_info = self._ask_vlm(state.screenshot_base64)
             # Full parsed answer for diagnosis (what the model saw vs. what became evidence)
-            state.network_evidence["vlm_answer"] = dict(vlm_result) if vlm_result else None
-            if vlm_result:
+            state.network_evidence["vlm_answer"] = dict(vlm_result)
+            if vlm_result:  # an empty JSON object carries no finding
                 lure_type = str(vlm_result.get("lure") or "").strip().lower() or None
                 vlm_action = str(vlm_result.get("asks_user_action") or "").strip().lower()
-                # An image attachment that renders a document / payment / delivery lure AND asks the viewer to act
-                # ("enter your password to view the invoice"). The same fact seen by OCR is not counted twice.
-                if state.screenshot_source == "image_file" and lure_type in VISUAL_DOCUMENT_LURES \
-                        and vlm_action in LURE_ACTIONS and "IMAGE_FAKE_DOCUMENT_VIEWER" not in state.reason_codes:
-                    state.add_reason("VISUAL_DOCUMENT_LURE", f"VLM: изображение-вложение изображает приманку типа «{lure_type}»",
-                                     {"type": "image_region", "box": _logo_box(vlm_result), "label": f"Изображение: {lure_type}"})
-                if state.screenshot_source == "image_file" and vlm_result.get("login_form_visible") is True \
-                        and "IMAGE_CREDENTIAL_PROMPT" not in state.reason_codes:
-                    state.add_reason("IMAGE_CREDENTIAL_PROMPT", "VLM: на изображении форма входа / ввода пароля",
-                                     {"type": "image_region", "box": None, "label": "Форма входа на изображении (VLM)"})
+                if state.screenshot_source == "image_file":
+                    # Image lure judged by the model from the picture itself: a password / card request;
+                    # behind a document type it is a fake document viewer.
+                    asks_data = vlm_result.get("login_form_visible") is True or vlm_action in DATA_ACTIONS
+                    document = lure_type in VISUAL_DOCUMENT_LURES
+                    reason = str(vlm_result.get("reason") or "")[:200]
+                    vlm_evidence = {"type": "image_region", "box": _logo_box(vlm_result), "value": reason or None,
+                                    "label": f"Изображение (VLM): {reason or lure_type or vlm_action}"}
+                    if asks_data:
+                        state.add_reason("IMAGE_CREDENTIAL_PROMPT", f"VLM: изображение запрашивает {'данные карты' if vlm_action == 'enter_card' else 'логин / пароль'}"
+                                         + (f" — {reason}" if reason else ""), vlm_evidence)
+                    if asks_data and document:
+                        state.add_reason("IMAGE_FAKE_DOCUMENT_VIEWER", f"VLM: «документ» ({lure_type}) за запросом данных", vlm_evidence)
+                    elif document and vlm_action in LURE_ACTIONS:
+                        # a document lure that asks to open / download (no data request seen)
+                        state.add_reason("VISUAL_DOCUMENT_LURE", f"VLM: изображение-вложение изображает приманку типа «{lure_type}»", vlm_evidence)
                 # The brand the page presents itself as — not payment logos or partners (prompt vision_brand).
-                name = str(vlm_result.get("impersonated_brand") or vlm_result.get("brand") or "").strip().strip('"\'')
+                name = str(vlm_result.get("impersonated_brand") or "").strip().strip('"\'')
                 try:
                     conf = float(vlm_result.get("confidence", 0.7))
                 except (TypeError, ValueError):
@@ -174,12 +174,6 @@ class VisionAgent:
                         page_brand, source, confidence = found, "vlm", round(min(conf, 0.95), 2)
                     else:
                         state.network_evidence["vlm_unregistered_brand"] = name[:80]
-
-        # Brand named in the text of an image attachment (no VLM, or VLM did not recognise a brand).
-        if not page_brand and ocr_text:
-            ocr_hit = self.registry.find_brand_in_text(ocr_text)
-            if ocr_hit:
-                page_brand, source, confidence = ocr_hit[0], "ocr", 0.6
 
         # The look-alike brand describes the page only if the page is actually hosted on that domain.
         lookalike_name = state.network_evidence.get("lookalike_brand")
@@ -229,16 +223,14 @@ class VisionAgent:
                 # data (a shop checkout that shows a bank's payment logo is not a phishing page of that bank).
                 vlm_asks_data = str((vlm_result or {}).get("asks_user_action") or "").lower() in DATA_ACTIONS \
                     or (vlm_result or {}).get("login_form_visible") is True
-                confirmed = (source == "lookalike_domain" or (source == "title" and asks_for_data)
-                             or (source == "vlm" and (asks_for_data or vlm_asks_data))
-                             or (source == "ocr" and image_signals["document_gate"]))
+                confirmed = (source == "lookalike_domain" or (source in ("title", "brand_assets") and asks_for_data)
+                             or (source == "vlm" and (asks_for_data or vlm_asks_data)))
                 if confirmed:
                     brand_ev.brand_impersonation_confirmed = True
                     if source == "vlm":
                         evidence = {"type": "image_region", "box": brand_ev.logo_box, "label": f"Логотип {page_brand['display_name']} (VLM)"}
-                    elif source == "ocr":  # brand name + credential prompt in the image text
-                        evidence = {"type": "text", "value": ocr_hit[1],
-                                    "label": "Название бренда в тексте изображения (OCR)"}
+                    elif source == "brand_assets":
+                        evidence = {"type": "url", "value": ", ".join(brand_assets), "label": "Значок сайта / логотип с домена бренда"}
                     elif source == "title":
                         title_snip = (page.get("evidence_snippets") or att.get("evidence_snippets") or {}).get("title") or title_text
                         evidence = {"type": "dom", "value": title_snip, "label": "Заголовок страницы"}

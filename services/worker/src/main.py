@@ -13,7 +13,7 @@ if _current_dir not in sys.path:
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 try:
     from .orchestrator.state import PhishingState
@@ -23,6 +23,7 @@ try:
     from .db.models import BrandAllowlistModel
     from .brands.matcher import get_brand_registry
     from .config import get_settings
+    from .llm.client import LLMUnavailable
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState
     from orchestrator.graph import run_pipeline
@@ -31,6 +32,7 @@ except (ImportError, ValueError):
     from db.models import BrandAllowlistModel
     from brands.matcher import get_brand_registry
     from config import get_settings
+    from llm.client import LLMUnavailable
 
 
 settings = get_settings()
@@ -95,13 +97,20 @@ def _incident_dict(inc, with_evidence: bool = False) -> dict:
     return data
 
 
+@app.exception_handler(LLMUnavailable)
+async def llm_unavailable_handler(request, exc: LLMUnavailable):
+    """The model is required: without its answer an object is not analysed (retry later)."""
+    return JSONResponse(status_code=503, content={"detail": f"Модель недоступна: {exc}"})
+
+
 @app.get("/health")
 def health():
     return {
         "status": "healthy",
         "service": "worker",
         "llm_mode": settings.llm_mode,
-        "llm_enabled": settings.llm_configured,
+        "llm_ready": not settings.llm_config_problem(),
+        "llm_problem": settings.llm_config_problem() or None,
         "llm_model": settings.text_model,
         "vlm_model": settings.vision_model
     }
@@ -131,6 +140,8 @@ async def scan_endpoint(
 
     try:
         final_state = await run_in_threadpool(run_pipeline, initial_state)
+    except LLMUnavailable:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Pipeline execution error: {type(e).__name__}: {e}")
     return final_state.public_dump()

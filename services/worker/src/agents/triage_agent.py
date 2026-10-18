@@ -8,12 +8,14 @@ try:
     from ..config import get_settings
     from ..sandbox_bridge import SandboxClient
     from ..features.url_features import hostname, registrable_domain, qr_payload_url
+    from ..features.file_names import ATTACHMENT_TYPES
     from ..brands.matcher import get_brand_registry
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, RedirectHop, FormEvidence, AgentStepTrace
     from config import get_settings
     from sandbox_bridge import SandboxClient
     from features.url_features import hostname, registrable_domain, qr_payload_url
+    from features.file_names import ATTACHMENT_TYPES
     from brands.matcher import get_brand_registry
 
 
@@ -40,7 +42,7 @@ def _forms_from(raw_forms: List[Dict[str, Any]], origin: str) -> List[FormEviden
             prefilled_victim_email=bool(f.get("prefilled_victim_email")),
             is_external_target=bool(f.get("is_external")),
             submit_target_url=submit.get("target_url"),
-            submit_mechanism="telegram_bot" if submit.get("has_telegram") else "standard_submit",
+            submit_mechanism="telegram_bot" if submit.get("has_telegram") else ("script" if f.get("formless") else "standard_submit"),
             origin=origin,
             snippet=f.get("snippet", "") or "",
         ))
@@ -195,7 +197,7 @@ class TriageAgent:
                 if extracted.get("error"):
                     notes.append(extracted["error"])
                 kind = extracted.get("type", "unknown")
-                if kind in ("eml", "html", "pdf", "office", "image", "archive"):
+                if kind in ("eml",) + ATTACHMENT_TYPES:
                     state.source_type = kind
                 state.attachment_evidence = _compact(extracted)
 

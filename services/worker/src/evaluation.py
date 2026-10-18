@@ -25,12 +25,14 @@ try:
     from .ingest.dataset import build_state_from_sample_dir, iter_brand_samples
     from .rules.engine import record_from_state, rule_matches
     from .ingest.split import in_part, sample_order
+    from .llm.client import LLMUnavailable
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState
     from orchestrator.graph import run_pipeline
     from ingest.dataset import build_state_from_sample_dir, iter_brand_samples
     from rules.engine import record_from_state, rule_matches
     from ingest.split import in_part, sample_order
+    from llm.client import LLMUnavailable
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 FIXTURES_DIR = os.path.join(REPO_ROOT, "tests", "fixtures")
@@ -96,12 +98,6 @@ def _file_state(path: str) -> PhishingState:
 
 
 # ---------------------------------------------------------------------- evaluation
-def llm_degraded(state: PhishingState) -> bool:
-    """The model was configured but skipped (back-off) or a call failed for this object."""
-    failed = any(str((t.llm_audit or {}).get("call_type", "")).endswith("_FAILED") for t in state.agent_traces)
-    return failed or bool(state.network_evidence.get("llm_unavailable"))
-
-
 def diagnostics(state: PhishingState) -> Dict[str, Any]:
     """Why this verdict: every piece the decision was made of, small enough to keep for every object of a run."""
     try:
@@ -121,7 +117,6 @@ def diagnostics(state: PhishingState) -> Dict[str, Any]:
         "vlm_unregistered_brand": net.get("vlm_unregistered_brand"),
         "llm_lure": net.get("llm_lure"),
         "llm_lure_input_chars": net.get("llm_lure_input_chars"),
-        "llm_unavailable": bool(net.get("llm_unavailable")),
         "llm_calls": [{"agent": t.agent_id, "type": (t.llm_audit or {}).get("call_type"),
                        "seconds": (t.llm_audit or {}).get("elapsed_seconds"),
                        "prompt_version": (t.llm_audit or {}).get("prompt_version")}
@@ -138,7 +133,6 @@ def diagnostics(state: PhishingState) -> Dict[str, Any]:
 def summarize(state: PhishingState, elapsed: float) -> Dict[str, Any]:
     return {
         "incident_id": state.incident_id,
-        "llm_degraded": llm_degraded(state),
         "diag": diagnostics(state),
         "verdict": state.verdict,
         "risk": state.risk_score,
@@ -162,6 +156,8 @@ def _run_object(group: str, category: str, object_id: str, factory: SampleFactor
     try:
         state = run_pipeline(factory())
         row.update(status="ok", **summarize(state, time.time() - t0))
+    except LLMUnavailable as e:  # the model did not answer after all attempts: skipped, never judged without it
+        row.update(status="skipped_llm", error=str(e)[:300], seconds=round(time.time() - t0, 3))
     except Exception as e:
         row.update(status="error", error=f"{type(e).__name__}: {str(e)[:200]}",
                    trace=traceback.format_exc(limit=3)[-600:], seconds=round(time.time() - t0, 3))
@@ -267,7 +263,8 @@ def run_diagnostics(rows: List[Dict[str, Any]], clean_t: float = 0.30, mal_t: fl
             "calls": len(calls),
             "calls_by_type": dict(collections.Counter(c.get("type") for c in calls)),
             "failed_calls": sum(1 for c in calls if str(c.get("type", "")).endswith("_FAILED")),
-            "degraded_objects": [r["object"] for r in ok if r.get("llm_degraded")][:100],
+            "skipped_objects": [{"object": r["object"], "error": r.get("error")} for r in rows
+                                if r.get("status") == "skipped_llm"][:100],
             "seconds_median": round(statistics.median(secs), 2) if secs else None,
             "seconds_p95": secs[int(0.95 * (len(secs) - 1))] if secs else None,
             "prompt_versions": dict(collections.Counter(f"{c.get('agent')}:{c.get('prompt_version')}" for c in calls)),
@@ -337,6 +334,9 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
     metrics = {
         "processing_completeness": _rate(len(phish_ok), len(phish)),
         "recall_phishing_plus_suspicious": _rate(len(detected), len(phish_ok)),
+        # the same with every object the model could not process counted as a miss (lower bound)
+        "recall_counting_skipped_as_missed": _rate(len(detected), len(phish)),
+        "skipped_llm_objects": sum(1 for r in rows if r["status"] == "skipped_llm"),
         "recall_template_split": _rate(sum(1 for r in template_reps if r["verdict"] != "CLEAN"), len(template_reps)),
         "recall_html_templates": _rate(sum(1 for r in html_templates.values() if r["verdict"] != "CLEAN"), len(html_templates)),
         "html_templates": len(html_templates),
@@ -348,8 +348,6 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
         "light_engine_agreement_with_heavy": _rate(len(light_agree), len(light_hits)),
         "light_engine_benign_hits": len(benign_rule_hits),
         "mean_seconds_per_object": round(sum(r["seconds"] for r in rows) / len(rows), 3) if rows else None,
-        # objects analysed without the configured model (back-off / failed call): a run with many is not valid
-        "llm_degraded_objects": sum(1 for r in rows if r.get("llm_degraded")),
     }
     targets = {
         "processing_completeness": (">=", 0.85),
@@ -389,7 +387,7 @@ def build_report(rows: List[Dict[str, Any]], elapsed: float, dataset_root: str, 
         "missed_phishing": [r["object"] for r in phish_ok if r["verdict"] == "CLEAN"][:200],
         "errors": [{"object": r["object"], "error": r["error"]} for r in rows if r["status"] == "error"][:200],
         "objects": [{k: r.get(k) for k in ("group", "category", "object", "status", "verdict", "risk", "codes", "brand",
-                                           "campaign", "rule_kind", "rule_status", "seconds", "llm_degraded",
+                                           "campaign", "rule_kind", "rule_status", "seconds", "error",
                                            "incident_id", "diag")} for r in rows],
     }
 
@@ -452,11 +450,14 @@ def robustness(dataset_root: str, limit_per_source: int = 30, progress=None, spl
     import copy
     from ingest.dataset import load_sample_dir
     scenarios = collections.defaultdict(lambda: {"objects": 0, "still_detected": 0, "missed": []})
-    excluded = {"email_detected_without_pages": 0}
+    excluded = {"email_detected_without_pages": 0, "skipped_llm": 0}
     for category, object_id, factory in phishing_sources(dataset_root, limit_per_source, ("keis2", "html"),
                                                          split=split, part=part):
         try:
             base = run_pipeline(factory())
+        except LLMUnavailable:
+            excluded["skipped_llm"] += 1
+            continue
         except Exception:
             continue
         if base.verdict == "CLEAN":
@@ -473,8 +474,12 @@ def robustness(dataset_root: str, limit_per_source: int = 30, progress=None, spl
             sample = load_sample_dir(object_id)
             if not any(l.get("html") for l in sample["links"]):
                 continue
-            email_only = run_pipeline(PhishingState(incident_id=f"rb_{uuid_hex()}", source_type="eml", raw_target=sample["eml_path"],
-                                                    raw_bytes=sample["eml_bytes"] or None, offline_mode=True, precollected_links=[]))
+            try:
+                email_only = run_pipeline(PhishingState(incident_id=f"rb_{uuid_hex()}", source_type="eml", raw_target=sample["eml_path"],
+                                                        raw_bytes=sample["eml_bytes"] or None, offline_mode=True, precollected_links=[]))
+            except LLMUnavailable:
+                excluded["skipped_llm"] += 1
+                continue
             if email_only.verdict != "CLEAN":
                 excluded["email_detected_without_pages"] += 1
                 continue
@@ -490,7 +495,11 @@ def robustness(dataset_root: str, limit_per_source: int = 30, progress=None, spl
                 variants.append((name, PhishingState(incident_id=f"rb_{uuid_hex()}", source_type="eml", raw_target=sample["eml_path"],
                                                      raw_bytes=sample["eml_bytes"] or None, offline_mode=True, precollected_links=links)))
         for name, state in variants:
-            res = run_pipeline(state)
+            try:
+                res = run_pipeline(state)
+            except LLMUnavailable:
+                excluded["skipped_llm"] += 1
+                continue
             sc = scenarios[name]
             sc["objects"] += 1
             if res.verdict != "CLEAN":
@@ -537,7 +546,9 @@ def evaluate_labeled_eml(root: str, out_dir: str, subset: str = "validation", li
                                                raw_bytes=eml, offline_mode=True, precollected_links=links))
             item.update(status="ok", verdict=state.verdict, risk=state.risk_score, codes=state.reason_codes,
                         details=state.reason_details, brand=state.brand_evidence.detected_brand_name,
-                        llm_degraded=llm_degraded(state), incident_id=state.incident_id, diag=diagnostics(state))
+                        incident_id=state.incident_id, diag=diagnostics(state))
+        except LLMUnavailable as e:  # skipped: predicted "benign" in the files, listed in the summary
+            item.update(status="skipped_llm", verdict="CLEAN", error=str(e)[:300])
         except Exception as e:
             item.update(status="error", verdict="CLEAN", error=f"{type(e).__name__}: {str(e)[:200]}")
         item["seconds"] = round(time.time() - t0, 3)
@@ -560,7 +571,8 @@ def evaluate_labeled_eml(root: str, out_dir: str, subset: str = "validation", li
     verdicts = lambda items: dict(collections.Counter(i["verdict"] for i in items))
     summary = {
         "objects": len(results), "errors": sum(i["status"] == "error" for i in results),
-        "llm_degraded_objects": sum(1 for i in results if i.get("llm_degraded")),
+        "skipped_llm_objects": sum(1 for i in results if i["status"] == "skipped_llm"),
+        "skipped_llm_ids": [i["id"] for i in results if i["status"] == "skipped_llm"],
         "elapsed_seconds": round(time.time() - started, 1),
         "phishing_verdicts": verdicts(phish), "benign_verdicts": verdicts(benign),
         "recall_strict": _rate(sum(i["verdict"] == "MALICIOUS" for i in phish), len(phish)),

@@ -61,6 +61,16 @@ def free_hosting_suffix(host: str) -> Optional[str]:
     return None
 
 
+# Victim IP / geolocation lookups made by kits before sending the data: not where the data goes (BACKLOG 23b)
+IP_LOOKUP_SERVICES = {"ipify.org", "ipinfo.io", "ip-api.com", "ipapi.co", "geoplugin.net", "ipgeolocation.io",
+                      "db-ip.com", "ipwho.is", "myip.com", "ipapi.com", "extreme-ip-lookup.com", "icanhazip.com"}
+
+
+def is_ip_lookup_service(url_or_host: str) -> bool:
+    host = hostname(url_or_host) if "/" in (url_or_host or "") else (url_or_host or "").lower()
+    return registrable_domain(host) in IP_LOOKUP_SERVICES
+
+
 def is_shared_infrastructure(host: str) -> bool:
     host = (host or "").lower()
     site = registrable_domain(host)

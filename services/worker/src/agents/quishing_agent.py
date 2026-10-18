@@ -6,20 +6,31 @@ from typing import Any, Dict, List
 try:
     from ..orchestrator.state import PhishingState, AgentStepTrace
     from ..features.url_features import hostname, qr_payload_url
-    from ..features.file_names import DOUBLE_EXT_PATTERN
+    from ..features.file_names import DOUBLE_EXT_PATTERN, ATTACHMENT_TYPES
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from features.url_features import hostname, qr_payload_url
-    from features.file_names import DOUBLE_EXT_PATTERN
+    from features.file_names import DOUBLE_EXT_PATTERN, ATTACHMENT_TYPES
 
 
 # Indicators of specific known campaigns (file names, hashes) are not detection logic: they come from the
 # knowledge base as signatures of known phishing and are excluded from recall (ТЗ табл. 3, BACKLOG п. 1, A1).
 
 
+def _with_archive_contents(items: List[Dict[str, Any]], prefix: str = "") -> List[Dict[str, Any]]:
+    """Files unpacked from archives are checked like attachments, named 'archive.zip/inner.html'."""
+    out = []
+    for item in items:
+        named = dict(item, filename=prefix + (item.get("filename") or "вложение"))
+        out.append(named)
+        out += _with_archive_contents(item.get("archive_items") or [], named["filename"] + "/")
+    return out
+
+
 class QuishingAgent:
-    """Specialist agent for attachments: QR-phishing, double extensions, HTML attachments,
-    macros, remote templates, executables inside archives, PDF active content."""
+    """Specialist agent for attachments: QR-phishing, double extensions, HTML attachments, macros (OpenXML and
+    legacy OLE), remote templates, exploit / DDE documents (OLE, RTF, OpenXML, CSV), archive contents (recursive,
+    encrypted entries), executables and disk images, PDF active content."""
 
     def run(self, state: PhishingState) -> PhishingState:
         t0 = time.time()
@@ -29,11 +40,12 @@ class QuishingAgent:
         att = state.attachment_evidence or {}
         # Items to inspect: nested e-mail attachments, or the uploaded file itself.
         items: List[Dict[str, Any]] = list(att.get("attachments_analysis") or [])
-        if att and att.get("type") in ("html", "pdf", "office", "image", "archive"):
+        if att and att.get("type") in ATTACHMENT_TYPES:
             own = dict(att)
             own.setdefault("filename", os.path.basename(str(state.raw_target)))
             own["kind"] = att.get("type")
             items.append(own)
+        items = _with_archive_contents(items)
 
         names = [os.path.basename(str(state.raw_target))] + [i.get("filename") or "" for i in items]
         names += [m.get("filename") or "" for m in att.get("attachments_meta") or []]
@@ -61,6 +73,16 @@ class QuishingAgent:
                                                 ("встроенный файл " + ", ".join(item.get("embedded_files") or [])[:120],
                                                  item.get("has_embedded_payload"))) if on]
                 state.add_reason("ATTACH_PDF_ACTIVE_CONTENT", f"{name}: {'; '.join(active)} в PDF", {"type": "file", "value": name, "label": "PDF"})
+            if item.get("has_equation_editor") or item.get("has_object_autoupdate"):
+                what = "объект редактора формул" if item.get("has_equation_editor") else "автообновление встроенного объекта"
+                state.add_reason("ATTACH_EXPLOIT_DOCUMENT", f"{name}: {what}", {"type": "file", "value": name, "label": f"Документ ({kind})"})
+            elif item.get("has_embedded_object"):
+                state.add_reason("ATTACH_EMBEDDED_OBJECT", f"{name}: встроенный OLE-объект", {"type": "file", "value": name, "label": f"Документ ({kind})"})
+            if item.get("has_dde"):
+                state.add_reason("ATTACH_DDE", f"{name}: DDE-вызов программы", {"type": "file", "value": name, "label": f"Документ ({kind})"})
+            if item.get("archive_encrypted_entries"):
+                state.add_reason("ATTACH_ARCHIVE_ENCRYPTED", f"{name}: архив с паролем ({len(item['archive_encrypted_entries'])} файл.)",
+                                 {"type": "file", "value": ", ".join(item["archive_encrypted_entries"][:5]), "label": "Зашифрованные файлы архива"})
             if item.get("is_executable"):
                 state.add_reason("ATTACH_EXECUTABLE", f"{name}: исполняемый файл" + (" в архиве" if kind == "archive" else ""),
                                  {"type": "file", "value": ", ".join([name] + [n for n in item.get("archive_entries") or [] if n.lower().endswith((".exe", ".scr", ".js", ".vbs", ".lnk", ".iso", ".msi", ".bat", ".hta"))][:5]), "label": "Исполняемое содержимое"})

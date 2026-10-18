@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./pipeline.db"
 
-    # LLM / VLM (optional heavy extractors). Any OpenAI-compatible chat-completions endpoint.
+    # LLM / VLM — required: lure text, image and brand judgements come from the model. Any OpenAI-compatible
+    # chat-completions endpoint.
     #   LLM_MODE=local -> local server without key, no external network: the `llm` Ollama container of
     #                     docker-compose (http://llm:11434/v1), or Ollama / LM Studio / vLLM on the host
-    #   LLM_MODE=cloud -> remote endpoint authorised with an API key (open / own data only: ТЗ 4.5.2.2)
-    #   LLM_MODE=off   -> pipeline works with deterministic extractors only
+    #   LLM_MODE=cloud -> remote endpoint authorised with an API key
     # Each mode has its own models: a cloud model name does not exist on the local server and vice versa.
     LLM_MODE: str = "local"
     LLM_LOCAL_BASE_URL: str = "http://localhost:11434/v1"
@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 4000
     LLM_TEMPERATURE: float = 0.1
     LLM_TIMEOUT_SECONDS: int = 60
+    # A failed call is retried with growing pauses; after the last attempt the object is skipped (reported).
+    LLM_ATTEMPTS: int = 4
 
     # Security & Thresholds
     ANTI_SSRF_ENABLED: bool = True
@@ -78,8 +80,8 @@ class Settings(BaseSettings):
 
     @property
     def llm_mode(self) -> str:
-        mode = (self.LLM_MODE or "off").strip().lower()
-        return mode if mode in ("local", "cloud", "off") else "off"
+        mode = (self.LLM_MODE or "local").strip().lower()
+        return mode if mode in ("local", "cloud") else "local"
 
     @property
     def llm_base_url(self) -> str:
@@ -100,13 +102,15 @@ class Settings(BaseSettings):
             return self.LLM_CLOUD_VISION_MODEL or self.LLM_CLOUD_TEXT_MODEL
         return self.LLM_LOCAL_VISION_MODEL or self.LLM_LOCAL_TEXT_MODEL
 
-    @property
-    def llm_configured(self) -> bool:
-        if self.llm_mode == "off":
-            return False
+    def llm_config_problem(self) -> str:
+        """Empty when the model of the active mode is fully configured, otherwise what is missing."""
         if self.llm_mode == "cloud":
-            return bool(self.LLM_CLOUD_BASE_URL and self.LLM_CLOUD_API_KEY and self.LLM_CLOUD_TEXT_MODEL)
-        return bool(self.LLM_LOCAL_BASE_URL and self.LLM_LOCAL_TEXT_MODEL)
+            missing = [n for n, v in (("LLM_CLOUD_BASE_URL", self.LLM_CLOUD_BASE_URL), ("LLM_CLOUD_API_KEY", self.LLM_CLOUD_API_KEY),
+                                      ("LLM_CLOUD_TEXT_MODEL", self.LLM_CLOUD_TEXT_MODEL)) if not v]
+        else:
+            missing = [n for n, v in (("LLM_LOCAL_BASE_URL", self.LLM_LOCAL_BASE_URL),
+                                      ("LLM_LOCAL_TEXT_MODEL", self.LLM_LOCAL_TEXT_MODEL)) if not v]
+        return f"LLM_MODE={self.llm_mode}: not set {', '.join(missing)}" if missing else ""
 
 
 _settings: Settings = None
@@ -116,9 +120,3 @@ def get_settings() -> Settings:
     if _settings is None:
         _settings = Settings()
     return _settings
-
-
-def reset_settings() -> None:
-    """Drops the cached settings (used by tests that tweak environment variables)."""
-    global _settings
-    _settings = None

@@ -5,7 +5,7 @@ import os
 from rules.package import build_package, save_package, load_package
 from rules.light_engine import apply_package, record_for_object
 from features.url_features import mask_url, is_shared_infrastructure
-from helpers import run_page, TELEGRAM_KIT
+from helpers import run_page, run_file, TELEGRAM_KIT
 import cli
 
 
@@ -79,3 +79,18 @@ def test_rule_contribution_in_package():
     assert contrib["detected_objects_total"] >= 1 and contrib["covered_by_package"] >= 1
     top = contrib["rules"][0]
     assert top["detected_objects"] >= 1 and top["clean_objects_matched"] == 0
+
+
+def test_visual_clusters_join_alike_screenshots():
+    from features.fingerprints import visual_clusters
+    items = [("a", "ffff0000ffff0000"), ("b", "ffff0000ffff0003"), ("c", "0123456789abcdef"), ("d", "ffff0000ffff0007")]
+    assert visual_clusters(items, max_distance=8) == [["a", "b", "d"]]
+
+
+def test_known_signatures_are_checked_on_the_legitimate_set_and_include_file_hashes():
+    import hashlib
+    data = b"<html><title>Docs</title><form action='https://drop.example.top/p'><input type='password'></form></html>"
+    run_file("standalone_kit.html", data)
+    known = build_package(min_verdict="SUSPICIOUS")["known_phishing_signatures"]
+    assert known["checked_on_benign"]["benign_objects"] > 0
+    assert hashlib.sha256(data).hexdigest() in {h["sha256"] for h in known["attachment_sha256"]}

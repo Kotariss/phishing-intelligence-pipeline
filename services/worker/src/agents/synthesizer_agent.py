@@ -1,3 +1,4 @@
+import hashlib
 import time
 
 try:
@@ -114,6 +115,8 @@ class SynthesizerAgent:
             "attachment_sha256": list(dict.fromkeys(m["sha256"] for m in att.get("attachments_meta") or []
                                                     if m.get("sha256") and not m.get("inline"))),
             "sender_domain": att.get("from_domain") or None,
+            # the analysed file itself (standalone HTML / image / document): a signature of known phishing
+            "file_sha256": hashlib.sha256(state.raw_bytes).hexdigest() if state.raw_bytes else None,
         }
         state.fingerprints = {k: v for k, v in fp.items() if v not in (None, [], "")}
         state.campaign_id = campaign_key(state.fingerprints)
@@ -161,24 +164,24 @@ class SynthesizerAgent:
             no_rule_note = "Правило не построено: нет обобщаемого набора признаков."
         state.zero_fpr_note = clamp_note or no_rule_note
 
-        # Explanation (deterministic reason codes first: explainability must not depend on the LLM)
+        # Explanation: indicators with weights and details
         lines = [f"- {code} ({SEVERITY_RU.get(rc.get(code).severity, rc.get(code).severity)}, вес {rc.get(code).weight:.2f}): "
                  f"{state.reason_details.get(code) or rc.get(code).description}"
                  for code in sorted(state.reason_codes, key=lambda c: -rc.get(c).weight)]
-        deterministic = (f"Вердикт: {VERDICT_RU.get(state.verdict, state.verdict)} (риск {state.risk_score:.2f}, "
+        # The evidence list always follows the analyst summary: every claim is traceable to an indicator.
+        evidence_text = (f"Вердикт: {VERDICT_RU.get(state.verdict, state.verdict)} (риск {state.risk_score:.2f}, "
                          f"объединение {len(state.reason_codes)} независимых признаков). "
                          f"Бренд: {state.brand_evidence.detected_brand_name or '—'}. Проверка на легитимных данных: {state.zero_fpr_note}"
                          + ("\nОбоснование:\n" + "\n".join(lines) if lines else ""))
         llm_call_info = None
-        state.explanation = deterministic
-        if state.verdict != "CLEAN" and self.llm.available_for(state.network_evidence):
+        state.explanation = evidence_text
+        if state.verdict != "CLEAN":
             prompt = prompts.render("analyst_summary", target=state.raw_target, final_url=state.final_url or "—",
                                     brand=state.brand_evidence.detected_brand_name or "—", verdict=state.verdict,
                                     risk=f"{state.risk_score:.2f}", indicators="\n".join(lines[:12]))
             text = self.llm.ask_llm(prompt, system_prompt=prompts.render("analyst_summary_system"), prompt_name="analyst_summary")
             llm_call_info = self.llm.get_last_call()
-            if not self.llm.is_fallback(text):
-                state.explanation = f"{text.strip()}\n\n{deterministic}"
+            state.explanation = f"{text.strip()}\n\n{evidence_text}"
 
         elapsed_ms = round((time.time() - t0) * 1000, 1)
         state.agent_traces.append(AgentStepTrace(

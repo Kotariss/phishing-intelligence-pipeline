@@ -2,7 +2,7 @@ import io
 import re
 from typing import List
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 MAX_PIXELS = 25_000_000  # decompression-bomb guard
 
@@ -29,9 +29,34 @@ def _decode_with_opencv(pil_img: Image.Image) -> List[str]:
     return found
 
 
+def _decode(pil_img: Image.Image) -> List[str]:
+    for backend in (_decode_with_pyzbar, _decode_with_opencv):
+        try:
+            found = [d for d in backend(pil_img) if d]
+        except Exception:
+            # Backend missing (ImportError / zbar DLL absent) or failed on this image.
+            continue
+        if found:
+            return found
+    return []
+
+
+def _variants(pil_img: Image.Image):
+    """The image as is, then preprocessed copies for hard cases (ТЗ 4.1.4.5: noisy and inverted codes):
+    contrast-stretched grey, inverted (light code on a dark background), upscaled small images, binarised."""
+    yield pil_img
+    grey = ImageOps.autocontrast(pil_img.convert("L"))
+    yield grey
+    yield ImageOps.invert(grey)
+    if min(grey.size) < 400:
+        factor = max(2, 400 // max(1, min(grey.size)))
+        yield grey.resize((grey.width * factor, grey.height * factor), Image.NEAREST)
+    yield grey.point(lambda v: 255 if v > 128 else 0)
+
+
 def scan_qr_codes(image_bytes: bytes) -> List[str]:
     """
-    Decodes QR codes from raw image bytes.
+    Decodes QR codes from raw image bytes (with preprocessing for inverted / low-contrast / small codes).
     Backends: pyzbar (needs the zbar system library) -> OpenCV QRCodeDetector -> none.
     """
     try:
@@ -43,12 +68,8 @@ def scan_qr_codes(image_bytes: bytes) -> List[str]:
         return []
 
     found: List[str] = []
-    for backend in (_decode_with_pyzbar, _decode_with_opencv):
-        try:
-            found = [d for d in backend(pil_img) if d]
-        except Exception:
-            # Backend missing (ImportError / zbar DLL absent) or failed on this image.
-            continue
+    for variant in _variants(pil_img):
+        found = _decode(variant)
         if found:
             break
 

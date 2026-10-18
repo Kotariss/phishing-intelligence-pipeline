@@ -243,8 +243,11 @@ def cmd_kb_stats(args):
 
 def cmd_cluster(args):
     from db.repository import IncidentRepository
-    campaigns = IncidentRepository().list_campaigns(min_size=args.min_size, limit=args.limit)
-    print(json.dumps(campaigns, ensure_ascii=False, indent=2))
+    repo = IncidentRepository()
+    if args.visual:
+        print(json.dumps(repo.list_visual_clusters(max_distance=args.max_distance, min_size=args.min_size), ensure_ascii=False, indent=2))
+        return
+    print(json.dumps(repo.list_campaigns(min_size=args.min_size, limit=args.limit), ensure_ascii=False, indent=2))
 
 
 def cmd_export_package(args):
@@ -354,7 +357,7 @@ def cmd_build_benign_corpus(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="phishctl", description="DW-2 Phishing Intelligence Pipeline")
-    parser.add_argument("--llm", choices=["off", "local", "cloud"], help="override LLM_MODE")
+    parser.add_argument("--llm", choices=["local", "cloud"], help="override LLM_MODE")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("import-corpus", help="index a corpus directory (types, hashes, duplicates)")
@@ -383,6 +386,8 @@ def main(argv=None):
     p = sub.add_parser("cluster", help="phishing campaigns (incidents sharing kit / infrastructure)")
     p.add_argument("--min-size", type=int, default=2)
     p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--visual", action="store_true", help="group by alike screenshots (perceptual hash) instead")
+    p.add_argument("--max-distance", type=int, default=8, help="dHash bits (of 64) that may differ in --visual")
     p.set_defaults(func=cmd_cluster)
 
     p = sub.add_parser("export-package", help="export a versioned artefact package (JSON + YARA)")
@@ -442,7 +447,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.llm:
         os.environ["LLM_MODE"] = args.llm
-    args.func(args)
+    from llm.client import LLMUnavailable
+    try:
+        args.func(args)
+    except LLMUnavailable as e:  # analysis requires the model; batch commands skip objects instead
+        raise SystemExit(f"model unavailable: {e}")
 
 
 if __name__ == "__main__":

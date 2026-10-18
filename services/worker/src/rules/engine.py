@@ -18,10 +18,10 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 try:
-    from ..features.url_features import hostname, registrable_domain
+    from ..features.url_features import hostname, registrable_domain, is_ip_lookup_service
     from ..brands.matcher import alias_pattern, normalize_display_text
 except (ImportError, ValueError):
-    from features.url_features import hostname, registrable_domain
+    from features.url_features import hostname, registrable_domain, is_ip_lookup_service
     from brands.matcher import alias_pattern, normalize_display_text
 
 
@@ -167,7 +167,8 @@ def build_record(url: str = "", page: Optional[Dict[str, Any]] = None, attachmen
                    "is_external": bool(f.get("is_external") or f.get("is_external_target")),
                    "action_host": f.get("action_host") or ""} for f in (forms if forms is not None else page.get("forms") or [])],
         "dom_hash": dom_hash or page.get("dom_structural_hash"),
-        "js_endpoint_hosts": sorted({registrable_domain(hostname(u)) for u in page.get("js_external_endpoints") or [] if hostname(u)}),
+        "js_endpoint_hosts": sorted({registrable_domain(hostname(u)) for u in page.get("js_external_endpoints") or []
+                                     if hostname(u) and not is_ip_lookup_service(u)}),
         "telegram_bot_ids": _telegram_ids(tg),
         "discord_webhook_ids": sorted({w.rstrip("/").split("/")[-1] if w.count("/") > 3 else w for w in dc}),
         "attachment_names": [n for n in names if n],

@@ -5,7 +5,7 @@ from evaluation import diff_runs, run_diagnostics
 
 def _row(obj, group, verdict, risk, codes, cat="html_attachment", **diag):
     return {"object": obj, "group": group, "category": cat, "status": "ok", "verdict": verdict, "risk": risk,
-            "codes": codes, "llm_degraded": diag.pop("degraded", False), "diag": {"llm_calls": [], **diag}}
+            "codes": codes, "diag": {"llm_calls": [], **diag}}
 
 
 def test_diagnostics_point_at_the_causes():
@@ -13,7 +13,8 @@ def test_diagnostics_point_at_the_causes():
         _row("a", "phishing", "CLEAN", 0.0, []),
         _row("b", "phishing", "CLEAN", 0.25, ["URL_FREE_HOSTING"]),
         _row("c", "phishing", "SUSPICIOUS", 0.30, ["RC_ATTACH_OBFUSCATED_JS"]),
-        _row("d", "phishing", "CLEAN", 0.0, [], llm_lure={"is_phishing_lure": True, "confidence": 0.7}, degraded=True),
+        _row("d", "phishing", "CLEAN", 0.0, [], llm_lure={"is_phishing_lure": True, "confidence": 0.7}),
+        {"object": "s", "group": "phishing", "category": "image_lure", "status": "skipped_llm", "error": "VISION_VLM failed"},
         _row("e", "benign", "MALICIOUS", 0.95, ["BRAND_IMPERSONATION_CONFIRMED"], cat="benign_page",
              vlm={"impersonated_brand": "Сбер", "asks_user_action": "enter_card"}),
     ]
@@ -23,7 +24,7 @@ def test_diagnostics_point_at_the_causes():
     assert d["near_threshold"]["phishing_just_below_suspicious"][0]["object"] == "b"
     assert d["single_indicator_detections"] == {"RC_ATTACH_OBFUSCATED_JS": 1}
     assert d["benign_flags"][0]["vlm"]["impersonated_brand"] == "Сбер"
-    assert d["llm"]["degraded_objects"] == ["d"]
+    assert d["llm"]["skipped_objects"] == [{"object": "s", "error": "VISION_VLM failed"}]
     assert [r["object"] for r in d["llm"]["lure_yes_but_clean"]] == ["d"]
     assert [r["object"] for r in d["llm"]["lure_confidence_just_below"]] == ["d"]
     json.dumps(d)

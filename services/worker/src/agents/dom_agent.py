@@ -5,10 +5,12 @@ try:
     from ..orchestrator.state import PhishingState, AgentStepTrace
     from ..sandbox_bridge import dom_skeleton_hash
     from ..brands.matcher import get_brand_registry
+    from ..features.url_features import hostname, registrable_domain, is_ip_lookup_service
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, AgentStepTrace
     from sandbox_bridge import dom_skeleton_hash
     from brands.matcher import get_brand_registry
+    from features.url_features import hostname, registrable_domain, is_ip_lookup_service
 
 
 PASSWORD_INPUT = re.compile(r'<input\b[^>]*\btype\s*=\s*["\']?password\b', re.IGNORECASE)
@@ -34,7 +36,9 @@ class DOMAgent:
         registry = get_brand_registry()
         external_forms = [f for f in state.dom_forms if f.is_external_target
                           and not (f.action_host and registry.find_brand_for_domain(f.action_host))]
-        js_external = [u for u in (page.get("js_external_endpoints") or []) if not registry.find_brand_for_domain(u)]
+        # Services that only look up the victim's IP / geo are not where the data goes (BACKLOG 23b)
+        js_external = [u for u in (page.get("js_external_endpoints") or [])
+                       if not registry.find_brand_for_domain(u) and not is_ip_lookup_service(u)]
         card_forms = [f for f in state.dom_forms if f.has_card]
 
         # Evidence fragments: page snippets, otherwise those of the HTML attachments of an e-mail
@@ -57,9 +61,10 @@ class DOMAgent:
             hosts = sorted({f.action_host or f.action for f in external_forms})
             state.add_reason("FORM_EXTERNAL_ACTION", f"Форма отправляет данные на: {', '.join(hosts)[:200]}",
                              dom(external_forms[0].snippet, f"action → {external_forms[0].action_host}"))
+        telegram_exfil = bool(page.get("has_telegram_exfil") or att.get("has_telegram_exfil"))
         if has_password and (any(f.has_password for f in external_forms) or js_external):
             ext_pw = next((f for f in external_forms if f.has_password), None)
-            target = ext_pw.action_host if ext_pw else js_external[0]
+            target = ext_pw.action_host if ext_pw else ("api.telegram.org (Telegram Bot API)" if telegram_exfil else js_external[0])
             state.add_reason("FORM_PASSWORD_HARVESTING", f"Пароль уходит на сторонний ресурс: {target}",
                              dom(ext_pw.snippet if ext_pw else snippets.get("js_endpoint", ""), "Отправка учётных данных"))
         if card_forms:
@@ -73,6 +78,17 @@ class DOMAgent:
         if prefilled:
             state.add_reason("DOM_PREFILLED_VICTIM_EMAIL", "Поле логина предзаполнено e-mail адресом получателя",
                              dom(prefilled.snippet, "Предзаполненная форма"))
+
+        # Displayed address vs. link target on the page / HTML attachment (e-mail bodies: quishing agent)
+        page_mismatch = (page.get("link_text_mismatch") or []) or (att.get("link_text_mismatch") if att.get("type") == "html" else [])
+        if page_mismatch:
+            m = page_mismatch[0]
+            state.add_reason("DOM_LINK_TEXT_MISMATCH", f"Текст «{m['shown'][:60]}» → {hostname(m['href'])}",
+                             {"type": "url", "value": f"показано: {m['shown'][:100]}\nведёт на: {m['href']}", "label": f"Подмена текста ссылки ({origin})"})
+        frames = page.get("full_page_iframes") or att.get("full_page_iframes") or []
+        if frames:
+            state.add_reason("DOM_FULL_PAGE_FRAME", f"Во весь экран показан {hostname(frames[0])}",
+                             {"type": "url", "value": frames[0], "label": "Полноэкранный фрейм"})
 
         # 2. Exfiltration channels (page or attachments)
         if page.get("has_telegram_exfil") or att.get("has_telegram_exfil") or                 any(f.submit_mechanism == "telegram_bot" for f in state.dom_forms) or "api.telegram.org/bot" in dom_html.lower():

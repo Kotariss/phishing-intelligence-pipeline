@@ -126,6 +126,28 @@ class IncidentRepository:
             if self._db is None:
                 db.close()
 
+    def list_visual_clusters(self, max_distance: int = 8, min_size: int = 2) -> List[Dict[str, Any]]:
+        """Phishing incidents with alike screenshots (perceptual hash), whatever their DOM / domain."""
+        try:
+            from ..features.fingerprints import visual_clusters
+        except (ImportError, ValueError):
+            from features.fingerprints import visual_clusters
+        db = self._get_session()
+        try:
+            rows = db.query(IncidentModel).filter(IncidentModel.verdict.in_(("MALICIOUS", "SUSPICIOUS"))).all()
+            by_id = {r.id: r for r in rows}
+            items = [(r.id, (r.fingerprints or {}).get("screenshot_dhash")) for r in rows]
+            groups = visual_clusters([(i, h) for i, h in items if h], max_distance)
+            return [{"incidents": len(g), "incident_ids": g[:50],
+                     "brands": sorted({by_id[i].target_brand for i in g if by_id[i].target_brand}),
+                     "domains": sorted({(by_id[i].final_url or "").split("/")[2] for i in g
+                                        if (by_id[i].final_url or "").count("/") >= 2})[:20],
+                     "campaign_ids": sorted({by_id[i].campaign_id for i in g if by_id[i].campaign_id})[:20]}
+                    for g in groups if len(g) >= min_size]
+        finally:
+            if self._db is None:
+                db.close()
+
     def count_stats(self) -> Dict[str, Any]:
         db = self._get_session()
         try:

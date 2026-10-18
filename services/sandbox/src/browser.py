@@ -7,13 +7,16 @@ import requests
 try:
     from .security import validate_url_safety, SecurityError
     from .attachment_parser import AttachmentParser
+    from .qr_scanner import scan_qr_codes
 except ImportError:
     try:
         from security import validate_url_safety, SecurityError
         from attachment_parser import AttachmentParser
+        from qr_scanner import scan_qr_codes
     except ImportError:
         from src.security import validate_url_safety, SecurityError
         from src.attachment_parser import AttachmentParser
+        from src.qr_scanner import scan_qr_codes
 
 
 DEFAULT_USER_AGENT = (
@@ -81,6 +84,8 @@ class BrowserController:
             "qr_codes": [],
         }
         result.update(parsed_html)
+        if screenshot_b64:  # QR codes visible only on the rendered page (table / CSS / background image)
+            result["qr_codes"] = sorted(set(result.get("qr_codes") or []) | set(scan_qr_codes(base64.b64decode(screenshot_b64))))
         if error:
             result["error"] = error
         return result

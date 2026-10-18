@@ -8,6 +8,11 @@ try:
 except ImportError:  # pragma: no cover - depends on environment
     yara = None
 
+try:
+    from ..features.url_features import is_ip_lookup_service
+except (ImportError, ValueError):
+    from features.url_features import is_ip_lookup_service
+
 
 def yara_escape(value: str) -> str:
     """Escapes a value for a YARA text string; non-ASCII is emitted as UTF-8 \\xHH bytes."""
@@ -73,7 +78,8 @@ class YARAGenerator:
             specific += 1
 
         post_hosts = sorted({f.action_host for f in state.dom_forms if f.is_external_target and f.action_host})
-        post_hosts += [u.split("/")[2] for s in sources for u in s.get("js_external_endpoints") or [] if u.count("/") >= 2]
+        post_hosts += [u.split("/")[2] for s in sources for u in s.get("js_external_endpoints") or []
+                       if u.count("/") >= 2 and not is_ip_lookup_service(u)]
         for i, host in enumerate(sorted(set(post_hosts))[:3]):
             strings.append((f"$post{i}", f'"{yara_escape(host)}" ascii wide nocase'))
             specific += 1

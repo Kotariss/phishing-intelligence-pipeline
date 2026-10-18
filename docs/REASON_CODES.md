@@ -31,6 +31,8 @@
 | `RC_ATTACH_DISCORD_EXFIL` | 0.95 | critical (не нейтрализуется) | Эксфильтрация данных в Discord Webhook |
 | `FORM_PASSWORD_HARVESTING` | 0.45 | high | Пароль отправляется на сторонний домен / JS-эндпоинт |
 | `DOM_PREFILLED_VICTIM_EMAIL` | 0.40 | medium | Форма заранее заполнена адресом жертвы (персонализированный kit) |
+| `DOM_LINK_TEXT_MISMATCH` | 0.30 | medium | Текст ссылки на странице показывает один адрес, а ведёт на другой домен |
+| `DOM_FULL_PAGE_FRAME` | 0.30 | medium | Страница целиком показывает другой сайт во фрейме (обёртка чужой страницы) |
 | `RC_ATTACH_OBFUSCATED_JS` | 0.30 | medium | Обфусцированный JavaScript (packer/fromCharCode/base64-блоб) |
 | `FORM_EXTERNAL_ACTION` | 0.25 | medium | Форма отправляет данные на сторонний домен |
 | `RC_SANDBOX_EVASION_CODE` | 0.25 | medium | Код противодействия анализу (navigator.webdriver, debugger) |
@@ -65,12 +67,16 @@
 |---|---|---|---|
 | `ATTACH_OFFLINE_FORM` | 0.75 | critical (не нейтрализуется) | HTML-вложение с формой ввода пароля или данных карты: локальная страница сбора данных всегда передаёт их на сторонний ресурс (составной признак) |
 | `ATTACH_HTML_REDIRECTOR` | 0.60 | high (не нейтрализуется) | HTML-вложение перенаправляет на внешний сайт (meta/JS) |
+| `ATTACH_EXPLOIT_DOCUMENT` | 0.60 | high | Документ с признаками эксплойта: объект редактора формул (CVE-2017-11882) или автообновление встроенного объекта |
+| `ATTACH_DDE` | 0.60 | high | Документ запускает команды через DDE (поле DDEAUTO или формула с вызовом программы) |
 | `ATTACH_REMOTE_TEMPLATE` | 0.60 | high (не нейтрализуется) | Office-документ загружает удалённый шаблон/OLE-объект |
 | `ATTACH_EXECUTABLE` | 0.60 | high (не нейтрализуется) | Исполняемый файл во вложении/архиве |
 | `RC_LURE_DOUBLE_EXTENSION` | 0.60 | high (не нейтрализуется) | Двойное расширение файла (.pdf.png и т.п.) |
 | `ATTACH_ACTIVE_MACRO_MARKER` | 0.50 | high (не нейтрализуется) | Office-документ с VBA-макросами |
 | `ATTACH_FAKE_HUMAN_CHECK` | 0.45 | high | Вложенный файл изображает проверку «вы не робот» / CAPTCHA: настоящие проверки выдаёт сайт, а не файл во вложении |
 | `ATTACH_PDF_ACTIVE_CONTENT` | 0.40 | medium | PDF содержит JavaScript, Launch-действие или встроенный исполняемый / HTML-файл |
+| `ATTACH_ARCHIVE_ENCRYPTED` | 0.35 | medium | Архив с паролем: содержимое скрыто от проверки (пароль обычно в тексте письма) |
+| `ATTACH_EMBEDDED_OBJECT` | 0.30 | medium | Документ содержит встроенный OLE-объект / пакет |
 | `ATTACH_QR_CODE_FOUND` | 0.30 | medium | QR-код со ссылкой во вложении (quishing) |
 
 ## Анализ текста приманки (LLM)

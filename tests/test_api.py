@@ -20,7 +20,7 @@ def client():
 
 def test_health(client):
     body = client.get("/health").json()
-    assert body["status"] == "healthy" and body["llm_mode"] == "off"
+    assert body["status"] == "healthy" and body["llm_mode"] == "local" and body["llm_ready"] is True
 
 
 def test_scan_file_then_fetch_result(client):

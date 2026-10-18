@@ -25,6 +25,7 @@ try:
     from ..features.url_features import registrable_domain, mask_url, is_shared_infrastructure
     from . import reason_codes as rc
     from .engine import build_record, rule_matches
+    from .zero_fpr_guard import ZeroFPRGuard
 except (ImportError, ValueError):
     from db.database import SessionLocal
     from db.models import IncidentModel, LSignatureModel
@@ -32,6 +33,7 @@ except (ImportError, ValueError):
     from features.url_features import registrable_domain, mask_url, is_shared_infrastructure
     from rules import reason_codes as rc
     from rules.engine import build_record, rule_matches
+    from rules.zero_fpr_guard import ZeroFPRGuard
 
 PACKAGE_FORMAT = "dw2-artifact-package/1.0"
 
@@ -77,7 +79,9 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
     db = SessionLocal()
     try:
         signatures = db.query(LSignatureModel).filter(LSignatureModel.status == "ACTIVE_VERIFIED").all()
-        incidents = db.query(IncidentModel).filter(IncidentModel.verdict == min_verdict).all()
+        # "at least" min_verdict: SUSPICIOUS takes both suspicious and phishing incidents
+        verdicts = ("MALICIOUS",) if min_verdict == "MALICIOUS" else ("MALICIOUS", "SUSPICIOUS")
+        incidents = db.query(IncidentModel).filter(IncidentModel.verdict.in_(verdicts)).all()
         all_incidents = db.query(IncidentModel).all()
     finally:
         db.close()
@@ -102,7 +106,7 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
     for inc in incidents:
         fp = inc.fingerprints or {}
         att = fp.get("attachment_sha256") or []
-        for h in [att] if isinstance(att, str) else att:
+        for h in ([att] if isinstance(att, str) else att) + ([fp["file_sha256"]] if fp.get("file_sha256") else []):
             hashes[h] = inc.id
         if inc.final_url and inc.final_url.startswith("http"):
             host = (urlparse(inc.final_url).hostname or "").lower()
@@ -113,7 +117,21 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
         if inc.dom_hash and (fp.get("dom_tags_count") or 0) >= 15:
             dom_hashes[inc.dom_hash] += 1
 
+    # Exact indicators are checked on the known-legitimate set before entering the package (ТЗ 4.1.7.3):
+    # a domain or DOM template seen on a legitimate object is never a signature of phishing.
+    benign = ZeroFPRGuard().corpus
+    benign_domains = {registrable_domain(h) for r in benign for h in (r.get("host"), r.get("sender_domain")) if h}
+    benign_doms = {r["dom_hash"] for r in benign if r.get("dom_hash")}
+    dropped_domains = sorted(d for d in domains if d in benign_domains)
+    dropped_doms = sorted(h for h in dom_hashes if h in benign_doms)
+    for d in dropped_domains:
+        del domains[d]
+    for h in dropped_doms:
+        del dom_hashes[h]
+
     known = {
+        "checked_on_benign": {"benign_objects": len(benign), "dropped_domains": dropped_domains,
+                              "dropped_dom_hashes": dropped_doms},
         "attachment_sha256": [{"sha256": h, "source_incident": i} for h, i in sorted(hashes.items())],
         "urls_masked": [{"url": u, "source_incident": i} for u, i in sorted(urls.items())],
         "domains": [{"domain": d, "incidents": n} for d, n in domains.most_common()],

@@ -63,6 +63,15 @@ ARCHIVE_EXTENSIONS = (".zip",)
 EXECUTABLE_EXTENSIONS = (".exe", ".scr", ".msi", ".bat", ".cmd", ".js", ".jse", ".vbs", ".vbe",
                          ".hta", ".ps1", ".lnk", ".iso", ".img", ".jar", ".wsf", ".cab")
 MACRO_EXTENSIONS = (".docm", ".xlsm", ".pptm", ".doc", ".xls", ".ppt")
+FORMULA_EXTENSIONS = (".csv", ".slk", ".iqy")
+OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+# Archive unpacking limits (zip-bomb guard)
+ARCHIVE_MAX_DEPTH = 2
+ARCHIVE_MAX_ENTRIES = 20
+ARCHIVE_MAX_ENTRY_BYTES = 20 * 1024 * 1024
+ARCHIVE_MAX_TOTAL_BYTES = 50 * 1024 * 1024
+DDE_FIELD = re.compile(rb'DDEAUTO|\bDDE\b', re.I)
+DDE_FORMULA = re.compile(rb'(?m)^[\s"\']*[=+\-@][^\n]{0,80}\|', re.I)
 MAX_NESTED_ATTACHMENTS = 20
 # OCR of pictures inside an e-mail: the largest ones only (logos and tracking pixels carry no lure text)
 OCR_MIN_IMAGE_BYTES = 15_000
@@ -122,6 +131,34 @@ def normalize_url(url: str) -> str:
     return u
 
 
+CSS_DATA_IMAGE = re.compile(r'url\(\s*["\']?data:image/[a-z+]+;base64,([A-Za-z0-9+/=\s]+)["\']?\s*\)', re.I)
+MAX_QR_DATA_IMAGES = 10
+
+
+def _data_images(soup, html_str: str) -> List[str]:
+    """Base64 payloads of data-URI images: <img src="data:..."> and CSS url(data:...) (background images)."""
+    out = []
+    for img in soup.find_all("img", src=True):
+        src = img["src"].strip()
+        if src.startswith("data:image/") and "base64," in src:
+            out.append(src.split("base64,", 1)[1])
+    out += [m.group(1) for m in CSS_DATA_IMAGE.finditer(html_str[:5_000_000])]
+    return [re.sub(r"\s+", "", d) for d in out]
+
+
+def _qr_from_data_images(images: List[str]) -> List[str]:
+    import base64
+    found = set()
+    for data in sorted(images, key=len, reverse=True)[:MAX_QR_DATA_IMAGES]:
+        if len(data) < 800:  # icons / spacers
+            continue
+        try:
+            found.update(scan_qr_codes(base64.b64decode(data, validate=False)))
+        except (ValueError, TypeError):
+            continue
+    return sorted(found)
+
+
 def _strip_js_comments(js: str) -> str:
     """Drops /* … */ blocks and // line comments; '//' after ':' (https://) or inside a word is kept."""
     js = re.sub(r'/\*.*?\*/', ' ', js, flags=re.S)
@@ -160,6 +197,12 @@ def _attachment_kind(filename: str, content_type: str, payload: bytes) -> str:
         return "image"
     if head.startswith(b"PK\x03\x04"):
         return "office" if b"[Content_Types].xml" in payload[:65536] or name.endswith(OFFICE_EXTENSIONS) else "archive"
+    if head.startswith(OLE_MAGIC):
+        return "ole"
+    if head.lstrip()[:5].lower() == b"{\\rtf":
+        return "rtf"
+    if _container_type(payload):
+        return "container"
     if name.endswith(MHT_EXTENSIONS) or ctype == "multipart/related":
         return "mht"
     if name.endswith(HTML_EXTENSIONS) or ctype in ("text/html", "image/svg+xml") or HTML_MARKUP.search(head):
@@ -172,7 +215,20 @@ def _attachment_kind(filename: str, content_type: str, payload: bytes) -> str:
         return "image"
     if name.endswith(ARCHIVE_EXTENSIONS):
         return "archive"
+    if name.endswith(FORMULA_EXTENSIONS):
+        return "spreadsheet_text"
     return "other"
+
+
+def _container_type(payload: bytes) -> str:
+    """Archive / disk-image containers that are recognised but not unpacked (no parser in the sandbox image)."""
+    if payload.startswith(b"7z\xbc\xaf\x27\x1c"):
+        return "7z"
+    if payload.startswith(b"Rar!\x1a\x07"):
+        return "rar"
+    if payload[0x8001:0x8006] == b"CD001" or payload[0x8801:0x8806] == b"CD001":
+        return "iso"
+    return ""
 
 
 def _mht_html(payload: bytes) -> str:
@@ -287,8 +343,10 @@ def _merge_layer(base: Dict[str, Any], layer: Dict[str, Any]) -> None:
         base[flag] = bool(base.get(flag) or layer.get(flag))
     for key in ("telegram_bot_tokens", "telegram_chat_ids", "discord_webhooks", "external_scripts",
                 "external_resource_hosts", "iframes", "js_redirects", "js_endpoints", "js_external_endpoints",
-                "links", "obfuscation_markers", "evasion_markers"):
+                "links", "obfuscation_markers", "evasion_markers", "logo_image_hosts", "full_page_iframes",
+                "hidden_fields", "qr_codes"):
         base[key] = sorted(set(base.get(key) or []) | set(layer.get(key) or []))
+    base["link_text_mismatch"] = (base.get("link_text_mismatch") or []) + (layer.get("link_text_mismatch") or [])
     for key in ("title", "meta_refresh", "favicon", "embedded_image_base64", "brand_context_text"):
         if not base.get(key) and layer.get(key):
             base[key] = layer[key]
@@ -315,6 +373,12 @@ def sniff_file_kind(filename: str, payload: bytes) -> str:
         return "image"
     if head.startswith(b"PK\x03\x04"):
         return "office" if name.endswith(OFFICE_EXTENSIONS) else "archive"
+    if head.startswith(OLE_MAGIC):
+        return "ole"
+    if head.lstrip()[:5].lower() == b"{\\rtf":
+        return "rtf"
+    if _container_type(payload):
+        return "container"
     first_line = head.lstrip()[:200]
     if _HEADER_LINE.match(first_line):
         header_block = head.split(b"\r\n\r\n", 1)[0].split(b"\n\n", 1)[0]
@@ -434,6 +498,8 @@ class AttachmentParser:
                 analysis[i]["ocr_text"] = text[:1500]
 
         qr_codes, forms = [], []
+        if body_html:  # images embedded in the body as data URIs (inline cid: images are attachments above)
+            qr_codes.extend(_qr_from_data_images(_data_images(soup, body_html)))
         for item in analysis:
             for u in item.get("links", []):
                 links.add(u)
@@ -484,7 +550,7 @@ class AttachmentParser:
         }
 
     @staticmethod
-    def analyze_attachment(filename: str, content_type: str, payload: bytes, inline: bool = False) -> Dict[str, Any]:
+    def analyze_attachment(filename: str, content_type: str, payload: bytes, inline: bool = False, depth: int = 0) -> Dict[str, Any]:
         """Analyses one attachment and returns a JSON-safe summary (no raw bytes)."""
         kind = _attachment_kind(filename, content_type, payload)
         name_low = (filename or "").lower()
@@ -515,24 +581,88 @@ class AttachmentParser:
             elif kind == "image":
                 summary["qr_codes"] = scan_qr_codes(payload)
             elif kind == "archive":
-                summary.update(AttachmentParser.parse_archive(payload))
+                summary.update(AttachmentParser.parse_archive(payload, depth))
+            elif kind == "ole":
+                summary.update(AttachmentParser.parse_ole(payload))
+            elif kind == "rtf":
+                summary.update(AttachmentParser.parse_rtf(payload))
+            elif kind == "container":
+                ctype = _container_type(payload)
+                summary["container_type"] = ctype
+                summary["container_unpacked"] = False  # recognised, contents not analysed
+                summary["is_executable"] = summary["is_executable"] or ctype == "iso"  # disk image: MOTW bypass
+            elif kind == "spreadsheet_text":
+                summary["has_dde"] = bool(DDE_FORMULA.search(payload[:2_000_000]))
         except Exception as e:
             summary["error"] = f"{type(e).__name__}: {e}"
         return summary
 
     @staticmethod
-    def parse_archive(file_bytes: bytes) -> Dict[str, Any]:
-        names: List[str] = []
+    def parse_archive(file_bytes: bytes, depth: int = 0) -> Dict[str, Any]:
+        """ZIP contents are analysed like attachments (nested archives up to ARCHIVE_MAX_DEPTH); links, QR codes
+        and forms found inside are lifted to the archive. Encrypted entries cannot be read: that is reported."""
         try:
-            with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
-                names = zf.namelist()[:200]
+            zf = zipfile.ZipFile(io.BytesIO(file_bytes))
         except zipfile.BadZipFile:
             return {"archive_error": "not a zip archive"}
+        with zf:
+            infos = zf.infolist()
+            names = [i.filename for i in infos][:200]
+            encrypted = [i.filename for i in infos if i.flag_bits & 0x1]
+            items: List[Dict[str, Any]] = []
+            total = 0
+            if depth < ARCHIVE_MAX_DEPTH:
+                for info in infos:
+                    if info.is_dir() or info.flag_bits & 0x1 or len(items) >= ARCHIVE_MAX_ENTRIES:
+                        continue
+                    if info.file_size > ARCHIVE_MAX_ENTRY_BYTES or total + info.file_size > ARCHIVE_MAX_TOTAL_BYTES:
+                        continue
+                    data = zf.read(info)
+                    total += len(data)
+                    items.append(AttachmentParser.analyze_attachment(info.filename, "", data, depth=depth + 1))
+        links = sorted({u for i in items for u in i.get("links", [])})
         return {
             "archive_entries": names,
+            "archive_encrypted_entries": encrypted[:50],
+            "archive_items": items,
+            "archive_skipped_entries": max(0, len([i for i in infos if not i.is_dir()]) - len(items)),
             "is_executable": any(n.lower().endswith(EXECUTABLE_EXTENSIONS) for n in names),
             "archive_has_html": any(n.lower().endswith(HTML_EXTENSIONS) for n in names),
+            "links": links,
+            "qr_codes": sorted({q for i in items for q in i.get("qr_codes", [])}),
+            "forms": [f for i in items for f in i.get("forms", [])],
         }
+
+    @staticmethod
+    def parse_ole(file_bytes: bytes) -> Dict[str, Any]:
+        """Legacy Office (.doc / .xls / .ppt, OLE compound file). Stream names in the directory are UTF-16LE:
+        a VBA project, an Equation Editor object (CVE-2017-11882) or an embedded package are visible without a
+        full OLE parser."""
+        def utf16(name: str) -> bytes:
+            return name.encode("utf-16-le")
+        data = file_bytes[:30_000_000]
+        has_vba = any(utf16(n) in data for n in ("_VBA_PROJECT", "VBA\x00", "Macros")) or b"Attribute VB_" in data
+        equation = utf16("Equation Native") in data or b"Equation.3" in data
+        embedded = utf16("\x01Ole10Native") in data or utf16("Ole10Native") in data or utf16("ObjectPool") in data
+        links = sorted({m.decode("latin-1").rstrip(".,;") for m in re.findall(rb'https?://[\x21-\x7e]{4,300}', data)})[:50]
+        return {"has_vba_macros": has_vba, "has_equation_editor": equation, "has_embedded_object": embedded,
+                "has_dde": bool(DDE_FIELD.search(data)), "links": links}
+
+    @staticmethod
+    def parse_rtf(file_bytes: bytes) -> Dict[str, Any]:
+        """RTF: embedded OLE objects (\\object / \\objdata), automatic object update (\\objupdate, used by
+        exploit documents), Equation Editor objects, DDE fields, remote templates and hyperlinks."""
+        text = file_bytes[:30_000_000]
+        low = text.lower()
+        embedded = b"\\objdata" in low or b"\\object" in low
+        hex_tail = re.sub(rb"[^0-9a-f]", b"", low[low.find(b"\\objdata"):][:4000]) if b"\\objdata" in low else b""
+        # Equation Editor object (CVE-2017-11882): only inside an embedded object, not the word in the text
+        equation = embedded and (b"equation" in low or b"4571756174696f6e" in hex_tail)  # 'Equation' hex in objdata
+        template = re.search(rb'\\\*\\template\s+(https?://[^\s}]+)', text, re.I)
+        links = sorted({m.decode("latin-1").rstrip(".,;\"") for m in re.findall(rb'https?://[\x21-\x7e]{4,300}', text)})[:50]
+        return {"has_embedded_object": embedded, "has_object_autoupdate": b"\\objupdate" in low,
+                "has_equation_editor": equation, "has_dde": bool(DDE_FIELD.search(text)),
+                "has_remote_template": bool(template), "links": links}
 
     # ------------------------------------------------------------------ DOM
     @staticmethod
@@ -575,6 +705,24 @@ class AttachmentParser:
             }
         except Exception:
             return {"dom_skeleton": "", "dom_structural_hash": None, "tags_count": 0}
+
+    @staticmethod
+    def _inputs_features(inputs, base_url: str, base_site: str, endpoints: List[str]) -> Dict[str, Any]:
+        """A 'script form': fields outside <form> whose data a script sends to `endpoints` (first one used)."""
+        target = endpoints[0] if endpoints else ""
+        host = _host(target) if _is_http(target) else ""
+        blob = lambda inp: " ".join(str(inp.get(a) or "") for a in ("name", "id", "placeholder", "autocomplete", "aria-label")).lower()
+        return {
+            "action": target, "action_absolute": target, "action_host": host, "method": "SCRIPT",
+            "has_password": any((i.get("type") or "").lower() == "password" for i in inputs),
+            "has_email": any((i.get("type") or "").lower() == "email" or re.search(r'e-?mail|login|user|почт|логин', blob(i)) for i in inputs),
+            "has_card": any(re.search(r'card|cvv|cvc|ccnum|cc-number|pan\b|expir|карт', blob(i)) for i in inputs),
+            "has_phone": any((i.get("type") or "").lower() == "tel" or re.search(r'phone|tel\b|телефон', blob(i)) for i in inputs),
+            "prefilled_victim_email": any(EMAIL_VALUE.match((i.get("value") or "").strip()) for i in inputs),
+            "is_external": bool(host) and (not base_site or _registrable(host) != base_site),
+            "submit_button": {}, "formless": True,
+            "snippet": compact_html(" ".join(str(i) for i in inputs[:6])),
+        }
 
     @staticmethod
     def _form_features(form, base_url: str, base_site: str) -> Dict[str, Any]:
@@ -692,6 +840,40 @@ class AttachmentParser:
         js_endpoints = sorted({_absolute(u, base_url) for u in JS_NETWORK_SINK.findall(inline_js)})[:20]
         js_external_endpoints = [u for u in js_endpoints if _is_http(u) and (not base_site or _registrable(_host(u)) != base_site)]
 
+        # Input fields outside any <form>, sent by a script (fetch / XHR): a "script form" (ТЗ 4.1.4.2)
+        formless = [i for i in soup.find_all(["input", "textarea"]) if i.find_parent("form") is None
+                    and (i.get("type") or "text").lower() not in ("hidden", "submit", "button", "checkbox", "radio", "search")]
+        if formless:
+            script_form = AttachmentParser._inputs_features(formless, base_url, base_site, js_external_endpoints or js_endpoints)
+            if script_form["has_password"] or script_form["has_email"] or script_form["has_card"]:
+                forms_data.append(script_form)
+        hidden_fields = sorted({(i.get("name") or i.get("id") or "")[:40] for i in soup.find_all("input", {"type": re.compile(r"^hidden$", re.I)})} - {""})[:30]
+
+        # Frames covering the whole page and loading another site (wrapper of a phishing page elsewhere)
+        full_page_iframes = []
+        for fr in soup.find_all(["iframe", "frame"], src=True):
+            src = _absolute(fr.get("src") or "", base_url)
+            geometry = " ".join(str(fr.get(a) or "") for a in ("width", "height", "style")).lower().replace(" ", "")
+            covers = "100%" in geometry or "100vh" in geometry or "100vw" in geometry or fr.name == "frame"
+            if _is_http(src) and covers and (not base_site or _registrable(_host(src)) != base_site):
+                full_page_iframes.append(src)
+
+        # Favicon / logo images loaded from another site (kits hotlink the brand's own assets)
+        logo_image_hosts = sorted({_host(_absolute(i.get("src") or "", base_url)) for i in soup.find_all("img", src=True)
+                                   if re.search(r"logo", " ".join(str(i.get(a) or "") for a in ("src", "alt", "class", "id")), re.I)
+                                   and _is_http(_absolute(i.get("src") or "", base_url))} - {""})
+
+        # Displayed address vs. actual link target on the page (ТЗ 4.1.4.1)
+        link_text_mismatch = []
+        for a in soup.find_all("a", href=True):
+            href = _absolute(normalize_url(a["href"]), base_url)
+            anchor = a.get_text(" ", strip=True)
+            shown = URL_IN_TEXT.search(anchor) or re.match(r'^(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+$', anchor, re.I)
+            if _is_http(href) and shown:
+                shown_host = _host(shown.group(0) if shown.group(0).startswith("http") else "http://" + shown.group(0))
+                if shown_host and _registrable(shown_host) != _registrable(_host(href)):
+                    link_text_mismatch.append({"shown": anchor[:120], "href": href[:300]})
+
         # Exfiltration channels (the whole document: kits hide them in attributes too)
         tg_tokens = sorted({f"{m[0]}:{m[1][:6]}…" for m in TELEGRAM_BOT.findall(html_str)})
         tg_chat_ids = sorted(set(TELEGRAM_CHAT_ID.findall(html_str)))[:5]
@@ -716,15 +898,11 @@ class AttachmentParser:
         evasion_markers = [m for m in ("navigator.webdriver", "debugger;", "outerwidth - window.innerwidth", "headlesschrome")
                            if m in js_low]
 
-        # Largest embedded image (kits embed brand logos / screenshots as data URIs)
-        embedded_img_b64 = None
-        best_len = 0
-        for img in soup.find_all("img", src=True):
-            src = img["src"].strip()
-            if src.startswith("data:image/") and "base64," in src:
-                data = src.split("base64,", 1)[1]
-                if len(data) > best_len:
-                    embedded_img_b64, best_len = data, len(data)
+        # Embedded images (data URIs in <img> and in CSS): the largest one is kept (kits embed brand logos /
+        # screenshots), every one is scanned for QR codes (ТЗ 4.1.4.5)
+        data_images = _data_images(soup, html_str)
+        embedded_img_b64 = max(data_images, key=len) if data_images else None
+        qr_codes = _qr_from_data_images(data_images)
 
         # Evidence fragments (ТЗ 4.1.5.1): the exact HTML/JS that triggered a finding
         evidence = {}
@@ -782,6 +960,10 @@ class AttachmentParser:
             "external_scripts": external_scripts[:50],
             "external_resource_hosts": external_resource_hosts[:50],
             "iframes": iframes[:20],
+            "full_page_iframes": full_page_iframes[:5],
+            "hidden_fields": hidden_fields,
+            "logo_image_hosts": logo_image_hosts[:10],
+            "link_text_mismatch": link_text_mismatch[:20],
             "favicon": favicon,
             "meta_refresh": meta_refresh,
             "js_redirects": js_redirects,
@@ -789,6 +971,7 @@ class AttachmentParser:
             "js_external_endpoints": js_external_endpoints,
             "links": sorted(links),
             "embedded_image_base64": embedded_img_b64,
+            "qr_codes": qr_codes,
             "visible_text": visible_text,
             "brand_context_text": brand_context,
             "evidence_snippets": evidence,
@@ -887,6 +1070,7 @@ class AttachmentParser:
         """Detects VBA macros, external relationships, remote templates and QR images in Office OpenXML."""
         has_vba = False
         has_remote_template = False
+        has_dde = False
         links = set()
         qr_urls: List[str] = []
         error = None
@@ -910,8 +1094,13 @@ class AttachmentParser:
                             links.add(target.group(1))
                             if "attachedTemplate" in tag or "oleObject" in tag:
                                 has_remote_template = True
+                    elif low.endswith(".xml") and "externallink" in low:
+                        has_dde = has_dde or b"ddeLink" in zf.read(name)
                     elif low.endswith(".xml") and ("document" in low or "sheet" in low or "slide" in low or "sharedstrings" in low):
-                        xml_text = zf.read(name).decode("utf-8", errors="ignore")
+                        raw_xml = zf.read(name)
+                        # DDE field codes (DDEAUTO / DDE) in Word instrText / fldSimple
+                        has_dde = has_dde or bool(re.search(rb'(?:instrText[^>]*>|instr=")[^<"]*\bDDE(?:AUTO)?\b', raw_xml, re.I))
+                        xml_text = raw_xml.decode("utf-8", errors="ignore")
                         for m in URL_IN_TEXT.findall(xml_text):
                             if "schemas.openxmlformats.org" in m or "schemas.microsoft.com" in m or "purl.org" in m or "w3.org" in m:
                                 continue
@@ -928,6 +1117,7 @@ class AttachmentParser:
             "filename": filename,
             "has_vba_macros": has_vba,
             "has_remote_template": has_remote_template,
+            "has_dde": has_dde,
             "links": sorted(links),
             "qr_codes": sorted(set(qr_urls))
         }
