@@ -328,6 +328,18 @@ def cmd_baseline(args):
         _log(f"baseline evaluation written to {args.out}")
 
 
+def cmd_extraction_eval(args):
+    """Extraction completeness on the hand-labelled sample (ТЗ табл. 3, ПМИ К-2)."""
+    from extraction_eval import evaluate
+    report = evaluate(args.labels, args.dataset)
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False, indent=1)
+    print(json.dumps({k: report[k] for k in ("objects", "elements", "extracted", "completeness", "target", "by_kind", "by_object_type")},
+                     ensure_ascii=False, indent=2))
+    _log(f"extraction report written to {args.out} ({len(report['misses'])} misses)")
+
+
 def cmd_robustness(args):
     from evaluation import robustness, save_report
     from ingest.split import load_split
@@ -467,6 +479,12 @@ def main(argv=None):
     p.add_argument("--pipeline-report", default=os.path.join(REPO_ROOT, "reports", "test_v3.json"),
                    help="eval: metrics report of the full pipeline on the same split, for the comparison")
     p.set_defaults(func=cmd_baseline)
+
+    p = sub.add_parser("extraction-eval", help="completeness of link / form / QR / resource extraction on the hand-labelled sample")
+    p.add_argument("--labels", default=os.path.join(REPO_ROOT, "docs", "labelling", "extraction_labels_v1.json"))
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "extraction_eval.json"))
+    p.set_defaults(func=cmd_extraction_eval)
 
     p = sub.add_parser("build-benign-corpus", help="rebuild the known-legitimate feature corpus")
     p.set_defaults(func=cmd_build_benign_corpus)
