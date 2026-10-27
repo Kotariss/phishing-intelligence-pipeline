@@ -387,6 +387,29 @@ def cmd_merge_reports(args):
     print(json.dumps({"merged_from": merged["merged_from"], "metrics": merged["metrics"]}, ensure_ascii=False, indent=2))
 
 
+def cmd_rescore(args):
+    """Applies the CURRENT verdict rules to the reason codes stored in a metrics report (no model run) and rebuilds the aggregates.
+    A post-hoc analysis: the report is marked `rescored`, its numbers are not an independent measurement of the new rules."""
+    from evaluation import build_report, save_report
+    from rules.verdict import decide
+    with open(args.report, encoding="utf-8") as f:
+        base = json.load(f)
+    rows, changed = [], 0
+    for r in base.get("objects", []):
+        if r.get("status") == "ok" and r.get("codes") is not None:
+            d = decide(r["codes"])
+            if d["verdict"] != r["verdict"] or d["risk"] != r.get("risk"):
+                changed += 1
+            r = dict(r, verdict=d["verdict"], risk=d["risk"])
+        rows.append(r)
+    report = build_report(rows, base.get("elapsed_seconds", 0), args.dataset, base.get("limit_per_source"))
+    report["split"] = base.get("split")
+    report["rescored"] = {"from": os.path.basename(args.report), "rows_changed": changed,
+                          "note": "verdicts recomputed from stored reason codes with the current rules (post-hoc, not an independent measurement)"}
+    save_report(report, args.out)
+    print(json.dumps({"rescored": report["rescored"], "metrics": report["metrics"]}, ensure_ascii=False, indent=2))
+
+
 def cmd_split(args):
     """Leakage-free dev / held-out test split of the customer corpus (groups: brand, DOM template, cluster)."""
     from ingest.split import build_split, save_split
@@ -541,6 +564,12 @@ def main(argv=None):
     p.add_argument("--only-status", default="skipped_llm", help="comma-separated statuses for --only-from")
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_metrics)
+
+    p = sub.add_parser("rescore", help="apply the current verdict rules to the codes stored in a metrics report (no model run)")
+    p.add_argument("report")
+    p.add_argument("--out", required=True)
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.set_defaults(func=cmd_rescore)
 
     p = sub.add_parser("merge-reports", help="substitute the rows of a targeted re-run into a base metrics report and rebuild the aggregates")
     p.add_argument("base")

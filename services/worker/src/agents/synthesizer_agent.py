@@ -9,6 +9,7 @@ try:
     from ..rules.zero_fpr_guard import ZeroFPRGuard
     from ..rules.engine import record_from_state
     from ..rules import reason_codes as rc
+    from ..rules.verdict import decide
     from ..brands.matcher import get_brand_registry, extract_hostname
     from ..features.fingerprints import dhash64, campaign_key
     from ..features.url_features import registrable_domain
@@ -22,6 +23,7 @@ except (ImportError, ValueError):
     from rules.zero_fpr_guard import ZeroFPRGuard
     from rules.engine import record_from_state
     from rules import reason_codes as rc
+    from rules.verdict import decide
     from brands.matcher import get_brand_registry, extract_hostname
     from features.fingerprints import dhash64, campaign_key
     from features.url_features import registrable_domain
@@ -152,31 +154,19 @@ class SynthesizerAgent:
         self._add_composites(state)
         self._match_known_iocs(state)
         clamp_note = self._allowlist_clamp(state)
-        # The model's reading of the text is advisory when nothing else independent supports it (ТЗ 4.1.4.6, А.1.3)
-        scored_codes = list(state.reason_codes)
-        if any(c in rc.MODEL_TEXT_CODES for c in scored_codes) and \
-                not rc.independent_groups([c for c in scored_codes if c not in rc.MODEL_TEXT_CODES]):
-            scored_codes = [c for c in scored_codes if c not in rc.MODEL_TEXT_CODES]
-            state.network_evidence["model_text_advisory"] = [c for c in state.reason_codes if c in rc.MODEL_TEXT_CODES]
-        raw_score = rc.combine(scored_codes)
-        state.risk_score = round(raw_score, 2)
-
-        clean_t = self.settings.SCORE_CLEAN_THRESHOLD
+        decision = decide(state.reason_codes, self.settings.SCORE_CLEAN_THRESHOLD, self.settings.SCORE_MALICIOUS_THRESHOLD)
+        state.risk_score, state.verdict = decision["risk"], decision["verdict"]
+        if decision["advisory"]:  # the model's reading of the text is advisory without independent evidence (ТЗ А.1.3)
+            state.network_evidence["model_text_advisory"] = decision["advisory"]
+        if decision["capped"]:  # ТЗ 4.1.4.6: единичные признаки не дают «фишинг» — нужны признаки из двух независимых групп
+            state.network_evidence["verdict_capped"] = decision["capped"]
         mal_t = self.settings.SCORE_MALICIOUS_THRESHOLD
-        groups = rc.independent_groups(scored_codes)
-        ioc_match = "RC_KNOWN_IOC_MATCH" in state.reason_codes  # ТЗ 4.1.4.6: an exact confirmed indicator is enough
-        if state.risk_score >= mal_t and len(groups) < 2 and not ioc_match:
-            # ТЗ 4.1.4.6: единичные признаки не дают «фишинг» — нужны признаки из двух независимых групп
-            state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
-            state.network_evidence["verdict_capped"] = {"risk": state.risk_score, "independent_groups": sorted(groups)}
-        elif state.risk_score >= mal_t:
-            state.verdict, state.confidence = "MALICIOUS", ("HIGH" if state.risk_score >= 0.85 else "MEDIUM")
-        elif state.risk_score >= clean_t:
-            state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
+        if state.verdict == "MALICIOUS":
+            state.confidence = "HIGH" if state.risk_score >= 0.85 else "MEDIUM"
+        elif state.verdict == "SUSPICIOUS":
+            state.confidence = "MEDIUM"
         else:
-            state.verdict, state.confidence = "CLEAN", ("HIGH" if not state.reason_codes or clamp_note else "MEDIUM")
-            if state.network_evidence.get("model_text_advisory"):
-                state.confidence = "MEDIUM"
+            state.confidence = "MEDIUM" if (state.reason_codes and not clamp_note) or decision["advisory"] else "HIGH"
 
         self._fingerprints(state)
 
@@ -230,7 +220,7 @@ class SynthesizerAgent:
             phase="Phase 7: Verdict Synthesis & L-Signature Distillation",
             status="TRIGGERED" if state.verdict == "MALICIOUS" else ("WARNING" if state.verdict == "SUSPICIOUS" else "CLEAN"),
             duration_ms=elapsed_ms,
-            reasoning=f"Комбинирование {len(state.reason_codes)} независимых индикаторов (noisy-OR: 1-Π(1-wᵢ)) → {raw_score:.2f}. "
+            reasoning=f"Комбинирование {len(state.reason_codes)} независимых индикаторов (noisy-OR: 1-Π(1-wᵢ)) → {decision["risk"]:.2f}. "
                       f"Составные признаки, Level-1 allowlist, дистилляция L-сигнатуры/YARA, регрессия правила на эталонной выборке ({len(self.zero_guard.corpus)} легитимных образцов).",
             decision=f"ИТОГОВЫЙ ВЕРДИКТ: {state.verdict} (Risk: {state.risk_score:.2f}, уверенность: {state.confidence}). {state.zero_fpr_note}",
             tools_called=(["LLM(" + self.settings.text_model + ")"] if llm_call_info else []) + ["NoisyOrScorer", "LSignatureCompiler", "YARAGenerator", "ZeroFPRGuard"],
