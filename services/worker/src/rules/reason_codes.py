@@ -86,6 +86,45 @@ NON_CLAMPABLE = {
     "RC_LURE_DOUBLE_EXTENSION", "ATTACH_ACTIVE_MACRO_MARKER", "ATTACH_REMOTE_TEMPLATE",
 }
 
+
+# ТЗ 4.1.4.6: «фишинг» — совокупность независимых признаков из разных групп (намерение получить данные,
+# передача данных на сторонний ресурс, несоответствие бренда, домена, ссылки / QR, отправителя) либо точное совпадение
+# с подтверждённым индикатором; единичные признаки «фишинг» не дают. Доставка нагрузки (исполняемый файл, макрос,
+# эксплойт, RAT) — отдельная группа. Слабые и вспомогательные коды (обфускация, антианализ, упоминание бренда,
+# недоступный хост, число перенаправлений) группы не образуют.
+_INTENT, _EXFIL, _BRAND, _DOMAIN, _LINK, _SENDER, _PAYLOAD = (
+    "data_intent", "data_exfiltration", "brand_mismatch", "domain_mismatch", "link_mismatch", "sender_mismatch", "payload")
+
+INDEPENDENCE_GROUPS: Dict[str, frozenset] = {code: frozenset(groups) for code, groups in {
+    "RC_ATTACH_PASSWORD_INPUT": [_INTENT], "FORM_CARD_HARVESTING": [_INTENT], "IMAGE_CREDENTIAL_PROMPT": [_INTENT],
+    "IMAGE_FAKE_DOCUMENT_VIEWER": [_INTENT], "CONTENT_ACCOUNT_THREAT": [_INTENT], "CONTENT_VICTIM_ADDRESSED": [_INTENT],
+    "CONTENT_LLM_LURE": [_INTENT], "VISUAL_DOCUMENT_LURE": [_INTENT], "DOM_PREFILLED_VICTIM_EMAIL": [_INTENT],
+    "ATTACH_FAKE_HUMAN_CHECK": [_INTENT],
+    "FORM_EXTERNAL_ACTION": [_EXFIL], "RC_ATTACH_TELEGRAM_EXFIL": [_EXFIL], "RC_ATTACH_DISCORD_EXFIL": [_EXFIL],
+    "FORM_PASSWORD_HARVESTING": [_INTENT, _EXFIL],
+    "ATTACH_OFFLINE_FORM": [_INTENT, _EXFIL],   # составной признак: пароль / карта + отправка на сторонний ресурс
+    "BRAND_IMPERSONATION_CONFIRMED": [_BRAND], "EMAIL_SUBJECT_BRAND_OFF_DOMAIN": [_BRAND],
+    "RC_BRAND_SPOOF_DISPLAYNAME": [_BRAND, _SENDER],
+    "BRAND_HOMOGRAPH_DOMAIN": [_DOMAIN], "BRAND_LOOKALIKE_DOMAIN": [_DOMAIN], "URL_IP_HOST": [_DOMAIN],
+    "RC_REDIRECT_ABUSE_TRUSTED": [_LINK], "RC_REDIRECT_CROSS_DOMAIN_JS": [_LINK], "RC_CLOAKING_TO_OFFICIAL": [_LINK],
+    "EMAIL_LINK_TEXT_MISMATCH": [_LINK], "DOM_LINK_TEXT_MISMATCH": [_LINK], "DOM_FULL_PAGE_FRAME": [_LINK],
+    "ATTACH_QR_CODE_FOUND": [_LINK], "ATTACH_HTML_REDIRECTOR": [_LINK], "URL_IPFS_LINK": [_LINK],
+    "EMAIL_REPLY_TO_MISMATCH": [_SENDER], "EMAIL_AUTH_FAIL": [_SENDER], "EMAIL_DISPLAYNAME_OBFUSCATED": [_SENDER],
+    "RC_DROP_SCREENCONNECT_RAT": [_PAYLOAD], "RC_DROP_EXECUTABLE_PAYLOAD": [_PAYLOAD], "ATTACH_EXECUTABLE": [_PAYLOAD],
+    "ATTACH_ACTIVE_MACRO_MARKER": [_PAYLOAD], "ATTACH_EXPLOIT_DOCUMENT": [_PAYLOAD], "ATTACH_DDE": [_PAYLOAD],
+    "ATTACH_EMBEDDED_OBJECT": [_PAYLOAD], "ATTACH_REMOTE_TEMPLATE": [_PAYLOAD], "ATTACH_PDF_ACTIVE_CONTENT": [_PAYLOAD],
+    "ATTACH_ARCHIVE_ENCRYPTED": [_PAYLOAD], "RC_LURE_DOUBLE_EXTENSION": [_PAYLOAD],
+    "COMBO_BRAND_CREDENTIAL_FORM": [_BRAND, _INTENT], "COMBO_LOOKALIKE_CREDENTIAL_FORM": [_DOMAIN, _INTENT],
+}.items()}
+
+
+def independent_groups(codes) -> set:
+    """Группы независимых признаков, представленные кодами причин."""
+    groups = set()
+    for code in set(codes):
+        groups |= INDEPENDENCE_GROUPS.get(code, frozenset())
+    return groups
+
 UNKNOWN_CODE = ReasonCode(0.10, "info", "low", "Неклассифицированный индикатор")
 
 

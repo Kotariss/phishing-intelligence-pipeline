@@ -133,7 +133,12 @@ class SynthesizerAgent:
 
         clean_t = self.settings.SCORE_CLEAN_THRESHOLD
         mal_t = self.settings.SCORE_MALICIOUS_THRESHOLD
-        if state.risk_score >= mal_t:
+        groups = rc.independent_groups(state.reason_codes)
+        if state.risk_score >= mal_t and len(groups) < 2:
+            # ТЗ 4.1.4.6: единичные признаки не дают «фишинг» — нужны признаки из двух независимых групп
+            state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
+            state.network_evidence["verdict_capped"] = {"risk": state.risk_score, "independent_groups": sorted(groups)}
+        elif state.risk_score >= mal_t:
             state.verdict, state.confidence = "MALICIOUS", ("HIGH" if state.risk_score >= 0.85 else "MEDIUM")
         elif state.risk_score >= clean_t:
             state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
@@ -170,7 +175,7 @@ class SynthesizerAgent:
                  for code in sorted(state.reason_codes, key=lambda c: -rc.get(c).weight)]
         # The evidence list always follows the analyst summary: every claim is traceable to an indicator.
         evidence_text = (f"Вердикт: {VERDICT_RU.get(state.verdict, state.verdict)} (риск {state.risk_score:.2f}, "
-                         f"объединение {len(state.reason_codes)} независимых признаков). "
+                         f"{'признаки одной группы — «фишинг» требует двух независимых' if state.network_evidence.get('verdict_capped') else 'объединение ' + str(len(state.reason_codes)) + ' независимых признаков'}). "
                          f"Бренд: {state.brand_evidence.detected_brand_name or '—'}. Проверка на легитимных данных: {state.zero_fpr_note}"
                          + ("\nОбоснование:\n" + "\n".join(lines) if lines else ""))
         llm_call_info = None
