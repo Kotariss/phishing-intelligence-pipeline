@@ -335,8 +335,8 @@ def deobfuscate_payloads(text: str) -> List[str]:
     return found
 
 
-def _merge_layer(base: Dict[str, Any], layer: Dict[str, Any]) -> None:
-    """Merges features of a de-obfuscated layer into the outer document's features."""
+def _merge_layer(base: Dict[str, Any], layer: Dict[str, Any], label: str = "[раскодировано] ") -> None:
+    """Merges features of a de-obfuscated layer (or of the DOM after the scripts ran) into the outer document's features."""
     base["forms"] = base["forms"] + layer["forms"]
     base["forms_count"] = len(base["forms"])
     for flag in ("has_password_field", "has_telegram_exfil", "has_discord_exfil", "has_sandbox_evasion"):
@@ -352,7 +352,7 @@ def _merge_layer(base: Dict[str, Any], layer: Dict[str, Any]) -> None:
             base[key] = layer[key]
     snippets = base.setdefault("evidence_snippets", {})
     for key, value in (layer.get("evidence_snippets") or {}).items():
-        snippets.setdefault(key, "[раскодировано] " + value)
+        snippets.setdefault(key, label + value)
     if layer.get("visible_text"):
         base["visible_text"] = (base.get("visible_text", "") + " " + layer["visible_text"]).strip()[:4000]
 

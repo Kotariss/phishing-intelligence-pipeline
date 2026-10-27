@@ -2,16 +2,16 @@ import base64
 from typing import Dict, Any
 
 try:
-    from .attachment_parser import AttachmentParser, sniff_file_kind, FORMULA_EXTENSIONS
+    from .attachment_parser import AttachmentParser, sniff_file_kind, FORMULA_EXTENSIONS, _merge_layer
     from .qr_scanner import scan_qr_codes
     from .ocr import ocr_image
 except ImportError:
     try:
-        from attachment_parser import AttachmentParser, sniff_file_kind, FORMULA_EXTENSIONS
+        from attachment_parser import AttachmentParser, sniff_file_kind, FORMULA_EXTENSIONS, _merge_layer
         from qr_scanner import scan_qr_codes
         from ocr import ocr_image
     except ImportError:
-        from src.attachment_parser import AttachmentParser, sniff_file_kind, FORMULA_EXTENSIONS
+        from src.attachment_parser import AttachmentParser, sniff_file_kind, FORMULA_EXTENSIONS, _merge_layer
         from src.qr_scanner import scan_qr_codes
         from src.ocr import ocr_image
 
@@ -24,7 +24,21 @@ def parse_file_bytes(content: bytes, filename: str, browser_ctrl=None, base_url:
     if kind == "html":
         html_text = content.decode("utf-8", errors="ignore")
         parsed = AttachmentParser.parse_html(html_text, base_url=base_url)
-        parsed["screenshot_base64"] = (browser_ctrl.render_html_offline(html_text) if browser_ctrl else "") or None
+        dynamic = browser_ctrl.render_html_dynamic(html_text) if browser_ctrl and hasattr(browser_ctrl, "render_html_dynamic") else {}
+        parsed["screenshot_base64"] = (dynamic.get("screenshot_base64")
+                                       or (browser_ctrl.render_html_offline(html_text) if browser_ctrl else "")) or None
+        parsed["scripts_executed"] = bool(dynamic.get("dom_html"))
+        if dynamic.get("dom_html"):
+            # final DOM after the scripts ran: dynamically inserted forms / links and delayed content join the features
+            layer = AttachmentParser._parse_html_layer(dynamic["dom_html"], base_url)
+            before = {"forms": parsed["forms_count"], "links": len(parsed.get("links") or [])}
+            _merge_layer(parsed, layer, label="[после выполнения сценариев] ")
+            blocked = dynamic.get("blocked_urls") or []
+            if blocked:  # where the scripts tried to navigate / send: window.open, location, fetch / XHR
+                parsed["links"] = sorted(set(parsed.get("links") or []) | set(blocked))
+                parsed["script_requests"] = blocked
+            parsed["dynamic_added"] = {"forms": parsed["forms_count"] - before["forms"],
+                                       "links": len(parsed["links"]) - before["links"]}
         if parsed["screenshot_base64"]:
             # a QR drawn with a table / CSS or set as a background is only visible on the rendered page
             parsed["qr_codes"] = sorted(set(parsed.get("qr_codes") or []) | set(scan_qr_codes(base64.b64decode(parsed["screenshot_base64"]))))

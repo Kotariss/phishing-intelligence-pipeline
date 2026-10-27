@@ -221,6 +221,44 @@ class BrowserController:
         except Exception:
             return ""
 
+    def render_html_dynamic(self, html: str, wait_ms: int = 800, timeout_seconds: int = 10) -> Dict[str, Any]:
+        """Executes the scripts of a saved page in the sandbox browser (ТЗ 4.1.4.2: final DOM after the scripts, including
+        dynamically inserted elements and delayed loading). ALL network access is blocked: only data:/about: load, so
+        nothing leaves the container; requests the scripts try to make (navigation, window.open, fetch/XHR) are
+        recorded in `blocked_urls`. Returns {screenshot_base64, dom_html, blocked_urls}; empty values on failure."""
+        out: Dict[str, Any] = {"screenshot_base64": "", "dom_html": "", "blocked_urls": []}
+        if not _playwright_available():
+            return out
+        from playwright.sync_api import sync_playwright
+        blocked: List[str] = []
+
+        def guard(route, request):
+            if request.url.startswith(("data:", "about:")):
+                return route.continue_()
+            blocked.append(request.url)
+            return route.abort("blockedbyclient")
+
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--disable-dev-shm-usage"])
+                context = browser.new_context(java_script_enabled=True, accept_downloads=False, service_workers="block")
+                context.route("**/*", guard)
+                page = context.new_page()
+                page.set_default_timeout(timeout_seconds * 1000)  # a script stuck in a loop must not stall the object
+                page.on("dialog", lambda d: d.dismiss())
+                page.on("popup", lambda pop: pop.close())
+                page.set_content(html, timeout=timeout_seconds * 1000, wait_until="domcontentloaded")
+                page.wait_for_timeout(wait_ms)  # delayed loading: timers, deferred inserts
+                out["dom_html"] = page.content()[:2_000_000]
+                shot = page.screenshot(type="png", full_page=False)
+                out["screenshot_base64"] = base64.b64encode(shot).decode("utf-8")
+                context.close()
+                browser.close()
+        except Exception:
+            pass
+        out["blocked_urls"] = list(dict.fromkeys(u for u in blocked if u.startswith(("http://", "https://"))))[:50]
+        return out
+
     # ------------------------------------------------------------------ requests
     def _extract_with_requests(self, url: str, timeout_seconds: int, user_agent: str) -> Dict[str, Any]:
         redirect_chain: List[Dict[str, Any]] = []
