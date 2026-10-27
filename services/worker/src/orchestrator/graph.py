@@ -1,3 +1,4 @@
+import os
 import time
 import hashlib
 import datetime
@@ -148,6 +149,11 @@ def persist_node(state: PhishingState) -> PhishingState:
             "agent_traces": public["agent_traces"],
         }
     })
+
+    if state.verdict == "MALICIOUS" and not os.environ.get("DW2_DISABLE_IOC"):
+        repo.register_iocs([state.object_sha256] if state.raw_bytes else [], "file", state.incident_id)
+        repo.register_iocs([m.get("sha256") for m in (state.attachment_evidence or {}).get("attachments_meta") or [] if not m.get("inline")],
+                           "attachment", state.incident_id)
 
     exported = None
     if state.generated_l_signature:

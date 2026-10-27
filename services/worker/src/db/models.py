@@ -50,3 +50,14 @@ class BrandAllowlistModel(Base):
     allowed_domains = Column(JSON, default=list)
     allowed_patterns = Column(JSON, default=list)
     aliases = Column(JSON, default=list)
+
+
+class KnownIOCModel(Base):
+    """Exact indicators of confirmed phishing: content hashes of files / attachments of incidents with the verdict «phishing»
+    (ТЗ 4.1.4.6: an exact match with a confirmed indicator of compromise is a verdict on its own)."""
+    __tablename__ = "known_iocs"
+
+    sha256 = Column(String(64), primary_key=True, index=True)
+    kind = Column(String(16), default="file")          # file | attachment
+    incident_id = Column(String(64), index=True)        # the incident that confirmed it
+    created_at = Column(DateTime, default=_utcnow)

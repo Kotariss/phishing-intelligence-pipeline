@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from .models import IncidentModel, LSignatureModel
+from .models import IncidentModel, LSignatureModel, KnownIOCModel
 from .database import SessionLocal
 
 class IncidentRepository:
@@ -75,6 +75,33 @@ class IncidentRepository:
             if brand:
                 query = query.filter(IncidentModel.target_brand == brand)
             return query.order_by(IncidentModel.created_at.desc()).offset(offset).limit(limit).all()
+        finally:
+            if self._db is None:
+                db.close()
+
+    def register_iocs(self, hashes: List[str], kind: str, incident_id: str) -> int:
+        """Stores content hashes of a confirmed phishing incident as exact indicators (first confirmation wins)."""
+        db = self._get_session()
+        try:
+            added = 0
+            for h in {x for x in hashes if x}:
+                if db.get(KnownIOCModel, h) is None:
+                    db.add(KnownIOCModel(sha256=h, kind=kind, incident_id=incident_id))
+                    added += 1
+            db.commit()
+            return added
+        finally:
+            if self._db is None:
+                db.close()
+
+    def find_iocs(self, hashes: List[str], exclude_incident: Optional[str] = None) -> List[KnownIOCModel]:
+        hashes = [h for h in {x for x in hashes if x}]
+        if not hashes:
+            return []
+        db = self._get_session()
+        try:
+            rows = db.query(KnownIOCModel).filter(KnownIOCModel.sha256.in_(hashes)).all()
+            return [r for r in rows if r.incident_id != exclude_incident]
         finally:
             if self._db is None:
                 db.close()

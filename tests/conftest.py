@@ -10,6 +10,7 @@ _TMP = tempfile.mkdtemp(prefix="phish_tests_")
 
 # Deterministic, offline, isolated test environment (must be set before the worker modules load).
 # The model is required by the pipeline; tests never reach a server: the `fake_llm` fixture answers instead.
+os.environ["DW2_DISABLE_IOC"] = "1"  # tests share one database: exact-indicator matching is switched on only by its own test
 os.environ["LLM_MODE"] = "local"
 os.environ["LLM_LOCAL_BASE_URL"] = "http://127.0.0.1:1/v1"  # nothing listens there
 os.environ["SANDBOX_INPROCESS_FALLBACK"] = "true"

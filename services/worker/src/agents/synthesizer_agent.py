@@ -1,4 +1,5 @@
 import hashlib
+import os
 import time
 
 try:
@@ -55,6 +56,27 @@ class SynthesizerAgent:
         self.llm = llm_client or get_llm_client()
 
     # ---------------------------------------------------------------- scoring
+    @staticmethod
+    def _match_known_iocs(state: PhishingState) -> None:
+        """Exact match of the object (or of an attachment) with a confirmed indicator of compromise of the knowledge base.
+        Switched off in metric runs (DW2_DISABLE_IOC): recall is measured without exact indicators (ТЗ, табл. 3)."""
+        if os.environ.get("DW2_DISABLE_IOC"):
+            return
+        hashes = []
+        if state.raw_bytes:
+            hashes.append(hashlib.sha256(state.raw_bytes).hexdigest())
+        att = state.attachment_evidence or {}
+        hashes += [m["sha256"] for m in att.get("attachments_meta") or [] if m.get("sha256") and not m.get("inline")]
+        try:
+            from ..db.repository import IncidentRepository
+        except (ImportError, ValueError):
+            from db.repository import IncidentRepository
+        hits = IncidentRepository().find_iocs(hashes, exclude_incident=state.incident_id)
+        if hits:
+            state.add_reason("RC_KNOWN_IOC_MATCH", f"SHA-256 {hits[0].sha256[:16]}… подтверждён инцидентом {hits[0].incident_id}",
+                             {"type": "text", "value": "\n".join(f"{h.kind}: {h.sha256} ← {h.incident_id}" for h in hits[:5]),
+                              "label": "Совпадение с известным индикатором компрометации"})
+
     @staticmethod
     def _add_composites(state: PhishingState) -> None:
         codes = set(state.reason_codes)
@@ -127,6 +149,7 @@ class SynthesizerAgent:
         state.execution_steps.append("synthesizer_agent: Calculating risk score & synthesizing rules")
 
         self._add_composites(state)
+        self._match_known_iocs(state)
         clamp_note = self._allowlist_clamp(state)
         # The model's reading of the text is advisory when nothing else independent supports it (ТЗ 4.1.4.6, А.1.3)
         scored_codes = list(state.reason_codes)
@@ -140,7 +163,8 @@ class SynthesizerAgent:
         clean_t = self.settings.SCORE_CLEAN_THRESHOLD
         mal_t = self.settings.SCORE_MALICIOUS_THRESHOLD
         groups = rc.independent_groups(scored_codes)
-        if state.risk_score >= mal_t and len(groups) < 2:
+        ioc_match = "RC_KNOWN_IOC_MATCH" in state.reason_codes  # ТЗ 4.1.4.6: an exact confirmed indicator is enough
+        if state.risk_score >= mal_t and len(groups) < 2 and not ioc_match:
             # ТЗ 4.1.4.6: единичные признаки не дают «фишинг» — нужны признаки из двух независимых групп
             state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
             state.network_evidence["verdict_capped"] = {"risk": state.risk_score, "independent_groups": sorted(groups)}

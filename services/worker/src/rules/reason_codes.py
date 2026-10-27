@@ -23,6 +23,7 @@ REASON_CODES: Dict[str, ReasonCode] = {
     "RC_REDIRECT_CROSS_DOMAIN_JS": ReasonCode(0.15, "network", "low", "Клиентский (JS/meta) редирект на другой домен"),
     "RC_DROP_SCREENCONNECT_RAT": ReasonCode(0.97, "network", "critical", "Загрузка средства удалённого доступа ScreenConnect"),
     "RC_DROP_EXECUTABLE_PAYLOAD": ReasonCode(0.60, "network", "high", "Ссылка ведёт на исполняемый файл / образ диска"),
+    "RC_KNOWN_IOC_MATCH": ReasonCode(0.95, "campaign", "critical", "Точное совпадение с подтверждённым индикатором компрометации из базы знаний (хеш файла или вложения известного фишинга)"),
     "RC_EPHEMERAL_HOST_DEAD": ReasonCode(0.05, "info", "info", "Хост недоступен / ошибка (эфемерная фишинговая инфраструктура)"),
     "URL_IP_HOST": ReasonCode(0.30, "network", "medium", "В URL вместо домена используется IP-адрес"),
     "URL_IPFS_LINK": ReasonCode(0.25, "network", "medium", "Ссылка ведёт на шлюз IPFS: децентрализованное размещение, которое хостер не может удалить"),

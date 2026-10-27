@@ -182,6 +182,7 @@ def evaluate(dataset_root: str, limit_per_source: Optional[int] = None, sources=
     """`only` — re-run just these objects (keys as in the report rows, e.g. after `skipped_llm`).
     `workers` > 1 analyses the phishing objects in parallel processes (each with its own LLM client, browser
     and DB connection) — the run is bound by model latency, not CPU. Results keep the sequential order."""
+    os.environ["DW2_DISABLE_IOC"] = "1"  # recall is measured without exact indicators of compromise (ТЗ, табл. 3)
     started = time.time()
     rows: List[Dict[str, Any]] = []
 
@@ -453,6 +454,7 @@ def robustness(dataset_root: str, limit_per_source: int = 30, progress=None, spl
 
     Honest set-up: objects come from the held-out part only; an e-mail whose verdict does not need its pages
     (still detected with the links removed) is excluded — changing the page could not affect it anyway."""
+    os.environ["DW2_DISABLE_IOC"] = "1"  # recall is measured without exact indicators of compromise (ТЗ, табл. 3)
     import copy
     from ingest.dataset import load_sample_dir
     scenarios = collections.defaultdict(lambda: {"objects": 0, "still_detected": 0, "missed": []})
@@ -527,6 +529,7 @@ def evaluate_labeled_eml(root: str, out_dir: str, subset: str = "validation", li
     Writes per-object results and two prediction files for the set's own compare_labels.py:
       predictions_strict.csv  — phishing only for MALICIOUS (SUSPICIOUS counts as benign);
       predictions_lenient.csv — phishing for MALICIOUS or SUSPICIOUS."""
+    os.environ["DW2_DISABLE_IOC"] = "1"  # recall is measured without exact indicators of compromise (ТЗ, табл. 3)
     import csv
     from ingest.dataset import load_link_dir, _link_sort_key
     with open(os.path.join(root, "manifest.csv"), encoding="utf-8-sig", newline="") as f:

