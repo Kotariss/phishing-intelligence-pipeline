@@ -178,8 +178,9 @@ def _run_phishing_task(task: Tuple[str, str]) -> Dict[str, Any]:
 
 def evaluate(dataset_root: str, limit_per_source: Optional[int] = None, sources=("keis2", "html", "png"),
              progress: Optional[Callable[[str], None]] = None, split: Optional[Dict[str, Any]] = None,
-             part: Optional[str] = None, workers: int = 1) -> Dict[str, Any]:
-    """`workers` > 1 analyses the phishing objects in parallel processes (each with its own LLM client, browser
+             part: Optional[str] = None, workers: int = 1, only: Optional[set] = None) -> Dict[str, Any]:
+    """`only` — re-run just these objects (keys as in the report rows, e.g. after `skipped_llm`).
+    `workers` > 1 analyses the phishing objects in parallel processes (each with its own LLM client, browser
     and DB connection) — the run is bound by model latency, not CPU. Results keep the sequential order."""
     started = time.time()
     rows: List[Dict[str, Any]] = []
@@ -190,6 +191,9 @@ def evaluate(dataset_root: str, limit_per_source: Optional[int] = None, sources=
             progress(f"[{row['group']}/{row['category']}] {row['object'][:70]} -> {row.get('verdict', row['status'])}")
 
     phishing = phishing_sources(dataset_root, limit_per_source, sources, split, part)
+    key = lambda oid: os.path.relpath(oid, REPO_ROOT) if os.path.isabs(oid) else oid
+    if only is not None:
+        phishing = [t for t in phishing if key(t[1]) in only]
     if workers > 1:
         import multiprocessing
         from concurrent.futures import ProcessPoolExecutor
@@ -201,6 +205,8 @@ def evaluate(dataset_root: str, limit_per_source: Optional[int] = None, sources=
         for category, object_id, factory in phishing:
             report_progress(_run_object("phishing", category, object_id, factory))
     for category, object_id, factory in benign_sources():
+        if only is not None and key(object_id) not in only:
+            continue
         report_progress(_run_object("benign", category, object_id, factory))
     report = build_report(rows, time.time() - started, dataset_root, limit_per_source)
     report["split"] = {"part": part, "version": split.get("version"), "created_at": split.get("created_at")}         if split and part else None
@@ -697,3 +703,23 @@ def save_report(report: Dict[str, Any], out_path: str, split_file: Optional[str]
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     return out_path
+
+
+def merge_reports(base: Dict[str, Any], rerun: Dict[str, Any], dataset_root: str) -> Dict[str, Any]:
+    """Base report with the rows of a targeted re-run substituted (only rows that now have status ok replace skipped / failed ones);
+    all aggregates are rebuilt from the merged rows. The merge is recorded in `merged_from`."""
+    new = {(r["group"], r["object"]): r for r in rerun.get("objects", [])}
+    rows, replaced = [], 0
+    for r in base.get("objects", []):
+        n = new.get((r["group"], r["object"]))
+        if n is not None and n.get("status") == "ok" and r.get("status") != "ok":
+            rows.append(n)
+            replaced += 1
+        else:
+            rows.append(r)
+    report = build_report(rows, base.get("elapsed_seconds", 0) + rerun.get("elapsed_seconds", 0), dataset_root, base.get("limit_per_source"))
+    report["split"] = base.get("split")
+    report["merged_from"] = {"base": base.get("generated_at"), "rerun": rerun.get("generated_at"), "rows_replaced": replaced,
+                             "rerun_objects": len(new)}
+    report["reproducibility"] = {"base": base.get("reproducibility"), "rerun": rerun.get("reproducibility")}
+    return report

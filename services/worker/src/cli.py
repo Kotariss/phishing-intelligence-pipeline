@@ -353,12 +353,29 @@ def cmd_metrics(args):
         if not os.path.exists(args.split_file):
             raise SystemExit(f"split manifest {args.split_file} not found: run `phishctl.py split` first")
         split = load_split(args.split_file)
+    only = None
+    if args.only_from:  # re-run only the objects of a previous report with these statuses (default: skipped_llm)
+        with open(args.only_from, encoding="utf-8") as f:
+            wanted = set(args.only_status.split(","))
+            only = {o["object"] for o in json.load(f).get("objects", []) if o.get("status") in wanted}
+        _log(f"re-running {len(only)} objects from {args.only_from}")
     report = evaluate(args.dataset, args.limit, tuple(args.sources.split(",")),
-                      progress=_log if args.verbose else None, split=split, part=args.part, workers=args.workers)
+                      progress=_log if args.verbose else None, split=split, part=args.part, workers=args.workers, only=only)
     save_report(report, args.out, split_file=args.split_file if args.part else None)
     print(json.dumps({"counts": report["counts"], "metrics": report["metrics"], "acceptance": report["acceptance"]},
                      ensure_ascii=False, indent=2))
     _log(f"report written to {args.out}")
+
+
+def cmd_merge_reports(args):
+    from evaluation import merge_reports, save_report
+    with open(args.base, encoding="utf-8") as f:
+        base = json.load(f)
+    with open(args.rerun, encoding="utf-8") as f:
+        rerun = json.load(f)
+    merged = merge_reports(base, rerun, args.dataset)
+    save_report(merged, args.out)
+    print(json.dumps({"merged_from": merged["merged_from"], "metrics": merged["metrics"]}, ensure_ascii=False, indent=2))
 
 
 def cmd_split(args):
@@ -504,8 +521,17 @@ def main(argv=None):
     p.add_argument("--part", choices=("dev", "test"), help="only this part of the split manifest")
     p.add_argument("--split-file", default=os.path.join(REPO_ROOT, "reports", "split.json"))
     p.add_argument("--workers", type=int, default=1, help="parallel processes (useful with a remote LLM)")
+    p.add_argument("--only-from", help="re-run only objects of this report whose status is in --only-status (targeted re-run)")
+    p.add_argument("--only-status", default="skipped_llm", help="comma-separated statuses for --only-from")
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_metrics)
+
+    p = sub.add_parser("merge-reports", help="substitute the rows of a targeted re-run into a base metrics report and rebuild the aggregates")
+    p.add_argument("base")
+    p.add_argument("rerun")
+    p.add_argument("--out", required=True)
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.set_defaults(func=cmd_merge_reports)
 
     p = sub.add_parser("split", help="leakage-free dev / held-out test split of the customer corpus")
     p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
