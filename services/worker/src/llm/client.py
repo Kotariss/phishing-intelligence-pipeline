@@ -18,6 +18,10 @@ except (ImportError, ValueError):
 
 RETRYABLE_STATUS = (429, 500, 502, 503, 504)
 RETRY_PAUSES = (2.0, 5.0, 10.0, 20.0)  # seconds before attempt 2, 3, 4, ...
+try:  # LLM_RETRY_PAUSES="10,30,90": a loaded CPU server may need longer pauses than the defaults
+    RETRY_PAUSES = tuple(float(x) for x in os.environ["LLM_RETRY_PAUSES"].split(",") if x.strip()) or RETRY_PAUSES
+except (KeyError, ValueError):
+    pass
 AUDIT_TEXT_LIMIT = 20000
 
 # The object being analysed (set by the pipeline): every model call in the audit log names its object.

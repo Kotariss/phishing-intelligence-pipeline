@@ -128,12 +128,18 @@ class SynthesizerAgent:
 
         self._add_composites(state)
         clamp_note = self._allowlist_clamp(state)
-        raw_score = rc.combine(state.reason_codes)
+        # The model's reading of the text is advisory when nothing else independent supports it (ТЗ 4.1.4.6, А.1.3)
+        scored_codes = list(state.reason_codes)
+        if any(c in rc.MODEL_TEXT_CODES for c in scored_codes) and \
+                not rc.independent_groups([c for c in scored_codes if c not in rc.MODEL_TEXT_CODES]):
+            scored_codes = [c for c in scored_codes if c not in rc.MODEL_TEXT_CODES]
+            state.network_evidence["model_text_advisory"] = [c for c in state.reason_codes if c in rc.MODEL_TEXT_CODES]
+        raw_score = rc.combine(scored_codes)
         state.risk_score = round(raw_score, 2)
 
         clean_t = self.settings.SCORE_CLEAN_THRESHOLD
         mal_t = self.settings.SCORE_MALICIOUS_THRESHOLD
-        groups = rc.independent_groups(state.reason_codes)
+        groups = rc.independent_groups(scored_codes)
         if state.risk_score >= mal_t and len(groups) < 2:
             # ТЗ 4.1.4.6: единичные признаки не дают «фишинг» — нужны признаки из двух независимых групп
             state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
@@ -144,6 +150,8 @@ class SynthesizerAgent:
             state.verdict, state.confidence = "SUSPICIOUS", "MEDIUM"
         else:
             state.verdict, state.confidence = "CLEAN", ("HIGH" if not state.reason_codes or clamp_note else "MEDIUM")
+            if state.network_evidence.get("model_text_advisory"):
+                state.confidence = "MEDIUM"
 
         self._fingerprints(state)
 
@@ -176,7 +184,8 @@ class SynthesizerAgent:
         # The evidence list always follows the analyst summary: every claim is traceable to an indicator.
         evidence_text = (f"Вердикт: {VERDICT_RU.get(state.verdict, state.verdict)} (риск {state.risk_score:.2f}, "
                          f"{'признаки одной группы — «фишинг» требует двух независимых' if state.network_evidence.get('verdict_capped') else 'объединение ' + str(len(state.reason_codes)) + ' независимых признаков'}). "
-                         f"Бренд: {state.brand_evidence.detected_brand_name or '—'}. Проверка на легитимных данных: {state.zero_fpr_note}"
+                         + (f"Вывод модели по тексту ({', '.join(state.network_evidence['model_text_advisory'])}) учтён как справочный: без независимой улики он не меняет вердикт. " if state.network_evidence.get("model_text_advisory") else "")
+                         + f"Бренд: {state.brand_evidence.detected_brand_name or '—'}. Проверка на легитимных данных: {state.zero_fpr_note}"
                          + ("\nОбоснование:\n" + "\n".join(lines) if lines else ""))
         llm_call_info = None
         state.explanation = evidence_text
