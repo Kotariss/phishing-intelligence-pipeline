@@ -31,6 +31,12 @@ def parse_file_bytes(content: bytes, filename: str, browser_ctrl=None, base_url:
         if dynamic.get("dom_html"):
             # final DOM after the scripts ran: dynamically inserted forms / links and delayed content join the features
             layer = AttachmentParser._parse_html_layer(dynamic["dom_html"], base_url)
+            # only what the scripts added: forms / text already present in the static markup are not counted twice
+            known = {(f.get("action_absolute"), f.get("method"), (f.get("snippet") or "")[:200]) for f in parsed["forms"]}
+            layer["forms"] = [f for f in layer["forms"]
+                              if (f.get("action_absolute"), f.get("method"), (f.get("snippet") or "")[:200]) not in known]
+            if (layer.get("visible_text") or "").strip() in (parsed.get("visible_text") or ""):
+                layer["visible_text"] = ""
             before = {"forms": parsed["forms_count"], "links": len(parsed.get("links") or [])}
             _merge_layer(parsed, layer, label="[после выполнения сценариев] ")
             blocked = dynamic.get("blocked_urls") or []

@@ -52,3 +52,8 @@ def test_endless_script_does_not_hang_the_analysis():
     parsed = _parse(b"<html><body><form><input type=password></form><script>while(true){}</script></body></html>")
     assert time.time() - t0 < 40
     assert parsed["has_password_field"]  # the static features survive a failed render
+
+
+def test_static_form_is_not_counted_twice_after_rendering():
+    parsed = _parse(b'<html><body><form action="https://x.example/p" method="post"><input type="password"></form><p>text</p></body></html>')
+    assert parsed["forms_count"] == 1 and parsed["dynamic_added"]["forms"] == 0
