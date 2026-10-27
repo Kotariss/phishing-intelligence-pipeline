@@ -1,0 +1,711 @@
+{
+ "icons": {
+  "7_eleven": {
+   "dhash": "132f293333b6b649",
+   "sha256": "92178b7bfae4046a197565d3459aa17946e45588a6615d46239097a131fc7d04",
+   "source": "https://7-eleven.com/favicon/favicon-us.ico"
+  },
+  "adobe": {
+   "dhash": "b27069e8cccca6b6",
+   "sha256": "cf095470e003d37cfcbc737a8abfe12b1143061c1c59a131f8db39cbb69b1e3d",
+   "source": "https://adobe.com/favicon.ico"
+  },
+  "aeon": {
+   "dhash": "a855555555556996",
+   "sha256": "947d9e4b66524085860d7bc0390ed8f452a8cb01145b639dc3e7875a03b6065f",
+   "source": "https://aeon.co.jp/favicon.ico"
+  },
+  "aeon_pay": {
+   "dhash": "a855555555556996",
+   "sha256": "947d9e4b66524085860d7bc0390ed8f452a8cb01145b639dc3e7875a03b6065f",
+   "source": "https://aeon.co.jp/favicon.ico"
+  },
+  "alibaba": {
+   "dhash": "0f1c60a6489b1f7f",
+   "sha256": "39a1ae992d35ab51e0e09c5bcdc1fbe53eed4da4fd146e5fc77ef9fec752891c",
+   "source": "https://alibaba.com/favicon.ico"
+  },
+  "amazon": {
+   "dhash": "c4a28c71078cb2d4",
+   "sha256": "e767bf47290d28fdf6354d7bc9a81cd79604aead292d284a3f8bb5b78618fe96",
+   "source": "https://amazon.com/favicon.ico"
+  },
+  "amex": {
+   "dhash": "2a45958a10d60226",
+   "sha256": "4828c055c39fac063b6efa1699e2c9ebc462084028a5914467418423cab35ec9",
+   "source": "https://americanexpress.com/favicon.ico"
+  },
+  "ana": {
+   "dhash": "2f59b362ee8c9c10",
+   "sha256": "aa34917e53160d768637ffa9bfce16d4f0fe577a0a3c6d2b7614a27e672a48fc",
+   "source": "https://ana.co.jp/favicon.ico"
+  },
+  "antai": {
+   "dhash": "104e8e9e0e0e4680",
+   "sha256": "c18dbb80441035ec5d0cfe337ca2eb939933b39cb37c9659c40af37d26dfb676",
+   "source": "https://antai.gouv.fr/themes/open_antai_swa/favicon.ico"
+  },
+  "apple_appstore": {
+   "dhash": "e49a7961617982e0",
+   "sha256": "594039eea0551461db4278e6b49ae33a55914ab23c2b389f5281f06e834b51f2",
+   "source": "https://apple.com/favicon.ico"
+  },
+  "apple_icloud": {
+   "dhash": "451b79fcfefc7c02",
+   "sha256": "84bb89069624bca4025062bddfbf5efda819101538e65d3433e5bd9820b1071e",
+   "source": "https://icloud.com/favicon.ico"
+  },
+  "apple_id": {
+   "dhash": "e49a7961617982e0",
+   "sha256": "594039eea0551461db4278e6b49ae33a55914ab23c2b389f5281f06e834b51f2",
+   "source": "https://apple.com/favicon.ico"
+  },
+  "apple_support": {
+   "dhash": "e49a7961617982e0",
+   "sha256": "594039eea0551461db4278e6b49ae33a55914ab23c2b389f5281f06e834b51f2",
+   "source": "https://apple.com/favicon.ico"
+  },
+  "at_t": {
+   "dhash": "f1a2fc3efdbefcf0",
+   "sha256": "8030a41115f6790aa0a21ef9b53f02d2277462535c130fccf592c90a1879c980",
+   "source": "https://att.com/favicon.ico"
+  },
+  "au": {
+   "dhash": "448064e4a4900080",
+   "sha256": "44b56d792db957491c9ebb1dec4647647dbb928c3acecef334bf9d83217c512f",
+   "source": "https://au.com/content/dam/au-com/common/icon/favicon.ico"
+  },
+  "au_pay": {
+   "dhash": "448064e4a4900080",
+   "sha256": "44b56d792db957491c9ebb1dec4647647dbb928c3acecef334bf9d83217c512f",
+   "source": "https://au.com/content/dam/au-com/common/icon/favicon.ico"
+  },
+  "bank_of_america": {
+   "dhash": "8431b0deec709208",
+   "sha256": "9354a2584a532829a2e8529529fbaee465a6a2441042ed7aa385985e758ec8a1",
+   "source": "https://bankofamerica.com/favicon.ico"
+  },
+  "best_buy": {
+   "dhash": "00c0d0a0a0c0c000",
+   "sha256": "c522e55b9f9c38ac6d477efaa5b619f45e70f44b6aba58580368e82208805868",
+   "source": "https://bestbuy.com/favicon.ico"
+  },
+  "bnp_paribas": {
+   "dhash": "556391bcf26e6e9a",
+   "sha256": "e5482b5accc16f8dbe809a97599206ace764b21348db2f443c41082fdcea8ea4",
+   "source": "https://bnpparibas.com/favicon.ico"
+  },
+  "canal": {
+   "dhash": "b0b2b2d4d4b2b2b0",
+   "sha256": "ebff9514abfc73794dfb0734f7a88a6b41f95be3e3f7a9a602ddb1d9cd4b08cf",
+   "source": "https://canalplus.com/favicon.ico"
+  },
+  "capital_one": {
+   "dhash": "02f0e0f418b162c4",
+   "sha256": "1bdb0b030c6e607008c1a09f606b7f9057f607b35a974b5caa01dd1b7b28eb81",
+   "source": "https://capitalone.com/favicon.ico"
+  },
+  "citibank": {
+   "dhash": "48b878d894c84c80",
+   "sha256": "2e8c8809b87ab91f7aa6640769e08a9472bee97852d29aa90d1c9e66943146cb",
+   "source": "https://citibank.com/favicon.ico"
+  },
+  "coca_cola": {
+   "dhash": "00006400e03e3086",
+   "sha256": "141a1691ba07a87577b94d8c10e9f1c4176692e1127cb17e3514633acbf05423",
+   "source": "https://coca-cola.com/favicon.ico"
+  },
+  "coinbase": {
+   "dhash": "30f0cc8686ccf030",
+   "sha256": "e6514d561d3bff568799c0a507e52b3a9e725fad27c7a2e941397d93a05c8cf9",
+   "source": "https://coinbase.com/favicon.ico"
+  },
+  "comcast": {
+   "dhash": "08b2964d4d963309",
+   "sha256": "47dfd89d5b85dbc3810620fae12ad10e1549ea554a8e915c23894010c4fe727a",
+   "source": "https://www.comcast.com/favicon.ico"
+  },
+  "cpanel": {
+   "dhash": "048a78d4b0c14490",
+   "sha256": "e7c785a1e85727f51ddf105358ff0a2873e032adf9ff3201194fa5ea56918a41",
+   "source": "https://cpanel.net/wp-content/uploads/2025/07/cropped-android-chrome-512x512-1-32x32.png"
+  },
+  "d_point": {
+   "dhash": "0041a45b55a41100",
+   "sha256": "ed8d1953fb8ef5088e0696329dbadadae1179200cecc18133b4668ce7b15771d",
+   "source": "https://www.docomo.ne.jp/favicon.ico"
+  },
+  "dai_ichi_life": {
+   "dhash": "81a0a4a6e4c88104",
+   "sha256": "b590ca5f83604547ca9cd2040bfefe626c1a1fa5171cba04ee5f79828477ed4f",
+   "source": "https://www.dai-ichi-life.co.jp/favicon.ico"
+  },
+  "delta_air_lines": {
+   "dhash": "2810b2f079cc96f8",
+   "sha256": "a388463cfa089935072977e66a41a7aa21795f5451ca829c6348135620ad52e9",
+   "source": "https://www.delta.com/favicon.ico"
+  },
+  "deutsche_bank": {
+   "dhash": "332f193333630b33",
+   "sha256": "612af5bf21ea20fcade1c198e2948fdaf69f0432357840567ad90ddeeeea154d",
+   "source": "https://db.com/favicon.ico"
+  },
+  "deutsche_telekom": {
+   "dhash": "96b2b2b296b230f0",
+   "sha256": "da475e7cfa951e6a61cb45c80e65c2798b6a27a6e68ca1dd077c9c9371c28953",
+   "source": "https://www.telekom.de/favicon.ico"
+  },
+  "dhl": {
+   "dhash": "004807c8d427c000",
+   "sha256": "f9dfe88650b196d4c3c0d9e457a4bf636533cea478a00ba3dc28e03c48eb082e",
+   "source": "https://dhl.com/favicon.ico"
+  },
+  "digital_agency": {
+   "dhash": "f0ccb28080b2ccf0",
+   "sha256": "06fe934c16b7530d6cee9daf72ea3abc749f8856dc232bf48a0b4a4ca16836bf",
+   "source": "https://digital.go.jp/favicon.ico"
+  },
+  "docusign": {
+   "dhash": "4030f4f0f8f1c000",
+   "sha256": "a10b596c82e3359a1c28272b50e5b3bb7d6027edd74ba53b8a44d88725fb5fc6",
+   "source": "https://docusign.com/favicon.ico"
+  },
+  "dpd": {
+   "dhash": "71e8f09acc8ee870",
+   "sha256": "6a03d214a874f3436bb5c9fb9f8d0008e80822a8132fd0c4d6e93f23a5cf317e",
+   "source": "https://dpd.com/favicon.ico"
+  },
+  "drweb": {
+   "dhash": "094d710f694d4d29",
+   "sha256": "50c89f94a32bf5071d81ae1ca71de424d9f4cf7b50f6298c27f79e7080f32480",
+   "source": "https://drweb.ru/favicon.ico"
+  },
+  "dsl_su": {
+   "dhash": "1c7e066c6ca69088",
+   "sha256": "bbedb2ae65e1670291beca88438c6fa2671cd2745560a22db3808d3b190bbe1d",
+   "source": "https://dsl.su/favicon.ico"
+  },
+  "e_plus": {
+   "dhash": "8432dad280c2e008",
+   "sha256": "231f1cc6379f5cac4f812fb7cc70cedd377b76a598b28f1add4adc96a99d5c76",
+   "source": "https://eplus.jp/s/eplus/img/favicon.ico"
+  },
+  "e_tax": {
+   "dhash": "8270e896968e9600",
+   "sha256": "b7a7498e31a81e85ec90c524be02ce38380e88f05b523b8a4fe6872b1b8815b6",
+   "source": "https://www.nta.go.jp/favicon.ico"
+  },
+  "ekinet": {
+   "dhash": "a204a2a76dd20900",
+   "sha256": "db61050ce55204fefee74b9c9306489da981ec79c9500129b3bd760db6385aad",
+   "source": "https://www.eki-net.com/favicon.ico"
+  },
+  "epos_card": {
+   "dhash": "4014c96a461a2008",
+   "sha256": "8133b48e7828e831fc6e716a4b34598d7b5a308f71dae9d84974d3439f6730d7",
+   "source": "https://www.eposcard.co.jp/favicon.ico"
+  },
+  "etc": {
+   "dhash": "146d6b6927135d8d",
+   "sha256": "07bd6bde6093c04f5d67b59dac7f16b5fe24a90f6d1c455cc7ffc9336573afaf",
+   "source": "https://www.go-etc.jp/favicon.ico"
+  },
+  "facebook": {
+   "dhash": "f0c68ecc968eccc8",
+   "sha256": "c7aca1cbc374eeb9118c41499a01f3ba75ca67034112450013e497ceb3d2bbb6",
+   "source": "https://facebook.com/favicon.ico"
+  },
+  "fedex": {
+   "dhash": "10a2185242540a00",
+   "sha256": "4cd0062fb79d18b0b14e7c8ae8fdaae0d595d58b68d10bb679d915e1185e8ec5",
+   "source": "https://fedex.com/etc.clientlibs/designs/fedex-common/images/resources/fx-favicon.ico"
+  },
+  "fidelity": {
+   "dhash": "71cc8e8e8686c640",
+   "sha256": "e44f3efd8bf80450728b582a6b1177d8abf01baccf337b850f1dbb8482dd5d9e",
+   "source": "https://fidelity.com/favicon.ico"
+  },
+  "fifa": {
+   "dhash": "13073e3c1d383a38",
+   "sha256": "7bd2e9ca9ac54d78d03f8d3fd6b5cd3d83f9b2220c3b0632f1ed6f0b94170e8b",
+   "source": "https://fifa.com/favicon.ico"
+  },
+  "fukuoka_financial_group": {
+   "dhash": "5104d5d53c80c118",
+   "sha256": "71ae1a7155432066ba411365fdad7daec102e95c2954d85df1eb2c56a39a8adb",
+   "source": "https://www.fukuoka-fg.com/favicon.ico"
+  },
+  "gosuslugi": {
+   "dhash": "e04545b282062282",
+   "sha256": "eca96b7596843d0f4d8719d963364a02c52f886166932b3ecae12fdd31e3dfd4",
+   "source": "https://gosuslugi.ru/favicon.ico"
+  },
+  "hmrc": {
+   "dhash": "2a4daa692b2b2bd0",
+   "sha256": "785eadd1d0f32a42725117b64edfb1c2169a8766eb861c41f72b089aa26f7f8a",
+   "source": "https://gov.uk/favicon.ico"
+  },
+  "hsbc": {
+   "dhash": "8245f0b2b2f04582",
+   "sha256": "72a2ec9e5c95313cb422966a2d670b0e5799f70b0dafaf6d955e0a1c9658a2af",
+   "source": "https://hsbc.com/assets/basekit.features/favicon/images/favicon.ico"
+  },
+  "icbc": {
+   "dhash": "69c8aae868729090",
+   "sha256": "575ce7bdb71ae462b4611ebf73281845053c7d25b6ea83e5704fcdd0197d99ac",
+   "source": "https://www.icbc.com.cn/favicon.ico"
+  },
+  "instagram": {
+   "dhash": "86334955554d3b9e",
+   "sha256": "a209ba25ad83def86481444ef930d81924f38ca39b6548c0d30698c70e23d9f2",
+   "source": "https://instagram.com/favicon.ico"
+  },
+  "irs": {
+   "dhash": "f4ccb4b5bd233ac8",
+   "sha256": "db4a52ead820d683e84b66b55df4cf784368e916463f6a431abfde46b304a1fd",
+   "source": "https://irs.gov/favicon.ico"
+  },
+  "ja_net_bank": {
+   "dhash": "0016962e8c8c9c21",
+   "sha256": "0ca826828df89286179fa51849952c52325c0751befef3ca6fab5b592a6443d6",
+   "source": "https://www.jabank.jp/favicon.ico"
+  },
+  "jaccs": {
+   "dhash": "08209fdaa1160082",
+   "sha256": "4b3e0e9bfa6b656467cdfb9c8ca1a3cce5ac1d8b6dc5928d520ed6defe722ddb",
+   "source": "https://jaccs.co.jp/favicon.ico"
+  },
+  "jal_mileage_bank": {
+   "dhash": "4d9abab6a686c471",
+   "sha256": "b60746b3cae6fdba953bae42e6f11cce8456af01fad2e3e77343aa3c47a01581",
+   "source": "https://jal.co.jp/favicon.ico"
+  },
+  "jalan_net": {
+   "dhash": "402cd363398b6619",
+   "sha256": "96e14261cbc8aa3a2373d777ad747f8fd1693d77196f9c0920a1366d51643e2e",
+   "source": "https://jalan.net/favicon.ico"
+  },
+  "jalan_net_1": {
+   "dhash": "402cd363398b6619",
+   "sha256": "96e14261cbc8aa3a2373d777ad747f8fd1693d77196f9c0920a1366d51643e2e",
+   "source": "https://jalan.net/favicon.ico"
+  },
+  "japan_pension_service": {
+   "dhash": "70d8aeaeaeaecc70",
+   "sha256": "2e701405c4909e39a60b569268f7f194592de84b81c0ee26cdeb3945f1505e33",
+   "source": "https://www.nenkin.go.jp/favicon.ico"
+  },
+  "japan_post": {
+   "dhash": "00e4ea8898949c00",
+   "sha256": "6b5e72efe3c8446d34a6f6079769820b8cb803ed2c9242dc6ac2690da3bdcb4d",
+   "source": "https://www.japanpost.jp/favicon.ico"
+  },
+  "japan_post_1": {
+   "dhash": "00e4ea8898949c00",
+   "sha256": "6b5e72efe3c8446d34a6f6079769820b8cb803ed2c9242dc6ac2690da3bdcb4d",
+   "source": "https://www.japanpost.jp/favicon.ico"
+  },
+  "japan_post_bank": {
+   "dhash": "00e4ea8898949c00",
+   "sha256": "6b5e72efe3c8446d34a6f6079769820b8cb803ed2c9242dc6ac2690da3bdcb4d",
+   "source": "https://www.japanpost.jp/favicon.ico"
+  },
+  "jibun_bank": {
+   "dhash": "6ad292e468545c48",
+   "sha256": "30e293daf8781a490d6d46c0581a39662fe2cd125771ce40863f234321efbf8a",
+   "source": "https://www.jibunbank.co.jp/favicon.ico"
+  },
+  "jre_point": {
+   "dhash": "62f19c2c2e9cd162",
+   "sha256": "41f4f3407334e52b4e222efeef6ee9f0d061af9065dbba563193b89051a27e64",
+   "source": "https://www.jrepoint.jp/favicon.ico"
+  },
+  "kuroneko_yamato": {
+   "dhash": "00f0e6c6f0ece000",
+   "sha256": "991527b1e98d934c69892d0d9b9f2135b9e258bf6091bca5e8f6508f9262ce26",
+   "source": "https://www.yamato-hd.co.jp/favicon.ico"
+  },
+  "lawson": {
+   "dhash": "c892cccccccccaf0",
+   "sha256": "88a6e284a1928260a2bf00514424065389a91b389eeadd8edfbb88f23a97a8d6",
+   "source": "https://www.lawson.co.jp/favicon.ico"
+  },
+  "ledger": {
+   "dhash": "4d4d21a4a0314d4d",
+   "sha256": "43a7eb7c14113779fbdf08dd97d537d5356103278f48320e5776193dfdf2ed1e",
+   "source": "https://ledger.com/favicon.ico"
+  },
+  "line": {
+   "dhash": "f08e073b3b8eecd0",
+   "sha256": "b7a1ed01342415d17f5895fe252b5edbbecd72a5d512741cfde5c146ccc1fe2c",
+   "source": "https://line.me/favicon.ico"
+  },
+  "linkedin": {
+   "dhash": "c2bab6a2aababac4",
+   "sha256": "a0b21176223a7806a8d1270346fd32d66f3c432a24e3ff11cc6da80a7386ae23",
+   "source": "https://www.linkedin.com/favicon.ico"
+  },
+  "lowe_s": {
+   "dhash": "6800f0e007d00000",
+   "sha256": "c5326aaee3fe16fe983489c5e09ab5066bc9ad9ca8e64dce75674fc7fbe798ac",
+   "source": "https://lowes.com/favicon.ico"
+  },
+  "lufthansa": {
+   "dhash": "cc860fd8713986cc",
+   "sha256": "b2ef4ff8704ec0de1fd7ca703ce4afbeb3b56ec27bfd12bdb6146c0213ba6a1b",
+   "source": "https://lufthansa.com/favicon.ico"
+  },
+  "mailru": {
+   "dhash": "cc962b55552b96cc",
+   "sha256": "566e3756d1797dcec1f888afe651cbf430b290d8b8391902ff7cb1700aaa5ef2",
+   "source": "https://mail.ru/favicon.ico"
+  },
+  "marriot": {
+   "dhash": "70cc8e96968eccf0",
+   "sha256": "c0ec1e9ed76da13591f4309bfef7cb19d93095383b17b59767c6aa5589c5d6a7",
+   "source": "https://marriott.com/favicon.ico"
+  },
+  "mastercard": {
+   "dhash": "01ccc48282c4cc01",
+   "sha256": "0ef13de4cf113a7f201c32a26d1dc0a7ab62de2fdd569554b08fd2b74ad92b4f",
+   "source": "https://mastercard.com/etc.clientlibs/marts/clientlibs/clientlib-site/resources/icons/mastercard-favicon.ico"
+  },
+  "mauritius_commercial_bank": {
+   "dhash": "4c3cf8d948ab96e8",
+   "sha256": "37f87ed418bd3a358bf83bf31a4790d2f0da946fa05798829f9463892de8a7c5",
+   "source": "https://mcb.mu/ResourcePackages/MCBMU/assets/dist/images/favicon.ico"
+  },
+  "meta": {
+   "dhash": "44ccb23369cc9628",
+   "sha256": "feb29e10164c88c5d18eb24c4e672c76ce5ac7a26417273502b23b5742fa202c",
+   "source": "https://meta.com/favicon.ico"
+  },
+  "metamask": {
+   "dhash": "828e8e8ee8e896b2",
+   "sha256": "83f58711d3d5b98172bbcc5896be9a609d1bb173869aebc4f489d00ae1d0ad76",
+   "source": "https://metamask.io/favicon.ico"
+  },
+  "microsoft_account": {
+   "dhash": "0c0c0c0c2c2c2c2c",
+   "sha256": "24880d2227b347112e7e59301efb9c85ad9344e448847ecae50bb53a86be2f2e",
+   "source": "https://microsoft.com/favicon.ico"
+  },
+  "microsoft_hr": {
+   "dhash": "0c0c0c0c2c2c2c2c",
+   "sha256": "24880d2227b347112e7e59301efb9c85ad9344e448847ecae50bb53a86be2f2e",
+   "source": "https://microsoft.com/favicon.ico"
+  },
+  "microsoft_onedrive": {
+   "dhash": "8271e894079ac400",
+   "sha256": "98421217eacae575fe52d22387f224bf1a41ae032c2789688ad59f9595457026",
+   "source": "https://onedrive.live.com/favicon.ico"
+  },
+  "mintsifry": {
+   "dhash": "e60b3f2a2b330fe0",
+   "sha256": "de0a0060cc4ee984ac30c8c92512d6f976c110eea18c5536ad62339add9cefd0",
+   "source": "https://digital.gov.ru/favicon.png"
+  },
+  "mizuho_bank": {
+   "dhash": "cc32331b4b6b8461",
+   "sha256": "2f84d8f2ed8bbd6eae40b3b906536305db5c2f3efcecf6dcc5b8895c83addae0",
+   "source": "https://www.mizuhobank.co.jp/favicon.ico"
+  },
+  "monex_securities": {
+   "dhash": "336dd4d4f1b3e9cc",
+   "sha256": "5e9979448b5e846ee18d300c2a638347a64fc0c8e97df8ff1de22ebd5ab9cde1",
+   "source": "https://www.monex.co.jp/favicon.ico"
+  },
+  "mos_ru": {
+   "dhash": "e896b23232b20ef0",
+   "sha256": "8136b25601db40a65465a5b81a511c0a3518f62c48f4ab89885259460e5d9366",
+   "source": "https://mos.ru/favicon.ico"
+  },
+  "mufg": {
+   "dhash": "31cc96333396cc28",
+   "sha256": "bb7dd0ed1fa5cff2d28bb213bf341ee4b29f68154d9c59e6735359d103229ac3",
+   "source": "https://www.mufg.jp/favicon.ico"
+  },
+  "muji": {
+   "dhash": "19a65979696b940b",
+   "sha256": "90bbc2fc3f99e11ebf84b93456b4a00658d5ecf0a0fb5f5cbf5981a0f26055dd",
+   "source": "https://www.muji.com/favicon.ico"
+  },
+  "mvideo": {
+   "dhash": "f0c4a4e52d34f4f0",
+   "sha256": "3154c2f43ef5af47b07a2c8c41d0c28edfeb3939ab54cf758bf5c1fdcc31b69e",
+   "source": "https://mvideo.ru/favicon.ico"
+  },
+  "my_number_portal": {
+   "dhash": "d8f4c8e9cccab2f0",
+   "sha256": "03f331b7bb890c24dc47df8bb1b5094fdf13aebe7608ca691a32c54b24694e85",
+   "source": "https://myna.go.jp/favicon.ico"
+  },
+  "national_tax_agency": {
+   "dhash": "8270e896968e9600",
+   "sha256": "b7a7498e31a81e85ec90c524be02ce38380e88f05b523b8a4fe6872b1b8815b6",
+   "source": "https://www.nta.go.jp/favicon.ico"
+  },
+  "navy_federal_credit_union": {
+   "dhash": "e88e175555168ee8",
+   "sha256": "e7092f5fbcf49961c5045167fba18819ec534cfc4bdef24cbc8e7aab86196ebc",
+   "source": "https://navyfederal.org/favicon.ico"
+  },
+  "netflix": {
+   "dhash": "ccecece8e8c8c8cc",
+   "sha256": "7f72230d0a9f7107cc6b0f2af2f6ec4a2a709bbda61db25001990cb6b54a618e",
+   "source": "https://netflix.com/favicon.ico"
+  },
+  "nhk": {
+   "dhash": "0ae6e6c4dc9898ad",
+   "sha256": "220a09a6813c4e6bc65d53c72f00a5119180742e829bc086068ffc58effd2814",
+   "source": "https://www.nhk.or.jp/favicon.ico"
+  },
+  "nintendo": {
+   "dhash": "60e8cc60f0f0e8cc",
+   "sha256": "9ffe8975cf847fb79b1c7ae2cf7f0fcfafaf046f1c76024e584881d782fe21c4",
+   "source": "https://nintendo.com/favicon.ico"
+  },
+  "nintendo_1": {
+   "dhash": "60e8cc60f0f0e8cc",
+   "sha256": "9ffe8975cf847fb79b1c7ae2cf7f0fcfafaf046f1c76024e584881d782fe21c4",
+   "source": "https://nintendo.com/favicon.ico"
+  },
+  "ntt_communications": {
+   "dhash": "2000a6a298cc0080",
+   "sha256": "e642b709262cc4b008292f5a1e8cfd6db539b6afe3e77aab3cf0c9e04a7b0484",
+   "source": "https://www.ntt.com/favicon.ico"
+  },
+  "ntt_docomo": {
+   "dhash": "0041a45b55a41100",
+   "sha256": "ed8d1953fb8ef5088e0696329dbadadae1179200cecc18133b4668ce7b15771d",
+   "source": "https://www.docomo.ne.jp/favicon.ico"
+  },
+  "orico_bank": {
+   "dhash": "f0f0e8e8f070d0f4",
+   "sha256": "8b7e7c2e7e9a310dfc92b56030a0264b0f3834a0abbcd083c728f62efcbbb07b",
+   "source": "https://www.orico.co.jp/favicon.ico"
+  },
+  "ozon": {
+   "dhash": "aa555377692958a6",
+   "sha256": "45503fec7b7420da5ecb0761cc16ae3921dad62c3b596f8c3b5c1cdc62fa4eeb",
+   "source": "https://finance.ozon.ru/favicon.ico"
+  },
+  "paypal": {
+   "dhash": "30686860e8c0e230",
+   "sha256": "89fbbba0f6d9893b9096874570d9a3c7ef5d473cbed6ddf7845345533ecb276b",
+   "source": "https://paypal.com/favicon.ico"
+  },
+  "paypay_bank": {
+   "dhash": "b27d9791b1973d22",
+   "sha256": "2e3cf87dcb91e50be97d685fb04f79524439b84c172a06a484828fdf67307af6",
+   "source": "https://www.paypay-bank.co.jp/favicon.ico"
+  },
+  "philips": {
+   "dhash": "e0dccc8eaa8ecc61",
+   "sha256": "248c837dfc81f977732aea1ae36a99b0924014a154399c14898cebba9f10ead6",
+   "source": "https://philips.com/favicon.ico"
+  },
+  "playstation": {
+   "dhash": "008f333f03730e00",
+   "sha256": "e69bda144a9ed465c5a6d5b3cb0de3f6b8bc35ac2bed41fafe9c1e437c2f6efb",
+   "source": "https://sony.com/en/favicon.ico"
+  },
+  "pocket_card_co": {
+   "dhash": "2c68ccc4ccb13004",
+   "sha256": "67835d0626d5d566010419c5a3673e8fcbd13f6b1e282dcee5a7158b46903450",
+   "source": "https://www.pocketcard.co.jp/favicon.ico"
+  },
+  "postnl": {
+   "dhash": "a13c666b91063ca1",
+   "sha256": "ca2e2a7b471b5c22cc0a07bcb7e90e149a4d804f574320f8bc2e2ff3542a52ef",
+   "source": "https://postnl.nl/favicon.ico"
+  },
+  "rakuten_bank": {
+   "dhash": "606069686869e0e2",
+   "sha256": "8feead898510460f432aa0e3343c55eb62352389ebc09826fd679eaef02a4b73",
+   "source": "https://www.rakuten-bank.co.jp/favicon.ico"
+  },
+  "resona_bank": {
+   "dhash": "61f0b06b2bb6cc71",
+   "sha256": "b49947423d9a17593d0df959e9db175bcb73fb359e6b917bdfc55de6a79661ff",
+   "source": "https://www.resonabank.co.jp/favicon.ico"
+  },
+  "roundcube": {
+   "dhash": "61cc8a030fc4e070",
+   "sha256": "4cc006799f5679ec18192d3ba8f0423564f540b63e55811b2f234cf886f4908e",
+   "source": "https://roundcube.net/favicon.ico"
+  },
+  "rtl": {
+   "dhash": "0042005353004100",
+   "sha256": "751f1defec68ec86e43a6a71f4ca1e2a23ddc51ee8c010a4ebf3ae784a961295",
+   "source": "https://rtl.de/favicon.ico"
+  },
+  "sagawa_express": {
+   "dhash": "0021dc715b940100",
+   "sha256": "88d386f9252fb2566cd5e558517baf2ceeb2cf06d7db9a8d897ec22ed99f3366",
+   "source": "https://www.sagawa-exp.co.jp/favicon.ico"
+  },
+  "saison_id": {
+   "dhash": "00ca2362070f2300",
+   "sha256": "98ed9b9c4f65571c88abf98b8cd778cd4212157af51b108a90ca746af6d48c78",
+   "source": "https://saisoncard.co.jp/favicon.ico"
+  },
+  "saison_jp": {
+   "dhash": "00ca2362070f2300",
+   "sha256": "98ed9b9c4f65571c88abf98b8cd778cd4212157af51b108a90ca746af6d48c78",
+   "source": "https://saisoncard.co.jp/favicon.ico"
+  },
+  "santander": {
+   "dhash": "305239ecd4cae870",
+   "sha256": "f1df0e1f9c2f4f1f07895f517ce9a444b18b523960424cda3adc56481b1f7fbc",
+   "source": "https://santander.com/content/dam/santander-com/resources/favicon/apple-touch-icon.png"
+  },
+  "sbi_holdings": {
+   "dhash": "2301b4272b1b6f90",
+   "sha256": "7030849795ccda12e80d26b98c54c793fec989c6a4208bb690cd3eb5822e1c9c",
+   "source": "https://www.sbigroup.co.jp/favicon.ico"
+  },
+  "sbi_neotrade_securities": {
+   "dhash": "60b07ec8eca1f238",
+   "sha256": "2e8bb7ff0876bd1236930dc03bcd0586ed842018de4e54e12260fbbea4fc3d34",
+   "source": "https://www.sbineotrade.jp/favicon.ico"
+  },
+  "sbi_shinsei_bank": {
+   "dhash": "618c7ecbd8f4d000",
+   "sha256": "12ba1bf899f118749267777d9843cb16bc0b21d2658eb9c8f58675048dd6ee03",
+   "source": "https://sbishinseibank.co.jp/favicon.ico"
+  },
+  "sbi_shinsei_bank_1": {
+   "dhash": "618c7ecbd8f4d000",
+   "sha256": "12ba1bf899f118749267777d9843cb16bc0b21d2658eb9c8f58675048dd6ee03",
+   "source": "https://sbishinseibank.co.jp/favicon.ico"
+  },
+  "sharefile": {
+   "dhash": "f070dec676b6b6a4",
+   "sha256": "6c52e21297f122f943a967c2e53a4281d5d78acdfcb46f5262ab943b0b02ce43",
+   "source": "https://sharefile.com/favicon.ico"
+  },
+  "sharepoint": {
+   "dhash": "0c0c0c0c2c2c2c2c",
+   "sha256": "24880d2227b347112e7e59301efb9c85ad9344e448847ecae50bb53a86be2f2e",
+   "source": "https://microsoft.com/favicon.ico"
+  },
+  "shell": {
+   "dhash": "71ccaa2b0b96d4d0",
+   "sha256": "3625883dcd55de804853d4fcefbeb9d14e3432c55925b23e3309b849d78c31d8",
+   "source": "https://shell.com/favicon.ico"
+  },
+  "shopify": {
+   "dhash": "707cdc9c9c9e9efc",
+   "sha256": "63e295c67d68907dff29fa4450c73cf7fa5fd1b9c099054c5e9def5ec75edd6b",
+   "source": "https://shopify.com/favicon.ico"
+  },
+  "smbc": {
+   "dhash": "1826668e98968e70",
+   "sha256": "39f657de0fe5f536dd5514e93aedd23fb501874975a0272d8777309b6af8b567",
+   "source": "https://www.smbc.co.jp/favicon.ico"
+  },
+  "spotify": {
+   "dhash": "f0ccbe2b16b6c4f0",
+   "sha256": "3b1b417e1e33509f997f1e3f4a52824aacad911d695b80edc86a92a11ba3fe47",
+   "source": "https://spotify.com/favicon.ico"
+  },
+  "ssa": {
+   "dhash": "09542b5b2dd50bc3",
+   "sha256": "c3c2384774946c625d150c4f0d144c2581392f2492d1d7c56c854a66183cca37",
+   "source": "https://www.ssa.gov/favicon.ico"
+  },
+  "stoloto": {
+   "dhash": "3c4cca8a8a96e430",
+   "sha256": "74af04be61e1ae7a030b4cdc67df2286f7984758e6a700a594fb02cfa3f26a11",
+   "source": "https://stoloto.ru/favicon.ico"
+  },
+  "sumitomo_mitsui": {
+   "dhash": "1826668e98968e70",
+   "sha256": "39f657de0fe5f536dd5514e93aedd23fb501874975a0272d8777309b6af8b567",
+   "source": "https://www.smbc.co.jp/favicon.ico"
+  },
+  "tiktok": {
+   "dhash": "02240797252d9c40",
+   "sha256": "008a381a0f9f5c00308caa712a3c02c0b74a43d2b974b1a68555a67427382f08",
+   "source": "https://tiktok.com/favicon.ico"
+  },
+  "trust_wallet": {
+   "dhash": "e0e4a0a0a2c4e871",
+   "sha256": "61554ebd90c7d49f68815d77a968f0783939d3faed718b0ae55d5f9932de3d44",
+   "source": "https://trustwallet.com/favicon.ico"
+  },
+  "turkish_airlines": {
+   "dhash": "f0dc8ecc8f9ee4f0",
+   "sha256": "4892c9b2339655aab9b43b392155d2f85f4e122c8a3f17cc5911fbe7d4bce35f",
+   "source": "https://turkishairlines.com/favicon.ico"
+  },
+  "uniqlo": {
+   "dhash": "696d6d6d696b292d",
+   "sha256": "0768a371e92d02549a59575572dce8b96eb4a6acb3bfdf3d046f37ac55c7204c",
+   "source": "https://uniqlo.com/favicon.ico"
+  },
+  "ups": {
+   "dhash": "b8fcc8d29488c870",
+   "sha256": "c39ae6953d6977cf403f54f9319eddaeb5b850e4cd294647ba8a728340bc88b8",
+   "source": "https://ups.com/favicon.ico"
+  },
+  "usaa": {
+   "dhash": "cd6c37333359170b",
+   "sha256": "d461d102dcfc00a878b29be3000ea2f8dae37c2a0a8862c909037609d289ab6f",
+   "source": "https://usaa.com/favicon.ico"
+  },
+  "usps": {
+   "dhash": "f8fe0e39273ef28e",
+   "sha256": "bd454eb843bcdc80142ffffe63713f8ad9c488fff202076de555ceea82405ee5",
+   "source": "https://usps.com/favicon.ico"
+  },
+  "visa": {
+   "dhash": "00d4d4d4c0d4d400",
+   "sha256": "ecc3e2285b3c8e08189d7153f8527793b8eba52a15a263dcbd9e67e20a273215",
+   "source": "https://visa.com/favicon.ico"
+  },
+  "walmart": {
+   "dhash": "70b296cccc96b270",
+   "sha256": "2b6339111188525a43c7019a2416b0286f020a9d87edd155ca3e3c2e0c1f24cf",
+   "source": "https://walmart.com/favicon.ico"
+  },
+  "waon_point": {
+   "dhash": "a855555555556996",
+   "sha256": "947d9e4b66524085860d7bc0390ed8f452a8cb01145b639dc3e7875a03b6065f",
+   "source": "https://aeon.co.jp/favicon.ico"
+  },
+  "wells_fargo": {
+   "dhash": "51a857532b2ad52a",
+   "sha256": "02b02a61509db27d73ba43359defd40161f70bfe2e569bea5133bb25b3865e03",
+   "source": "https://wellsfargo.com/favicon.ico"
+  },
+  "whatsapp": {
+   "dhash": "e88e6b4369390e28",
+   "sha256": "3c6ba2a596a3f4646eb5126c020a24c144f6b8af481abd7fb4ecbbaffaf06c5f",
+   "source": "https://whatsapp.com/favicon.ico"
+  },
+  "wildberries": {
+   "dhash": "a81447351513ac82",
+   "sha256": "b72e6c3892fd6faa787c92563d435f7871d388b06ee1e4eece9a7d4071fecbf0",
+   "source": "https://wildberries.ru/favicon.ico"
+  },
+  "yamato_transport": {
+   "dhash": "00f0e6c6f0ece000",
+   "sha256": "991527b1e98d934c69892d0d9b9f2135b9e258bf6091bca5e8f6508f9262ce26",
+   "source": "https://www.yamato-hd.co.jp/favicon.ico"
+  },
+  "yodobashi": {
+   "dhash": "9c8c4c61a323464e",
+   "sha256": "1b1c1dfe2091e88e047aa57b9c77a52a549bc9f4b84cbd340e4ce44a1d6eed79",
+   "source": "https://www.yodobashi.com/favicon.ico"
+  },
+  "yu_pack": {
+   "dhash": "00e4ea8898949c00",
+   "sha256": "6b5e72efe3c8446d34a6f6079769820b8cb803ed2c9242dc6ac2690da3bdcb4d",
+   "source": "https://www.japanpost.jp/favicon.ico"
+  }
+ },
+ "max_hamming": 4,
+ "version": 1
+}

@@ -8,11 +8,13 @@ try:
     from ..orchestrator.state import PhishingState, BrandEvidence, AgentStepTrace
     from ..brands.matcher import get_brand_registry, extract_hostname, normalize_display_text
     from ..llm.client import get_llm_client, LLMUnavailable
+    from ..brands.icons import match_icon, icon_from_data_uri
     from ..llm import prompts
 except (ImportError, ValueError):
     from orchestrator.state import PhishingState, BrandEvidence, AgentStepTrace
     from brands.matcher import get_brand_registry, extract_hostname, normalize_display_text
     from llm.client import get_llm_client, LLMUnavailable
+    from brands.icons import match_icon, icon_from_data_uri
     from llm import prompts
 
 
@@ -136,6 +138,17 @@ class VisionAgent:
                     brand_assets.append(host)
                     break
 
+        # The brand's own site icon embedded in the page (inline data: favicon) or an icon-sized image object: reference icons of
+        # the registry matched by perceptual hash (ТЗ 4.1.2.1, 4.1.4.3). Only an unambiguous match names the brand.
+        icon_brand = None
+        if not page_brand:
+            icon_b64 = icon_from_data_uri(assets_src.get("favicon"))
+            candidates = match_icon(icon_b64) if icon_b64 else []
+            if len({b for b, _ in candidates}) == 1:
+                owner = self.registry.by_id.get(candidates[0][0])
+                if owner and not (page_host and self.registry.is_domain_allowed(owner["brand_id"], page_host)):
+                    page_brand, source, confidence, icon_brand = owner, "brand_icon", 0.8, candidates[0]
+
         lure_type = None
         # 2. The VLM looks at the screenshot / image: brand it presents itself as, what it asks the viewer to do
         if self.llm.enabled and not page_brand and state.screenshot_base64 and len(state.screenshot_base64) > 1000:
@@ -223,7 +236,7 @@ class VisionAgent:
                 # data (a shop checkout that shows a bank's payment logo is not a phishing page of that bank).
                 vlm_asks_data = str((vlm_result or {}).get("asks_user_action") or "").lower() in DATA_ACTIONS \
                     or (vlm_result or {}).get("login_form_visible") is True
-                confirmed = (source == "lookalike_domain" or (source in ("title", "brand_assets") and asks_for_data)
+                confirmed = (source == "lookalike_domain" or (source in ("title", "brand_assets", "brand_icon") and asks_for_data)
                              or (source == "vlm" and (asks_for_data or vlm_asks_data)))
                 if confirmed:
                     brand_ev.brand_impersonation_confirmed = True
@@ -231,6 +244,9 @@ class VisionAgent:
                         evidence = {"type": "image_region", "box": brand_ev.logo_box, "label": f"Логотип {page_brand['display_name']} (VLM)"}
                     elif source == "brand_assets":
                         evidence = {"type": "url", "value": ", ".join(brand_assets), "label": "Значок сайта / логотип с домена бренда"}
+                    elif source == "brand_icon":
+                        evidence = {"type": "text", "value": f"перцептивный хеш значка совпал с эталоном {page_brand['display_name']} "
+                                                             f"(расстояние {icon_brand[1]} из 64 бит)", "label": "Значок сайта (эталон реестра)"}
                     elif source == "title":
                         title_snip = (page.get("evidence_snippets") or att.get("evidence_snippets") or {}).get("title") or title_text
                         evidence = {"type": "dom", "value": title_snip, "label": "Заголовок страницы"}

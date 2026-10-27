@@ -27,6 +27,7 @@ try:
     from .engine import build_record, rule_matches
     from .zero_fpr_guard import ZeroFPRGuard
     from .yara_gen import hash_rule, hash_rules_file
+    from ..brands.icons import load_icons
     from ..features.fingerprints import dhash64, hamming
 except (ImportError, ValueError):
     from db.database import SessionLocal
@@ -37,6 +38,7 @@ except (ImportError, ValueError):
     from rules.engine import build_record, rule_matches
     from rules.zero_fpr_guard import ZeroFPRGuard
     from rules.yara_gen import hash_rule, hash_rules_file
+    from brands.icons import load_icons
     from features.fingerprints import dhash64, hamming
 
 PACKAGE_FORMAT = "dw2-artifact-package/1.0"
@@ -171,6 +173,7 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
             "display_name": b["display_name"],
             "keywords": registry.brand_keywords(b["brand_id"]),
             "allowed_domain_patterns": b.get("allowed_domain_patterns", []),
+            "reference_icon": (load_icons()[0].get(b["brand_id"]) or {}).get("dhash"),
             "observed_impersonations": impersonated.get(b["display_name"], 0),
         })
 
