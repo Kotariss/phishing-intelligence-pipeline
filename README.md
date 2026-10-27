@@ -210,6 +210,7 @@ python phishctl.py --help
 | `analyze <файл \| каталог образца \| URL> [--json out.json] [--online]` | анализ одного объекта; список URL (`.txt`, по одному на строку), ZIP-архив или каталог объектов запускаются пакетно, как `analyze-dir` |
 | `analyze page.html --url <URL> [--screenshot shot.png]` | анализ сохранённой страницы со снимком экрана |
 | `analyze-dir <dir \| .zip \| urls.txt> [--out reports/results.jsonl] [--limit N]` | пакетный анализ каталога, ZIP-архива (с защитой от выхода за каталог и лимитами) или списка URL; продолжает с места остановки, битые объекты не прерывают прогон; повторный объект помечается `duplicate_of` |
+| `build-kb <dir \| .zip \| urls.txt>` | построение базы знаний: анализ каждого объекта с сохранением в базу, затем статистика |
 | `kb-stats` | статистика базы знаний, частота техник, бренды |
 | `cluster [--min-size 2] [--visual]` | фишинговые кампании (общий kit / инфраструктура; `--visual` — по перцептивному хешу скриншота) |
 | `export-package [--out exports/package]` | версионированный пакет артефактов (JSON + YARA) |
@@ -223,6 +224,22 @@ python phishctl.py --help
 
 Глобальный флаг `--llm local|cloud` переопределяет режим модели для команды. Если модель не настроена, команда
 сообщает, каких переменных не хватает.
+
+## Демонстрационные образцы и данные
+
+В репозитории лежат **синтетические** образцы `samples/demo/` (выдуманные адреса и тексты; генерирует `scripts/make_demo_samples.py`):
+фишинговые письма и HTML-вложение, легитимные письмо и страница входа, изображение-приманка.
+
+```bash
+python phishctl.py analyze samples/demo/01_phish_email_bank_spoof.eml
+python phishctl.py analyze samples/demo/05_legit_login_page.html --url https://www.examplebank.example/login   # сохранённой странице нужен её адрес
+python phishctl.py build-kb samples/demo
+python phishctl.py kb-stats
+```
+
+Данные Заказчика (архивы `target_brands.zip` и `html_phishing.zip`) в репозиторий не входят: их передаёт Заказчик. Распакуйте их в
+каталог `file_for_case/` в корне репозитория (`file_for_case/keis2/<бренд>/<id>/`, `file_for_case/html_phishing2026/`,
+`file_for_case/grouped_png_phishing2026/`) и выполните `python phishctl.py import-corpus file_for_case`.
 
 ## Тесты
 

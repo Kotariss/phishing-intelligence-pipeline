@@ -1,0 +1,25 @@
+Subject: Your card will be blocked today
+From: "Sberbank" <security@sber-secure-alerts.example>
+To: client@mail.example
+Date: Mon, 02 Mar 2026 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============6888675413296874702=="
+
+--===============6888675413296874702==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Dear client, Sberbank detected a suspicious payment. Confirm your identity wi=
+thin 24 hours: https://login.sber-secure-alerts.example/verify
+
+--===============6888675413296874702==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<p>Dear client, Sberbank detected a suspicious payment.</p><p><a href=3D"http=
+s://login.sber-secure-alerts.example/verify">Confirm your identity</a> within=
+ 24 hours.</p>
+
+--===============6888675413296874702==--

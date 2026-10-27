@@ -1,0 +1,24 @@
+Subject: Your monthly statement is ready
+From: "Example Bank" <news@examplebank.example>
+To: client@mail.example
+Date: Mon, 02 Mar 2026 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============0673007384892729410=="
+
+--===============0673007384892729410==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Your monthly statement is available in your online account. https://www.examp=
+lebank.example/statements
+
+--===============0673007384892729410==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<p>Your monthly statement is available in your <a href=3D"https://www.example=
+bank.example/statements">online account</a>.</p>
+
+--===============0673007384892729410==--

@@ -4,6 +4,7 @@ Command-line interface (ТЗ п. 4.8.1.1).
     python phishctl.py import-corpus file_for_case
     python phishctl.py analyze <file | sample_dir | URL> [--json out.json]
     python phishctl.py analyze-dir <dir> [--out reports/results.jsonl] [--limit N]     # resumable
+    python phishctl.py build-kb <dir|zip|urls.txt> [--out reports/results.jsonl]          # analyse and store in the knowledge base
     python phishctl.py kb-stats
     python phishctl.py cluster [--min-size 2]
     python phishctl.py export-package [--out exports/package]
@@ -217,6 +218,14 @@ def cmd_analyze(args):
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump(state.public_dump(), f, ensure_ascii=False, indent=2)
         _log(f"full result written to {args.json}")
+
+
+def cmd_build_kb(args):
+    """Builds the knowledge base from a directory / archive / URL list (analysis of every object, results stored) and prints
+    its statistics: ТЗ 4.8.1.1 «построение базы знаний», ПМИ А-9."""
+    args.root = args.root
+    cmd_analyze_dir(args)
+    cmd_kb_stats(args)
 
 
 def cmd_analyze_dir(args):
@@ -493,6 +502,13 @@ def main(argv=None):
     p.add_argument("--limit", type=int)
     p.add_argument("--online", action="store_true")
     p.set_defaults(func=cmd_analyze_dir)
+
+    p = sub.add_parser("build-kb", help="build the knowledge base from a directory, ZIP archive or URL list and print its statistics")
+    p.add_argument("root")
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "results.jsonl"))
+    p.add_argument("--limit", type=int)
+    p.add_argument("--online", action="store_true")
+    p.set_defaults(func=cmd_build_kb)
 
     p = sub.add_parser("kb-stats", help="knowledge-base statistics and technique frequency")
     p.set_defaults(func=cmd_kb_stats)
