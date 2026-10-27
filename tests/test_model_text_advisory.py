@@ -33,3 +33,8 @@ def test_model_text_with_an_independent_signal_counts(other):
 def test_image_findings_are_not_advisory():
     state = _run("IMAGE_CREDENTIAL_PROMPT", "IMAGE_FAKE_DOCUMENT_VIEWER")
     assert state.verdict == "SUSPICIOUS" and "model_text_advisory" not in state.network_evidence
+
+
+def test_fake_human_check_in_an_attachment_is_independent_evidence():
+    state = _run("CONTENT_LLM_LURE", "ATTACH_FAKE_HUMAN_CHECK")
+    assert "model_text_advisory" not in state.network_evidence and state.verdict in ("SUSPICIOUS", "MALICIOUS")

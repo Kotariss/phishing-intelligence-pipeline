@@ -118,9 +118,10 @@ INDEPENDENCE_GROUPS: Dict[str, frozenset] = {code: frozenset(groups) for code, g
 }.items()}
 
 
-# Codes whose only source is the model's reading of the text (lure classifier and its quoted techniques). The model adds evidence but
+# Codes whose only source is the model's reading of the text (lure classifier and its quoted techniques); a fake human check inside an
+# HTML attachment is an anomaly of the attachment itself and stays independent evidence. The model adds evidence but
 # never decides alone (ТЗ 4.1.4.6, А.1.3): without any other independent evidence these codes are advisory and do not move the verdict.
-MODEL_TEXT_CODES = frozenset({"CONTENT_LLM_LURE", "CONTENT_ACCOUNT_THREAT", "CONTENT_VICTIM_ADDRESSED", "ATTACH_FAKE_HUMAN_CHECK"})
+MODEL_TEXT_CODES = frozenset({"CONTENT_LLM_LURE", "CONTENT_ACCOUNT_THREAT", "CONTENT_VICTIM_ADDRESSED"})
 
 
 def independent_groups(codes) -> set:
