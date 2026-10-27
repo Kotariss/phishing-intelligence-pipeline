@@ -289,6 +289,20 @@ def render_traces(result: Dict[str, Any]):
 
 
 # ------------------------------------------------------------------------------ full result
+def render_exports(result: Dict[str, Any]):
+    """Result of the object as JSON (verdict, reason codes, evidence — ТЗ 4.1.4.7, 4.1.9.3) and its YARA signature."""
+    rid = result.get("incident_id") or "result"
+    export = {k: v for k, v in result.items() if k != "screenshot_base64"}  # the screenshot is shown in the UI, not exported
+    yara = result.get("generated_yara_rule")
+    c1, c2 = st.columns(2)
+    c1.download_button("Скачать результат анализа (JSON)", json.dumps(export, ensure_ascii=False, indent=2, default=str),
+                       file_name=f"{rid}.json", mime="application/json", key=f"export_json_{rid}")
+    if yara:
+        c2.download_button("Скачать YARA-сигнатуру (.yar)", yara, file_name=f"{rid}.yar", key=f"export_yara_{rid}")
+    else:
+        c2.caption("YARA для объекта не сформирована: нет специфичных строк (Telegram/Discord, адрес приёма данных и т. п.).")
+
+
 def render_result(result: Dict[str, Any], catalogue: Dict[str, Any]):
     if result.get("error") and not result.get("verdict"):
         st.error(result["error"])
@@ -308,6 +322,7 @@ def render_result(result: Dict[str, Any], catalogue: Dict[str, Any]):
         st.progress(min(risk, 1.0))
         if top:
             st.markdown("**Главное:** " + "; ".join((catalogue.get(c) or {}).get("description", c) for c in top) + ".")
+        render_exports(result)
 
     summary, _ = _explanation_parts(result.get("explanation"))
     if summary:

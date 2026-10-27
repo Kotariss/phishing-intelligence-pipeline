@@ -1,7 +1,9 @@
 import collections
+import io
 import json
 import os
 import sys
+import zipfile
 
 import requests
 import streamlit as st
@@ -184,8 +186,17 @@ def page_package():
     c[1].metric("Обобщённых правил", s.get("rules", 0))
     c[2].metric("Сигнатур известного фишинга", s.get("known_signatures", 0))
     c[3].metric("YARA", s.get("yara_rules", 0))
-    st.download_button("Скачать пакет (JSON)", json.dumps(pkg, ensure_ascii=False, indent=2),
-                       file_name=f"package_v{data['version']}.json", mime="application/json")
+    pkg_json = json.dumps(pkg, ensure_ascii=False, indent=2)
+    pkg_yara = "\n".join(pkg.get("yara") or [])
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"package_v{data['version']}.json", pkg_json)
+        zf.writestr(f"package_v{data['version']}.yar", pkg_yara)
+    d = st.columns(3)
+    d[0].download_button("Скачать пакет (JSON)", pkg_json, file_name=f"package_v{data['version']}.json", mime="application/json")
+    d[1].download_button("Скачать YARA (.yar)", pkg_yara, file_name=f"package_v{data['version']}.yar", disabled=not pkg_yara)
+    d[2].download_button("Скачать пакет (ZIP: JSON + YARA)", buf.getvalue(), file_name=f"package_v{data['version']}.zip",
+                         mime="application/zip")
 
     contrib = pkg.get("rule_contribution") or {}
     st.subheader("Вклад правил в выявленные объекты")
