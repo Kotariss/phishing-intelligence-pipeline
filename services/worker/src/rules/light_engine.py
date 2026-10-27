@@ -11,10 +11,12 @@ from urllib.parse import urlparse
 try:
     from .engine import build_record, rule_matches
     from ..features.url_features import registrable_domain
+    from ..features.fingerprints import dhash64, hamming
     from ..sandbox_bridge import load_parsers
 except (ImportError, ValueError):
     from rules.engine import build_record, rule_matches
     from features.url_features import registrable_domain
+    from features.fingerprints import dhash64, hamming
     from sandbox_bridge import load_parsers
 
 
@@ -33,6 +35,8 @@ def record_for_object(data: bytes, name: str = "", url: str = "") -> Dict[str, A
                                dom_hash=parsed.get("dom_structural_hash"), extra_names=[os.path.basename(name)])
     else:
         rec = build_record(attachment=dict(parsed, filename=os.path.basename(name)), extra_names=[os.path.basename(name)])
+    if kind == "image" and parsed.get("screenshot_base64"):
+        rec["screenshot_dhash"] = dhash64(parsed["screenshot_base64"])
     rec["sha256"] = hashlib.sha256(data).hexdigest()
     rec["attachment_hashes"] = [m.get("sha256") for m in parsed.get("attachments_meta") or [] if m.get("sha256")]
     return rec
@@ -51,6 +55,10 @@ def apply_package(package: Dict[str, Any], rec: Dict[str, Any]) -> Dict[str, Any
     for host in hosts:
         if host and registrable_domain(host) in domains:
             reasons.append({"type": "known_signature", "indicator": "domain", "value": registrable_domain(host)})
+    for item in known.get("screenshot_dhash", []):  # perceptual hash of the screenshot / image
+        if rec.get("screenshot_dhash") and hamming(rec["screenshot_dhash"], item["dhash"]) <= item.get("max_hamming", 8):
+            reasons.append({"type": "known_signature", "indicator": "screenshot_dhash", "value": item["dhash"]})
+            break
     dom_hashes = {d["hash"] for d in known.get("dom_structural_hashes", [])}
     if rec.get("dom_hash") in dom_hashes:
         reasons.append({"type": "known_signature", "indicator": "dom_hash", "value": rec["dom_hash"]})

@@ -94,3 +94,29 @@ def test_known_signatures_are_checked_on_the_legitimate_set_and_include_file_has
     known = build_package(min_verdict="SUSPICIOUS")["known_phishing_signatures"]
     assert known["checked_on_benign"]["benign_objects"] > 0
     assert hashlib.sha256(data).hexdigest() in {h["sha256"] for h in known["attachment_sha256"]}
+
+
+def test_hash_yara_rules_and_perceptual_hashes_in_the_package(tmp_path):
+    """ТЗ 4.1.7.1, 4.1.9.3: YARA signature by file hash for known phishing files; perceptual hashes of screenshots."""
+    import hashlib
+    from rules.yara_gen import compile_check, hash_rule
+    from rules.light_engine import apply_package
+    from features.fingerprints import dhash64, hamming
+    data = TELEGRAM_KIT.encode()
+    run_file("hash_yara_kit.html", data)
+    pkg = build_package(min_verdict="SUSPICIOUS")
+    sha = hashlib.sha256(data).hexdigest()
+    rules = [r for r in pkg["yara_hash_rules"] if sha in r]
+    assert rules and compile_check('import "hash"\n' + rules[0])[0]
+    assert "screenshot_dhash" in pkg["known_phishing_signatures"]
+    paths = save_package(pkg, str(tmp_path))
+    assert os.path.isfile(os.path.join(str(tmp_path), f"package_v{paths['version']}_hashes.yar"))
+    # light module: an image whose perceptual hash is within the distance of a known one is a known signature
+    png = __import__("benign_samples").IMAGES[0]["png"]
+    import base64
+    h = dhash64(base64.b64encode(png).decode())
+    package = {"known_phishing_signatures": {"screenshot_dhash": [{"dhash": h, "max_hamming": 8}]}, "rules": []}
+    near = f"{int(h, 16) ^ 0b101:016x}"  # 2 bits away
+    assert hamming(h, near) == 2
+    assert apply_package(package, {"screenshot_dhash": near})["verdict"] == "MALICIOUS"
+    assert apply_package(package, {"screenshot_dhash": f"{int(h, 16) ^ 0xFFFF:016x}"})["verdict"] == "CLEAN"

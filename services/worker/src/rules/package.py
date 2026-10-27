@@ -26,6 +26,8 @@ try:
     from . import reason_codes as rc
     from .engine import build_record, rule_matches
     from .zero_fpr_guard import ZeroFPRGuard
+    from .yara_gen import hash_rule, hash_rules_file
+    from ..features.fingerprints import dhash64, hamming
 except (ImportError, ValueError):
     from db.database import SessionLocal
     from db.models import IncidentModel, LSignatureModel
@@ -34,8 +36,22 @@ except (ImportError, ValueError):
     from rules import reason_codes as rc
     from rules.engine import build_record, rule_matches
     from rules.zero_fpr_guard import ZeroFPRGuard
+    from rules.yara_gen import hash_rule, hash_rules_file
+    from features.fingerprints import dhash64, hamming
 
 PACKAGE_FORMAT = "dw2-artifact-package/1.0"
+DHASH_MAX_DISTANCE = 8  # bits of 64: screenshots this close are "the same page" (ТЗ 4.1.2.5, 4.1.7.1)
+
+
+def _benign_dhashes() -> List[str]:
+    """Perceptual hashes of the known-legitimate images of the Developer's set (tests/fixtures)."""
+    try:
+        import base64
+        import benign_samples  # tests/fixtures, on the path in the CLI and in tests
+        return [h for h in (dhash64(base64.b64encode(img["png"]).decode())
+                            for img in getattr(benign_samples, "IMAGES", [])) if h]
+    except Exception:
+        return []
 
 
 def _next_version(out_dir: str) -> str:
@@ -103,6 +119,7 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
 
     # ---- exact indicators of known phishing -------------------------------------------------------
     hashes, urls, domains, dom_hashes = {}, {}, collections.Counter(), collections.Counter()
+    dhashes: Dict[str, str] = {}
     for inc in incidents:
         fp = inc.fingerprints or {}
         att = fp.get("attachment_sha256") or []
@@ -114,6 +131,8 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
                 urls[mask_url(inc.final_url)] = inc.id
                 if not is_shared_infrastructure(host):
                     domains[registrable_domain(host)] += 1
+        if fp.get("screenshot_dhash"):
+            dhashes.setdefault(fp["screenshot_dhash"], inc.id)
         if inc.dom_hash and (fp.get("dom_tags_count") or 0) >= 15:
             dom_hashes[inc.dom_hash] += 1
 
@@ -124,6 +143,10 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
     benign_doms = {r["dom_hash"] for r in benign if r.get("dom_hash")}
     dropped_domains = sorted(d for d in domains if d in benign_domains)
     dropped_doms = sorted(h for h in dom_hashes if h in benign_doms)
+    # a perceptual hash close to the screenshot of a known-legitimate image is never a signature of phishing
+    dropped_dhashes = sorted(h for h in dhashes if any(hamming(h, b) <= DHASH_MAX_DISTANCE for b in _benign_dhashes()))
+    for h in dropped_dhashes:
+        del dhashes[h]
     for d in dropped_domains:
         del domains[d]
     for h in dropped_doms:
@@ -131,11 +154,12 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
 
     known = {
         "checked_on_benign": {"benign_objects": len(benign), "dropped_domains": dropped_domains,
-                              "dropped_dom_hashes": dropped_doms},
+                              "dropped_dom_hashes": dropped_doms, "dropped_screenshot_dhashes": dropped_dhashes},
         "attachment_sha256": [{"sha256": h, "source_incident": i} for h, i in sorted(hashes.items())],
         "urls_masked": [{"url": u, "source_incident": i} for u, i in sorted(urls.items())],
         "domains": [{"domain": d, "incidents": n} for d, n in domains.most_common()],
         "dom_structural_hashes": [{"hash": h, "incidents": n} for h, n in dom_hashes.most_common()],
+        "screenshot_dhash": [{"dhash": h, "max_hamming": DHASH_MAX_DISTANCE, "source_incident": i} for h, i in sorted(dhashes.items())],
     }
 
     # ---- brand features ------------------------------------------------------------------------------
@@ -165,6 +189,7 @@ def build_package(min_verdict: str = "MALICIOUS") -> Dict[str, Any]:
         "reason_codes": {code: {"weight": info.weight, "category": info.category, "severity": info.severity,
                                 "description": info.description} for code, info in rc.REASON_CODES.items()},
         "yara": yara_rules,
+        "yara_hash_rules": [hash_rule(h, i) for h, i in sorted(hashes.items())],
         "rule_contribution": contribution,
     }
 
@@ -179,6 +204,9 @@ def save_package(package: Dict[str, Any], out_dir: str, version: Optional[str] =
     yara_path = os.path.join(out_dir, f"package_v{version}.yar")
     with open(yara_path, "w", encoding="utf-8") as f:
         f.write("\n".join(package.get("yara", [])))
+    if package.get("yara_hash_rules"):  # hash signatures of known phishing files: a separate file, `import "hash"` once
+        with open(os.path.join(out_dir, f"package_v{version}_hashes.yar"), "w", encoding="utf-8") as f:
+            f.write(hash_rules_file(package["yara_hash_rules"]))
     digest = hashlib.sha256(open(json_path, "rb").read()).hexdigest()
     with open(os.path.join(out_dir, "LATEST"), "w", encoding="utf-8") as f:
         f.write(f"{version} {digest}\n")

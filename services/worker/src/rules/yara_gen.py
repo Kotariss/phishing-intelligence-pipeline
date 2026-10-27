@@ -44,6 +44,19 @@ def compile_check(rule_text: str) -> Tuple[bool, Optional[str]]:
         return False, str(e)
 
 
+def hash_rule(sha256: str, incident_id: str = "") -> str:
+    """YARA signature of one known phishing file / attachment by its SHA-256 (ТЗ 4.1.9.3, 4.1.7.1)."""
+    name = "DW2_FILE_" + sha256[:16].upper()
+    return (f'rule {name}\n{{\n    meta:\n        description = "Known phishing file (SHA-256)"\n'
+            f'        sha256 = "{sha256}"\n        source_incident = "{_meta_str(incident_id)}"\n'
+            f'    condition:\n        hash.sha256(0, filesize) == "{sha256}"\n}}\n')
+
+
+def hash_rules_file(rules: List[str]) -> str:
+    """A .yar file with the hash rules (the `hash` module is imported once)."""
+    return 'import "hash"\n\n' + "\n".join(rules)
+
+
 class YARAGenerator:
     """Generates content YARA rules for HTML pages / attachments / e-mails from sample-specific strings.
 
