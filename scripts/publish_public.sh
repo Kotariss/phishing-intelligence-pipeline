@@ -28,6 +28,12 @@ FILTER="git rm -r -q --cached --ignore-unmatch --"
 for p in "${EXCLUDE[@]}"; do FILTER+=" '$p'"; done
 FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --prune-empty --index-filter "$FILTER" -- main >/dev/null 2>&1
 git for-each-ref --format='%(refname)' refs/original | xargs -r -n1 git update-ref -d
+# optional private scrub list (internal hosts, personal paths, e-mails of the corpus): DW2_SCRUB=/path/to/scrub.py
+if [ -n "${DW2_SCRUB:-}" ]; then
+  FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --tree-filter "python3 '$DW2_SCRUB'" -- main >/dev/null 2>&1
+  git for-each-ref --format='%(refname)' refs/original | xargs -r -n1 git update-ref -d
+fi
+git branch -D master >/dev/null 2>&1 || true
 git remote remove origin
 git reflog expire --expire=now --all
 git gc -q --prune=now
