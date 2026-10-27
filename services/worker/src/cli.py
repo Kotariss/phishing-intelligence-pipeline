@@ -10,6 +10,7 @@ Command-line interface (ТЗ п. 4.8.1.1).
     python phishctl.py apply <package.json> <file|dir>...
     python phishctl.py split [--dev-share 0.3] [--seen-from reports/seen_objects.txt]   # dev / held-out test
     python phishctl.py metrics [--limit N] [--sources keis2,html,png] [--part dev|test] [--out reports/metrics.json]
+    python phishctl.py baseline train|eval                                              # interpretable baseline
     python phishctl.py build-benign-corpus
 """
 import argparse
@@ -311,6 +312,22 @@ def cmd_split(args):
     _log(f"split manifest written to {args.out}")
 
 
+def cmd_baseline(args):
+    """Interpretable baseline (decision tree on raw HTML features): train / evaluate (ТЗ 4.1.3.2, 4.1.11)."""
+    import baseline
+    if args.action == "train":
+        model = baseline.train(args.dataset, args.split_file, args.out)
+        print(json.dumps({k: model[k] for k in ("version", "algorithm", "training", "feature_importance")}, ensure_ascii=False, indent=2))
+        _log(f"baseline model written to {args.out}")
+    else:
+        report = baseline.evaluate(args.dataset, args.split_file, args.model, args.pipeline_report)
+        os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+        with open(args.out, "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=1)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        _log(f"baseline evaluation written to {args.out}")
+
+
 def cmd_robustness(args):
     from evaluation import robustness, save_report
     from ingest.split import load_split
@@ -441,10 +458,22 @@ def main(argv=None):
     p.add_argument("--show", type=int, default=40, help="changed objects printed")
     p.set_defaults(func=cmd_diff_runs)
 
+    p = sub.add_parser("baseline", help="interpretable baseline classifier of HTML pages: train / eval")
+    p.add_argument("action", choices=("train", "eval"))
+    p.add_argument("--dataset", default=os.path.join(REPO_ROOT, "file_for_case"))
+    p.add_argument("--split-file", default=os.path.join(REPO_ROOT, "reports", "split.json"))
+    p.add_argument("--model", default=os.path.join(REPO_ROOT, "models", "baseline_v1.json"))
+    p.add_argument("--out", help="train: model file (default --model); eval: report (default reports/baseline_eval.json)")
+    p.add_argument("--pipeline-report", default=os.path.join(REPO_ROOT, "reports", "test_v3.json"),
+                   help="eval: metrics report of the full pipeline on the same split, for the comparison")
+    p.set_defaults(func=cmd_baseline)
+
     p = sub.add_parser("build-benign-corpus", help="rebuild the known-legitimate feature corpus")
     p.set_defaults(func=cmd_build_benign_corpus)
 
     args = parser.parse_args(argv)
+    if getattr(args, "func", None) is cmd_baseline:
+        args.out = args.out or (args.model if args.action == "train" else os.path.join(REPO_ROOT, "reports", "baseline_eval.json"))
     if args.llm:
         os.environ["LLM_MODE"] = args.llm
     from llm.client import LLMUnavailable

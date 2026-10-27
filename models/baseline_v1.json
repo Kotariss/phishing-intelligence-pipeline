@@ -1,0 +1,141 @@
+{
+ "model": "baseline-tree",
+ "created_at": "2026-10-27T08:25:41+00:00",
+ "algorithm": "CART, Gini, balanced class weights, max_depth=4, min_samples_leaf=15",
+ "features": [
+  "forms_count",
+  "has_password_field",
+  "has_card_field",
+  "external_action_forms",
+  "hidden_fields",
+  "links_count",
+  "external_scripts",
+  "external_resource_hosts",
+  "iframes",
+  "full_page_iframes",
+  "has_telegram_exfil",
+  "has_discord_exfil",
+  "obfuscation_markers",
+  "has_sandbox_evasion",
+  "js_redirects",
+  "has_meta_refresh",
+  "link_text_mismatch",
+  "js_endpoints",
+  "js_external_endpoints",
+  "title_length",
+  "visible_text_length",
+  "tags_count",
+  "logo_image_hosts",
+  "deobfuscated_layers"
+ ],
+ "decision_threshold": 0.5,
+ "feature_importance": {
+  "external_scripts": 0.5448,
+  "title_length": 0.2378,
+  "iframes": 0.0842,
+  "visible_text_length": 0.0609,
+  "tags_count": 0.0467,
+  "js_redirects": 0.0255
+ },
+ "tree": [
+  {
+   "id": 0,
+   "n": 1044,
+   "prob_phishing": 0.5,
+   "feature": "external_scripts",
+   "threshold": 0.5,
+   "left": 1,
+   "right": 8
+  },
+  {
+   "id": 1,
+   "n": 303,
+   "prob_phishing": 0.2301,
+   "feature": "title_length",
+   "threshold": 7.5,
+   "left": 2,
+   "right": 3
+  },
+  {
+   "id": 2,
+   "n": 151,
+   "prob_phishing": 1.0
+  },
+  {
+   "id": 3,
+   "n": 152,
+   "prob_phishing": 0.1245,
+   "feature": "visible_text_length",
+   "threshold": 61.0,
+   "left": 4,
+   "right": 5
+  },
+  {
+   "id": 4,
+   "n": 33,
+   "prob_phishing": 1.0
+  },
+  {
+   "id": 5,
+   "n": 119,
+   "prob_phishing": 0.0974,
+   "feature": "tags_count",
+   "threshold": 623.0,
+   "left": 6,
+   "right": 7
+  },
+  {
+   "id": 6,
+   "n": 95,
+   "prob_phishing": 0.0766
+  },
+  {
+   "id": 7,
+   "n": 24,
+   "prob_phishing": 1.0
+  },
+  {
+   "id": 8,
+   "n": 741,
+   "prob_phishing": 0.9201,
+   "feature": "iframes",
+   "threshold": 0.5,
+   "left": 9,
+   "right": 10
+  },
+  {
+   "id": 9,
+   "n": 704,
+   "prob_phishing": 1.0
+  },
+  {
+   "id": 10,
+   "n": 37,
+   "prob_phishing": 0.3591,
+   "feature": "js_redirects",
+   "threshold": 0.5,
+   "left": 11,
+   "right": 12
+  },
+  {
+   "id": 11,
+   "n": 16,
+   "prob_phishing": 0.1893
+  },
+  {
+   "id": 12,
+   "n": 21,
+   "prob_phishing": 1.0
+  }
+ ],
+ "training": {
+  "phishing_pages": 1028,
+  "phishing_templates": 378,
+  "group_cap": 8,
+  "legitimate_objects": 16,
+  "split_file": "split.json",
+  "split_part": "dev",
+  "legitimate_source": "tests/fixtures/benign_samples.py pages + HTML of legitimate e-mails (70 %)"
+ },
+ "version": "baseline-tree-d370090227"
+}
