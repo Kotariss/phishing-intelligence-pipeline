@@ -355,7 +355,7 @@ def cmd_metrics(args):
         split = load_split(args.split_file)
     report = evaluate(args.dataset, args.limit, tuple(args.sources.split(",")),
                       progress=_log if args.verbose else None, split=split, part=args.part, workers=args.workers)
-    save_report(report, args.out)
+    save_report(report, args.out, split_file=args.split_file if args.part else None)
     print(json.dumps({"counts": report["counts"], "metrics": report["metrics"], "acceptance": report["acceptance"]},
                      ensure_ascii=False, indent=2))
     _log(f"report written to {args.out}")

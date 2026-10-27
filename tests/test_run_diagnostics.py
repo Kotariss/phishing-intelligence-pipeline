@@ -42,3 +42,15 @@ def test_diff_runs_explains_changes(tmp_path):
     diff = diff_runs(a, b)
     assert diff["transitions"] == [{"category": "image_lure", "from": "SUSPICIOUS", "to": "CLEAN", "objects": 1}]
     assert diff["changed_objects"][0]["codes_removed"] == ["RC_CAMPAIGN_INVARIANT_MATCH"]
+
+
+def test_reports_carry_reproducibility_block(tmp_path):
+    """ТЗ 4.1.8.3 / ПМИ А-11: versions of code, brand base, reason codes, prompts, model settings are recorded."""
+    import json
+    from evaluation import save_report
+    out = tmp_path / "r.json"
+    save_report({"counts": {}}, str(out))
+    info = json.loads(out.read_text(encoding="utf-8"))["reproducibility"]
+    for key in ("brand_registry_sha256", "reason_codes_sha256", "prompts_sha256", "llm", "thresholds", "python"):
+        assert info[key]
+    assert info["llm"]["mode"] in ("local", "cloud")

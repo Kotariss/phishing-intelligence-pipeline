@@ -635,7 +635,64 @@ def uuid_hex() -> str:
     return uuid.uuid4().hex[:10]
 
 
-def save_report(report: Dict[str, Any], out_path: str) -> str:
+def _sha256_file(path: str) -> Optional[str]:
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
+
+
+def _git_commit() -> Optional[str]:
+    """Commit of the code that produced a report (read from .git, no git binary needed)."""
+    try:
+        head = open(os.path.join(REPO_ROOT, ".git", "HEAD"), encoding="utf-8").read().strip()
+        if head.startswith("ref:"):
+            ref = head.split(" ", 1)[1]
+            ref_path = os.path.join(REPO_ROOT, ".git", ref)
+            if os.path.isfile(ref_path):
+                return open(ref_path, encoding="utf-8").read().strip()[:12]
+            for line in open(os.path.join(REPO_ROOT, ".git", "packed-refs"), encoding="utf-8"):
+                if line.strip().endswith(ref):
+                    return line.split()[0][:12]
+            return None
+        return head[:12]
+    except OSError:
+        return None
+
+
+def reproducibility_info(split_file: Optional[str] = None) -> Dict[str, Any]:
+    """Versions that make a metrics run repeatable (ТЗ 4.1.8.3, ПМИ А-11): code, split, brand base, reason codes,
+    prompts, model settings and thresholds. Equal blocks + equal data => the metrics must coincide."""
+    import platform
+    from config import get_settings
+    st = get_settings()
+    try:
+        from rules.reason_codes import REASON_CODES
+        codes = hashlib.sha256(json.dumps({k: list(v) for k, v in sorted(REASON_CODES.items())}, ensure_ascii=False).encode()).hexdigest()
+    except Exception:
+        codes = None
+    prompts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts")
+    h = hashlib.sha256()
+    for name in sorted(os.listdir(prompts_dir)) if os.path.isdir(prompts_dir) else []:
+        h.update(name.encode())
+        h.update(open(os.path.join(prompts_dir, name), "rb").read())
+    return {
+        "code_commit": _git_commit(),
+        "python": platform.python_version(),
+        "split_file_sha256": _sha256_file(split_file) if split_file else None,
+        "brand_registry_sha256": _sha256_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "brands", "brand_registry.json")),
+        "legitimate_corpus_sha256": _sha256_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules", "benign_corpus.json")),
+        "reason_codes_sha256": codes,
+        "prompts_sha256": h.hexdigest(),
+        "llm": {"mode": st.llm_mode, "text_model": st.text_model, "vision_model": st.vision_model,
+                "temperature": st.LLM_TEMPERATURE, "attempts": st.LLM_ATTEMPTS},
+        "thresholds": {"clean": st.SCORE_CLEAN_THRESHOLD, "malicious": st.SCORE_MALICIOUS_THRESHOLD},
+    }
+
+
+def save_report(report: Dict[str, Any], out_path: str, split_file: Optional[str] = None) -> str:
+    report.setdefault("reproducibility", reproducibility_info(split_file))
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
