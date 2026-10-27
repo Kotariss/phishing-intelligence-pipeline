@@ -26,3 +26,12 @@ def test_labels_file_is_consistent():
     for obj in labels["objects"]:
         assert obj["type"] in ("html", "eml", "image")
         assert all(isinstance(obj[k], list) for k in ("links", "resources", "forms", "endpoints"))
+
+
+def test_labels_hold_no_live_tokens_of_the_customer_corpus():
+    """ТЗ 4.5.2.3 / ПМИ А-19: tokens and webhooks from the corpus are masked."""
+    import re
+    text = open(LABELS, encoding="utf-8").read()
+    assert not re.search(r"bot[0-9]{8,}:[A-Za-z0-9_-]{30,}", text)
+    assert not re.search(r"/webhooks/[0-9]{10,}/[A-Za-z0-9_-]{20,}", text)
+    assert not re.search(r"token=[0-9a-f]{10,}", text)
