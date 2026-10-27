@@ -301,6 +301,5 @@ curl -F "file=@sample.eml" http://localhost:8000/api/v1/scan
 - [docs/REASON_CODES.md](docs/REASON_CODES.md) — каталог кодов причин
 - [docs/LLM_AND_PROMPTS.md](docs/LLM_AND_PROMPTS.md) — модели и промпты
 - [docs/METRICS.md](docs/METRICS.md) — методика расчёта метрик и отчёт о метриках
-- [docs/BACKLOG.md](docs/BACKLOG.md), [docs/TZ_GAPS.md](docs/TZ_GAPS.md) — открытые задачи и расхождения с ТЗ
 
 Данные Заказчика, `.env`, базы данных, `exports/`, `reports/` и `logs/` в репозиторий не входят.
