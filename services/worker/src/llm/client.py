@@ -133,7 +133,12 @@ class LLMClient:
                 errors.append(f"{type(e).__name__}: {str(e)[:150]}")
                 continue
             if resp.status_code in RETRYABLE_STATUS:
-                errors.append(f"HTTP {resp.status_code}")
+                errors.append(f"HTTP {resp.status_code}: {resp.text[:200].strip()}".rstrip(": "))
+                if "repeat limit" in resp.text:
+                    # a small model stuck in a token loop (greedy decoding): the next attempt samples differently
+                    payload["temperature"] = max(payload["temperature"], 0.6)
+                    payload["presence_penalty"] = 0.6
+                    payload["seed"] = attempt + 1
                 continue
             if resp.status_code >= 400:
                 # Client errors (bad model name, bad key, ...) do not get better on retry.

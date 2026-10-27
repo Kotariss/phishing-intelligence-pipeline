@@ -132,3 +132,21 @@ def test_prompts_are_versioned_files():
     assert "is_phishing_lure" in text and "techniques" in text and text.endswith("Тест")
     assert '"impersonated_brand"' in prompts.render("vision_brand", lure_types="a, b")
     assert prompts.version("vision_brand") != prompts.version("lure_classifier")
+
+
+def test_token_repeat_abort_is_retried_with_different_sampling(monkeypatch):
+    """A small local model stuck in a token loop (Ollama: 'token repeat limit reached', HTTP 500) answers on the next attempt."""
+    sent = []
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        sent.append(dict(json))
+        if len(sent) == 1:
+            return _Resp(500, text='{"error":{"message":"prediction aborted, token repeat limit reached"}}')
+        return _ok("{}")
+
+    monkeypatch.setattr("llm.client.requests.post", fake_post)
+    client = LLMClient(_settings(LLM_MODE="local", LLM_ATTEMPTS=3))
+    assert client.ask_llm("hello") == "{}"
+    assert len(sent) == 2
+    assert sent[1]["temperature"] >= 0.6 and sent[1]["presence_penalty"] > 0 and "seed" in sent[1]
+    assert "presence_penalty" not in sent[0]
