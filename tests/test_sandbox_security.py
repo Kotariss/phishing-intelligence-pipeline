@@ -1,3 +1,4 @@
+import os
 import ipaddress
 
 import pytest
@@ -125,3 +126,38 @@ def test_playwright_redirect_to_forbidden_address_is_not_followed(monkeypatch):
     assert hits == ["/start", "/middle"]
     assert result["blocked_requests"] == [f"{forbidden}/internal/secret"]
     assert [h["url"] for h in result["redirect_chain"]] == [base + "/start"]
+
+
+def _docx_with(document_xml: bytes) -> bytes:
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("[Content_Types].xml", "<Types/>")
+        zf.writestr("word/document.xml", document_xml)
+    return buf.getvalue()
+
+
+def test_xml_external_entity_in_office_document_is_not_loaded(tmp_path):
+    """ПМИ А-18: a document with an external XML entity is analysed without reading the referenced file."""
+    from attachment_parser import AttachmentParser
+    secret = tmp_path / "secret.txt"
+    secret.write_text("TOP-SECRET-CONTENT-12345", encoding="utf-8")
+    xml = (f'<?xml version="1.0"?><!DOCTYPE d [<!ENTITY xxe SYSTEM "file://{secret}">]>'
+           '<w:document xmlns:w="x"><w:body><w:t>&xxe;</w:t></w:body></w:document>').encode()
+    parsed = AttachmentParser.parse_office(_docx_with(xml), "xxe.docx")
+    assert "TOP-SECRET-CONTENT-12345" not in repr(parsed)
+
+
+def test_sandbox_container_is_unprivileged_read_only_and_without_network():
+    """ПМИ А-18 / ТЗ 4.5.2.1: container settings of the render and parse service."""
+    import re
+    root = os.path.join(os.path.dirname(__file__), "..")
+    text = open(os.path.join(root, "docker-compose.yml"), encoding="utf-8").read()
+    base = text[text.index("x-sandbox"):text.index("services:")]
+    assert 'user: "1000:1000"' in base and "read_only: true" in base
+    assert "cap_drop:" in base and "no-new-privileges:true" in base
+    sandbox = text[text.index("  sandbox:\n"):text.index("  sandbox-online:")]
+    assert "sandbox_net" in sandbox and "egress_net" not in sandbox
+    networks = text[text.index("\nnetworks:\n"):]
+    assert re.search(r"sandbox_net:\s+driver: bridge\s+internal: true", networks)
