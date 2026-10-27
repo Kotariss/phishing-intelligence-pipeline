@@ -54,3 +54,11 @@ def test_exact_match_with_a_confirmed_indicator_is_phishing(monkeypatch):
     monkeypatch.setenv("DW2_DISABLE_IOC", "1")
     third = run_file("ioc_kit_third.html", data)
     assert "RC_KNOWN_IOC_MATCH" not in third.reason_codes
+
+
+def test_link_text_mismatch_on_an_official_domain_is_not_evidence():
+    """A big brand site routinely shows one address and links to another (trackers): neutralised on the official domain like other page evidence."""
+    from helpers import run_page
+    html = '<html><head><title>Help</title></head><body><a href="https://track.partner-example.top/x?u=1">www.paypal.com/help</a></body></html>'
+    assert run_page("https://www.paypal.com/help", html).verdict == "CLEAN"
+    assert run_page("https://paypal-help-center.top/help", html).verdict in ("SUSPICIOUS", "MALICIOUS")

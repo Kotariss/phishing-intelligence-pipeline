@@ -410,6 +410,15 @@ def cmd_rescore(args):
     print(json.dumps({"rescored": report["rescored"], "metrics": report["metrics"]}, ensure_ascii=False, indent=2))
 
 
+def cmd_legit_eval(args):
+    """False positives on real legitimate pages of the brands' official sites (collect them with scripts/collect_legit_pages.py)."""
+    from evaluation import evaluate_legit_pages, save_report
+    report = evaluate_legit_pages(args.dir, progress=_log if args.verbose else None, limit=args.limit)
+    save_report(report, args.out)
+    print(json.dumps({k: report[k] for k in ("pages", "processed_ok", "skipped_llm", "false_phishing", "suspicious", "suspicious_share",
+                                             "acceptance", "flag_codes")}, ensure_ascii=False, indent=2))
+
+
 def cmd_split(args):
     """Leakage-free dev / held-out test split of the customer corpus (groups: brand, DOM template, cluster)."""
     from ingest.split import build_split, save_split
@@ -564,6 +573,13 @@ def main(argv=None):
     p.add_argument("--only-status", default="skipped_llm", help="comma-separated statuses for --only-from")
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_metrics)
+
+    p = sub.add_parser("legit-eval", help="false positives on real legitimate pages of the brands' official sites (local set)")
+    p.add_argument("--dir", default=os.path.join(REPO_ROOT, "file_for_case", "legit_real"))
+    p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "legit_real_eval.json"))
+    p.add_argument("--limit", type=int)
+    p.add_argument("--verbose", action="store_true")
+    p.set_defaults(func=cmd_legit_eval)
 
     p = sub.add_parser("rescore", help="apply the current verdict rules to the codes stored in a metrics report (no model run)")
     p.add_argument("report")

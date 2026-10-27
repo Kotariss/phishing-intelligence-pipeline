@@ -726,3 +726,50 @@ def merge_reports(base: Dict[str, Any], rerun: Dict[str, Any], dataset_root: str
                              "rerun_objects": len(new)}
     report["reproducibility"] = {"base": base.get("reproducibility"), "rerun": rerun.get("reproducibility")}
     return report
+
+
+def evaluate_legit_pages(pages_dir: str, progress=None, limit: Optional[int] = None) -> Dict[str, Any]:
+    """False positives on REAL legitimate pages of the brands' official sites (collected by scripts/collect_legit_pages.py): a legitimate
+    set that was not written with the rules (ТЗ 4.1.2.3, табл. 3: «0 ложных «фишинг»», «подозрительно» ≤ 10 %)."""
+    os.environ["DW2_DISABLE_IOC"] = "1"
+    with open(os.path.join(pages_dir, "index.json"), encoding="utf-8") as f:
+        pages = json.load(f)["pages"]
+    if limit:
+        pages = pages[:limit]
+    rows = []
+    started = time.time()
+    for p in pages:
+        t0 = time.time()
+        row = {"file": p["file"], "brand": p["brand"], "url": p["url"]}
+        try:
+            with open(os.path.join(pages_dir, p["file"]), "rb") as f:
+                html = f.read().decode("utf-8", errors="ignore")
+            state = run_pipeline(PhishingState(incident_id=f"legit_{p['file']}", source_type="url", raw_target=p["url"], offline_mode=True,
+                                               precollected_links=[{"url": p["url"], "final_url": p["url"], "html": html, "redirect_chain": []}]))
+            row.update(status="ok", verdict=state.verdict, risk=state.risk_score, codes=state.reason_codes, llm_mode=state.llm_mode)
+        except LLMUnavailable as e:
+            row.update(status="skipped_llm", error=str(e)[:200])
+        except Exception as e:
+            row.update(status="error", error=f"{type(e).__name__}: {str(e)[:160]}")
+        row["seconds"] = round(time.time() - t0, 2)
+        rows.append(row)
+        if progress:
+            progress(f"{row['brand'][:28]:28s} {row.get('verdict', row['status']):10s} {p['url'][:70]}")
+    ok = [r for r in rows if r["status"] == "ok"]
+    malicious = [r for r in ok if r["verdict"] == "MALICIOUS"]
+    suspicious = [r for r in ok if r["verdict"] == "SUSPICIOUS"]
+    code_freq = collections.Counter(c for r in malicious + suspicious for c in r["codes"])
+    return {
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "set": "real pages of official brand sites (local, not published)", "pages": len(rows), "processed_ok": len(ok),
+        "skipped_llm": sum(1 for r in rows if r["status"] == "skipped_llm"), "errors": sum(1 for r in rows if r["status"] == "error"),
+        "false_phishing": len(malicious), "suspicious": len(suspicious),
+        "suspicious_share": round(len(suspicious) / len(ok), 4) if ok else None,
+        "acceptance": {"false_phishing": {"target": "== 0", "actual": len(malicious), "passed": len(malicious) == 0},
+                       "suspicious_share": {"target": "<= 0.10", "actual": round(len(suspicious) / len(ok), 4) if ok else None,
+                                            "passed": bool(ok) and len(suspicious) / len(ok) <= 0.10}},
+        "flagged": [{k: r[k] for k in ("brand", "url", "verdict", "risk", "codes")} for r in malicious + suspicious],
+        "flag_codes": dict(code_freq.most_common()), "elapsed_seconds": round(time.time() - started, 1),
+        "mean_seconds": round(sum(r["seconds"] for r in rows) / len(rows), 3) if rows else None,
+        "objects": rows,
+    }
