@@ -1,4 +1,6 @@
 import time
+import hashlib
+import datetime
 from typing import Literal
 from langgraph.graph import StateGraph, START, END
 
@@ -107,6 +109,13 @@ def persist_node(state: PhishingState) -> PhishingState:
     t0 = time.time()
     state.execution_steps.append("db_persist: Saving incident dossier and L-signatures")
     repo = IncidentRepository()
+    # provenance and duplicates: the same object (content hash; URL — its text) analysed before is marked, not hidden
+    state.ingested_at = state.ingested_at or datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    state.object_sha256 = hashlib.sha256(state.raw_bytes if state.raw_bytes else (state.raw_target or "").encode("utf-8")).hexdigest()
+    first = repo.find_first_by_object_hash(state.object_sha256, exclude_id=state.incident_id)
+    if first is not None:
+        state.duplicate_of = first.id
+        state.execution_steps.append(f"db_persist: duplicate of {first.id} (same object content)")
     public = state.public_dump()
 
     repo.create_incident({
@@ -124,6 +133,8 @@ def persist_node(state: PhishingState) -> PhishingState:
         "campaign_id": state.campaign_id,
         "dom_hash": state.dom_structural_hash,
         "fingerprints": state.fingerprints,
+        "object_sha256": state.object_sha256,
+        "duplicate_of": state.duplicate_of,
         "evidence_data": {
             "network": public["network_evidence"],
             "page": public["page_features"],

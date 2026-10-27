@@ -79,12 +79,67 @@ def _brief(state) -> dict:
         "campaign_id": state.campaign_id,
         "signature": (state.generated_l_signature or {}).get("rule_id"),
         "signature_status": state.signature_status,
+        "duplicate_of": state.duplicate_of,
+        "ingested_at": state.ingested_at,
     }
 
 
+ARCHIVE_MAX_FILES = 5000
+ARCHIVE_MAX_BYTES = 512 * 1024 * 1024
+
+
+def _unpack_archive(path: str) -> str:
+    """Safely extracts a ZIP of objects into a temporary directory (ТЗ 4.1.1.1: каталог или архив объектов).
+    Names that leave the target directory are skipped; file count and total size are limited."""
+    import tempfile
+    import zipfile
+    target = tempfile.mkdtemp(prefix="phish_archive_")
+    root = os.path.realpath(target)
+    total = 0
+    with zipfile.ZipFile(path) as zf:
+        infos = [i for i in zf.infolist() if not i.is_dir()]
+        if len(infos) > ARCHIVE_MAX_FILES:
+            raise ValueError(f"archive has {len(infos)} files, limit is {ARCHIVE_MAX_FILES}")
+        for info in infos:
+            total += info.file_size
+            if total > ARCHIVE_MAX_BYTES:
+                raise ValueError("archive exceeds the size limit")
+            dest = os.path.realpath(os.path.join(target, info.filename))
+            if not dest.startswith(root + os.sep):
+                continue  # path traversal
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            with zf.open(info) as src, open(dest, "wb") as out:
+                out.write(src.read())
+    return target
+
+
+def _url_list(path: str):
+    """URLs of a list file (.txt / .list, one http(s) URL per line, '#' comments) or None if it is not a URL list."""
+    if not path.lower().endswith((".txt", ".list")):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8", errors="strict") as f:
+            lines = [l.strip() for l in f if l.strip() and not l.strip().startswith("#")]
+    except (OSError, UnicodeDecodeError):
+        return None
+    if lines and all(l.lower().startswith(("http://", "https://")) and " " not in l for l in lines):
+        return lines
+    return None
+
+
 def _iter_objects(root: str):
-    """Objects of a directory: dataset sample dirs (EML + Link_N) or individual files."""
+    """Objects of a directory, ZIP archive or URL list file: dataset sample dirs (EML + Link_N), individual files, URLs."""
     from ingest.dataset import is_sample_dir
+    if os.path.isfile(root):
+        urls = _url_list(root)
+        if urls is not None:
+            yield from urls
+            return
+        if root.lower().endswith(".zip"):
+            root = _unpack_archive(root)
+        else:
+            yield root
+            return
     if is_sample_dir(root):
         yield root
         return
@@ -98,7 +153,12 @@ def _iter_objects(root: str):
         for name in sorted(filenames):
             if name.lower().endswith((".json", ".txt", ".list", ".zip", ".pdf")) and "Link_" in dirpath:
                 continue
-            yield os.path.join(dirpath, name)
+            path = os.path.join(dirpath, name)
+            urls = _url_list(path)
+            if urls is not None:
+                yield from urls
+            else:
+                yield path
 
 
 # ---------------------------------------------------------------------------- commands
@@ -137,6 +197,13 @@ def cmd_import_corpus(args):
 
 def cmd_analyze(args):
     from orchestrator.graph import run_pipeline
+    from ingest.dataset import is_sample_dir
+    if not args.url and not args.target.lower().startswith(("http://", "https://")) and os.path.exists(args.target) and \
+            (_url_list(args.target) is not None or args.target.lower().endswith(".zip")
+             or (os.path.isdir(args.target) and not is_sample_dir(args.target))):
+        # a URL list, an archive or a directory of objects: batch mode (same as analyze-dir)
+        args.root, args.out, args.limit, args.online = args.target, args.out_batch, None, getattr(args, "online", False)
+        return cmd_analyze_dir(args)
     t0 = time.time()
     if args.url:
         state = run_pipeline(_snapshot_state(args.target, args.url, args.screenshot))
@@ -394,15 +461,16 @@ def main(argv=None):
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "corpus_index.json"))
     p.set_defaults(func=cmd_import_corpus)
 
-    p = sub.add_parser("analyze", help="analyse one object (file, dataset sample dir or URL)")
+    p = sub.add_parser("analyze", help="analyse one object (file, dataset sample dir or URL); a URL list, ZIP archive or directory runs as a batch")
     p.add_argument("target")
+    p.add_argument("--out-batch", default=os.path.join(REPO_ROOT, "reports", "results.jsonl"), help="batch mode: results file (resumable)")
     p.add_argument("--json", help="write the full JSON result")
     p.add_argument("--online", action="store_true", help="allow live URL fetching through the sandbox")
     p.add_argument("--url", help="treat TARGET as a saved page (HTML) captured from this URL")
     p.add_argument("--screenshot", help="screenshot of the saved page (with --url)")
     p.set_defaults(func=cmd_analyze)
 
-    p = sub.add_parser("analyze-dir", help="batch-analyse a directory (resumable)")
+    p = sub.add_parser("analyze-dir", help="batch-analyse a directory, ZIP archive or URL list (resumable)")
     p.add_argument("root")
     p.add_argument("--out", default=os.path.join(REPO_ROOT, "reports", "results.jsonl"))
     p.add_argument("--limit", type=int)

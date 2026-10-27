@@ -176,9 +176,9 @@ python phishctl.py --help
 | Команда | Назначение |
 |---|---|
 | `import-corpus <dir>` | индекс корпуса: тип, размер, SHA-256, дубликаты, происхождение → `reports/corpus_index.json` |
-| `analyze <файл \| каталог образца \| URL> [--json out.json] [--online]` | анализ одного объекта |
+| `analyze <файл \| каталог образца \| URL> [--json out.json] [--online]` | анализ одного объекта; список URL (`.txt`, по одному на строку), ZIP-архив или каталог объектов запускаются пакетно, как `analyze-dir` |
 | `analyze page.html --url <URL> [--screenshot shot.png]` | анализ сохранённой страницы со снимком экрана |
-| `analyze-dir <dir> [--out reports/results.jsonl] [--limit N]` | пакетный анализ; продолжает с места остановки, битые объекты не прерывают прогон |
+| `analyze-dir <dir \| .zip \| urls.txt> [--out reports/results.jsonl] [--limit N]` | пакетный анализ каталога, ZIP-архива (с защитой от выхода за каталог и лимитами) или списка URL; продолжает с места остановки, битые объекты не прерывают прогон; повторный объект помечается `duplicate_of` |
 | `kb-stats` | статистика базы знаний, частота техник, бренды |
 | `cluster [--min-size 2] [--visual]` | фишинговые кампании (общий kit / инфраструктура; `--visual` — по перцептивному хешу скриншота) |
 | `export-package [--out exports/package]` | версионированный пакет артефактов (JSON + YARA) |

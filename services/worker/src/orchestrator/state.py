@@ -93,6 +93,10 @@ class PhishingState(BaseModel):
     signature_status: Optional[str] = None  # ACTIVE_VERIFIED | DRAFT_REQUIRES_TUNING | NOT_GENERATED
     fingerprints: Dict[str, Any] = Field(default_factory=dict)
     campaign_id: Optional[str] = None
+    # Provenance and duplicates (ТЗ 4.1.1.3): source type + original object (`source_type`, `raw_target`), upload time, content hash
+    ingested_at: Optional[str] = None
+    object_sha256: Optional[str] = None
+    duplicate_of: Optional[str] = None   # id of the first incident analysed from the same object
     zero_fpr_passed: bool = True
     zero_fpr_note: Optional[str] = None
     execution_steps: List[str] = Field(default_factory=list)

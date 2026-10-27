@@ -25,6 +25,8 @@ class IncidentModel(Base):
     dom_hash = Column(String(64), index=True, nullable=True)
     fingerprints = Column(JSON, default=dict)
     evidence_data = Column(JSON, default=dict)
+    object_sha256 = Column(String(64), index=True, nullable=True)   # content hash of the analysed object
+    duplicate_of = Column(String(64), nullable=True)                 # first incident with the same object hash
 
 class LSignatureModel(Base):
     __tablename__ = "l_signatures"

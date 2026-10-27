@@ -29,11 +29,25 @@ class IncidentRepository:
                 campaign_id=incident_data.get("campaign_id"),
                 dom_hash=incident_data.get("dom_hash"),
                 fingerprints=incident_data.get("fingerprints", {}),
-                evidence_data=incident_data.get("evidence_data", {})
+                evidence_data=incident_data.get("evidence_data", {}),
+                object_sha256=incident_data.get("object_sha256"),
+                duplicate_of=incident_data.get("duplicate_of"),
             )
             db.merge(model)
             db.commit()
             return model
+        finally:
+            if self._db is None:
+                db.close()
+
+    def find_first_by_object_hash(self, object_sha256: str, exclude_id: Optional[str] = None) -> Optional[IncidentModel]:
+        """The earliest incident analysed from an object with this content hash (duplicate detection, ТЗ 4.1.1.3)."""
+        db = self._get_session()
+        try:
+            query = db.query(IncidentModel).filter(IncidentModel.object_sha256 == object_sha256)
+            if exclude_id:
+                query = query.filter(IncidentModel.id != exclude_id)
+            return query.order_by(IncidentModel.created_at.asc()).first()
         finally:
             if self._db is None:
                 db.close()
