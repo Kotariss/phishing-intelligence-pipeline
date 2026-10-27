@@ -47,6 +47,8 @@ class LLMClient:
     vLLM, llama.cpp) or a cloud endpoint with an API key. Every call is audited; a call that still fails
     after LLM_ATTEMPTS raises LLMUnavailable."""
 
+    enabled = True
+
     def __init__(self, settings=None):
         self.settings = settings or get_settings()
         self.last_call: Optional[Dict[str, Any]] = None
@@ -198,8 +200,26 @@ class LLMClient:
 _default_client: Optional[LLMClient] = None
 
 
-def get_llm_client() -> LLMClient:
+class DisabledLLMClient:
+    """LLM_MODE=off: stands in for the model so the structural extractors run alone. Agents check `enabled`."""
+    enabled = False
+
+    def __init__(self, settings=None):
+        self.settings = settings or get_settings()
+        self.last_call = None
+
+    def get_last_call(self):
+        return None
+
+    def ask_llm(self, *args, **kwargs):
+        raise LLMUnavailable("LLM_MODE=off")
+
+    ask_vlm = ask_llm
+
+
+def get_llm_client():
     global _default_client
     if _default_client is None:
-        _default_client = LLMClient()
+        settings = get_settings()
+        _default_client = LLMClient(settings) if settings.llm_enabled else DisabledLLMClient(settings)
     return _default_client

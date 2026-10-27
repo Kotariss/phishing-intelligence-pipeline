@@ -138,7 +138,7 @@ class VisionAgent:
 
         lure_type = None
         # 2. The VLM looks at the screenshot / image: brand it presents itself as, what it asks the viewer to do
-        if not page_brand and state.screenshot_base64 and len(state.screenshot_base64) > 1000:
+        if self.llm.enabled and not page_brand and state.screenshot_base64 and len(state.screenshot_base64) > 1000:
             vlm_invoked = True
             vlm_result, vlm_call_info = self._ask_vlm(state.screenshot_base64)
             # Full parsed answer for diagnosis (what the model saw vs. what became evidence)

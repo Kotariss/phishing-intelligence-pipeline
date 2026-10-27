@@ -120,7 +120,9 @@ class ContentAgent:
                                            page_text if att.get("type") == "html" else None] + attachment_texts))
 
         status, decision, call_info, result = "SKIPPED", "Текста для анализа нет.", None, None
-        if text.strip() and not state.has_rescanned_url:
+        if not self.llm.enabled:
+            decision = "Модель отключена (LLM_MODE=off): анализ текста приманки пропущен."
+        elif text.strip() and not state.has_rescanned_url:
             state.network_evidence["llm_lure_input_chars"] = len(text)
             result, call_info = self._classify(text)
             try:

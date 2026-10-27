@@ -479,7 +479,7 @@ def cmd_build_benign_corpus(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="phishctl", description="DW-2 Phishing Intelligence Pipeline")
-    parser.add_argument("--llm", choices=["local", "cloud"], help="override LLM_MODE")
+    parser.add_argument("--llm", choices=["local", "cloud", "off"], help="override LLM_MODE (off: no model, structural extractors only)")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("import-corpus", help="index a corpus directory (types, hashes, duplicates)")

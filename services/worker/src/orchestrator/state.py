@@ -93,6 +93,7 @@ class PhishingState(BaseModel):
     signature_status: Optional[str] = None  # ACTIVE_VERIFIED | DRAFT_REQUIRES_TUNING | NOT_GENERATED
     fingerprints: Dict[str, Any] = Field(default_factory=dict)
     campaign_id: Optional[str] = None
+    llm_mode: Optional[str] = None       # off | local | cloud: the mode the verdict was produced in
     # Provenance and duplicates (ТЗ 4.1.1.3): source type + original object (`source_type`, `raw_target`), upload time, content hash
     ingested_at: Optional[str] = None
     object_sha256: Optional[str] = None

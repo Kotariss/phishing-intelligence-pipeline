@@ -148,6 +148,7 @@ class SynthesizerAgent:
         t0 = time.time()
         state.execution_steps.append("synthesizer_agent: Calculating risk score & synthesizing rules")
 
+        state.llm_mode = self.settings.llm_mode if self.llm.enabled else "off"  # results of the modes are never mixed up
         self._add_composites(state)
         self._match_known_iocs(state)
         clamp_note = self._allowlist_clamp(state)
@@ -213,7 +214,7 @@ class SynthesizerAgent:
                          + ("\nОбоснование:\n" + "\n".join(lines) if lines else ""))
         llm_call_info = None
         state.explanation = evidence_text
-        if state.verdict != "CLEAN":
+        if state.verdict != "CLEAN" and self.llm.enabled:
             prompt = prompts.render("analyst_summary", target=state.raw_target, final_url=state.final_url or "—",
                                     brand=state.brand_evidence.detected_brand_name or "—", verdict=state.verdict,
                                     risk=f"{state.risk_score:.2f}", indicators="\n".join(lines[:12]))

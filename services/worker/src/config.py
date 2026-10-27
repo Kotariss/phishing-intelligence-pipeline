@@ -29,6 +29,7 @@ class Settings(BaseSettings):
 
     # LLM / VLM — required: lure text, image and brand judgements come from the model. Any OpenAI-compatible
     # chat-completions endpoint.
+    #   LLM_MODE=off   -> no model: structural extractors only (URL, DOM, forms, attachments, QR, headers); every result is marked llm_mode=off
     #   LLM_MODE=local -> local server without key, no external network: the `llm` Ollama container of
     #                     docker-compose (http://llm:11434/v1), or Ollama / LM Studio / vLLM on the host
     #   LLM_MODE=cloud -> remote endpoint authorised with an API key
@@ -81,7 +82,12 @@ class Settings(BaseSettings):
     @property
     def llm_mode(self) -> str:
         mode = (self.LLM_MODE or "local").strip().lower()
-        return mode if mode in ("local", "cloud") else "local"
+        return mode if mode in ("local", "cloud", "off") else "local"
+
+    @property
+    def llm_enabled(self) -> bool:
+        """False in LLM_MODE=off: only the structural extractors run (ТЗ 4.4.2: the model is optional, 7.11)."""
+        return self.llm_mode != "off"
 
     @property
     def llm_base_url(self) -> str:
@@ -104,6 +110,8 @@ class Settings(BaseSettings):
 
     def llm_config_problem(self) -> str:
         """Empty when the model of the active mode is fully configured, otherwise what is missing."""
+        if not self.llm_enabled:
+            return ""
         if self.llm_mode == "cloud":
             missing = [n for n, v in (("LLM_CLOUD_BASE_URL", self.LLM_CLOUD_BASE_URL), ("LLM_CLOUD_API_KEY", self.LLM_CLOUD_API_KEY),
                                       ("LLM_CLOUD_TEXT_MODEL", self.LLM_CLOUD_TEXT_MODEL)) if not v]

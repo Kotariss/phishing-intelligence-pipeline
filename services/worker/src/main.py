@@ -109,6 +109,7 @@ def health():
         "status": "healthy",
         "service": "worker",
         "llm_mode": settings.llm_mode,
+        "llm_enabled": settings.llm_enabled,
         "llm_ready": not settings.llm_config_problem(),
         "llm_problem": settings.llm_config_problem() or None,
         "llm_model": settings.text_model,
