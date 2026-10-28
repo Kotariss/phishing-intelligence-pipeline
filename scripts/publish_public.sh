@@ -33,6 +33,9 @@ if [ -n "${DW2_SCRUB:-}" ]; then
   FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --tree-filter "python3 '$DW2_SCRUB'" -- main >/dev/null 2>&1
   git for-each-ref --format='%(refname)' refs/original | xargs -r -n1 git update-ref -d
 fi
+# commit messages: no tool attribution lines in the published history
+FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter "python3 '$SRC/scripts/strip_attribution.py'" -- main >/dev/null 2>&1
+git for-each-ref --format='%(refname)' refs/original | xargs -r -n1 git update-ref -d
 git branch -D master >/dev/null 2>&1 || true
 git remote remove origin
 git reflog expire --expire=now --all
